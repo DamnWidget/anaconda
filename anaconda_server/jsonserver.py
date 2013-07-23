@@ -40,7 +40,9 @@ class JSONHandler(socketserver.StreamRequestHandler):
 
         with json_decode(self.rfile.readline().strip()) as self.data:
             self.server.logger.info(
-                '{0} requests: {1}'.format(self.client_address[0], self.data)
+                '{0} requests: {1}'.format(
+                    self.client_address[0], self.data['method']
+                )
             )
 
         if type(self.data) is dict:

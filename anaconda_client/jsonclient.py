@@ -52,6 +52,8 @@ class Client:
         """Send a request to the server
         """
 
+        print('Client')
+        print(kwargs)
         kwargs['method'] = method
         self.send(json.dumps(kwargs))
 

@@ -9,6 +9,7 @@ Anaconda is a python autocompletion and linting plugin for Sublime Text 3
 
 import os
 import sys
+import time
 import pipes
 import socket
 import logging
@@ -60,7 +61,9 @@ class AnacondaCompletionsListener(sublime_plugin.EventListener):
         """
 
         logger.info('Anaconda completion has been called')
-        proposals = Worker.lookup(view).autocomplete(prefix, locations)
+        worker = Worker.lookup(view)
+
+        proposals = Worker.lookup(view).autocomplete(locations[0])
 
         if proposals:
             completion_flags = (
@@ -105,29 +108,18 @@ class Worker:
             self.proccess.terminate()
             self.process = None
 
-    def __getattr__(self, attr, *args, **kwargs):
-        """Magic method dispatcher
+    def autocomplete(self, location):
+        """Call to autocomplete in the client
         """
 
-        if self.client is None:
-            self.stop()
-            self.restart()
+        data = {
+            'source': self.view.substr(sublime.Region(0, self.view.size())),
+            'line': self.view.rowcol(location)[0],
+            'offset': self.view.rowcol(location)[1],
+            'file': self.view.file_name() or ''
+        }
 
-        method = getattr(self.client, attr)
-
-        try:
-            return method(*args, **kwargs)
-        except Exception as error:
-            logging.error(error)
-            if self.proc.poll() is None:
-                # retry once
-                return method(*args, **kwargs)
-            else:
-                # server died, restart
-                self.restart()
-                return method(*args, **kwargs)
-
-        return None
+        return self.client.request('autocomplete', **data)
 
     @staticmethod
     def port():
@@ -209,7 +201,9 @@ class Worker:
             interp, '-B', WORKER_SCRIPT, '-p', project_name, str(self.port)
         ]
         for extra_path in extra_paths.split(','):
-            sub_args.extend(['-e', extra_path])
+            if extra_path != '':
+                sub_args.extend(['-e', extra_path])
+        sub_args.extend([str(os.getpid())])
 
         return subprocess.Popen(sub_args, **kwargs)
 
