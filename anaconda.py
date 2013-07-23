@@ -9,19 +9,17 @@ Anaconda is a python autocompletion and linting plugin for Sublime Text 3
 
 import os
 import sys
-import time
 import pipes
 import socket
 import logging
 import threading
-import functools
 import subprocess
 
 import sublime
 import sublime_plugin
 
-from anaconda.decorators import only_python
 from anaconda.anaconda_client import Client
+from anaconda.decorators import only_python, executor
 
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda only works with Sublime Text 3')
@@ -61,8 +59,6 @@ class AnacondaCompletionsListener(sublime_plugin.EventListener):
         """
 
         logger.info('Anaconda completion has been called')
-        worker = Worker.lookup(view)
-
         proposals = Worker.lookup(view).autocomplete(locations[0])
 
         if proposals:
@@ -108,18 +104,22 @@ class Worker:
             self.proccess.terminate()
             self.process = None
 
+    @executor
     def autocomplete(self, location):
         """Call to autocomplete in the client
         """
 
+        current_line, current_column = self.view.rowcol(location)
         data = {
             'source': self.view.substr(sublime.Region(0, self.view.size())),
-            'line': self.view.rowcol(location)[0],
-            'offset': self.view.rowcol(location)[1],
-            'file': self.view.file_name() or ''
+            'line': current_line + 1,
+            'offset': current_column,
+            'filename': self.view.file_name() or ''
         }
 
-        return self.client.request('autocomplete', **data)
+        result = self.client.request('autocomplete', **data)
+        if result and result['success'] is True:
+            return result['completions']
 
     @staticmethod
     def port():
@@ -217,22 +217,3 @@ def get_settings(view, name, default=None):
 
     plugin_settings = sublime.load_settings('Anaconda.sublime-settings')
     return view.settings().get(name, plugin_settings.get(name, default))
-
-
-###############################################################################
-# Decorators
-###############################################################################
-def only_python(func):
-    """Execute the given function if we are on Python source only
-    """
-
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-
-        location = self.view.sel()[0].begin()
-        matcher = 'source.python - string - comment'
-
-        if self.view.match_selector(location, matcher):
-            return func(self, *args, **kwargs)
-
-    return wrapper

@@ -6,6 +6,7 @@
 import os
 import sys
 import json
+import errno
 import logging
 import threading
 import traceback
@@ -49,10 +50,14 @@ class JSONHandler(socketserver.StreamRequestHandler):
         if type(self.data) is dict:
             try:
                 method = self.data.pop('method')
-                print(method)
                 self.script = self.jedi_script(**self.data)
                 getattr(self, method)()
-            except AttributeError as error:
+            except IOError as error:
+                if error.errno == errno.EPIPE:
+                    logger.error('Error [32]Broken PIPE Killing myself... ')
+                    self.shutdown()
+                    sys.exit()
+            except Exception as error:
                 logger.info('Exception: {0}'.format(error))
                 logger.info(traceback.print_last())
         else:
