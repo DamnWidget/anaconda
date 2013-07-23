@@ -12,6 +12,7 @@ class Client:
     """
 
     def __init__(self, host, port=None, timeout=None):
+
         if timeout is None:
             timeout = socket._GLOBAL_DEFAULT_TIMEOUT
         self.timeout = timeout
@@ -52,8 +53,6 @@ class Client:
         """Send a request to the server
         """
 
-        print('Client')
-        print(kwargs)
         kwargs['method'] = method
         self.send(json.dumps(kwargs))
 
@@ -68,8 +67,6 @@ class Client:
 
         try:
             line = self.file.readline()
-            print('Polline')
-            print(line)
         except socket.error as e:
             self.close()
             raise RuntimeError('Connection unexpectedly closed: ' + str(e))

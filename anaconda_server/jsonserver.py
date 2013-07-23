@@ -8,6 +8,7 @@ import sys
 import json
 import logging
 import threading
+import traceback
 from time import sleep
 from logging import handlers
 from optparse import OptionParser
@@ -39,7 +40,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
         """
 
         with json_decode(self.rfile.readline().strip()) as self.data:
-            self.server.logger.info(
+            logger.info(
                 '{0} requests: {1}'.format(
                     self.client_address[0], self.data['method']
                 )
@@ -47,9 +48,13 @@ class JSONHandler(socketserver.StreamRequestHandler):
 
         if type(self.data) is dict:
             try:
-                getattr(self, self.data.pop('method'))(**self.data)
+                method = self.data.pop('method')
+                print(method)
+                self.script = self.jedi_script(**self.data)
+                getattr(self, method)()
             except AttributeError as error:
-                self.server.logger.debug('Exception: {0}'.format(error))
+                logger.info('Exception: {0}'.format(error))
+                logger.info(traceback.print_last())
         else:
             self.server.logger.error(
                 '{0} sent something that I dont undertand: {1}'.format(
@@ -57,20 +62,109 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 )
             )
 
-    def autocomplete(self, source, line, offset, file='', encoding='utf-8'):
+    def jedi_script(self, source, line, offset, filename='', encoding='utf-8'):
+        return jedi.Script(
+            source, int(line), int(offset), filename, encoding
+        )
+
+    def autocomplete(self):
         """Return Jedi completions
         """
 
-        script = jedi.Script(
-            source, int(line), int(offset), file, encoding
-        )
+        try:
+            data = self._parameters_for_complete()
 
-        completions = script.completions()
+            completions = self.script.completions()
+            data.extend([
+                ('{0}\t{1}'.format(comp.name, comp.type), comp.name)
+                for comp in completions
+            ])
+            result = {'success': True, 'completions': data}
+        except Exception as error:
+            result = {
+                'success': False, 'error': error, 'tb': traceback.print_last()
+            }
+
+        self.wfile.write('{}\r\n'.format(json.dumps(result)))
+
+    def goto(self):
+        """Goto a Python definition
+        """
+
+        try:
+            definitions = self.script.goto_assignments()
+            if all(d.type == 'import' for d in definitions):
+                definitions = self.script.get_definition()
+        except jedi.api.NotFoundError:
+            data = None
+            success = False
+        else:
+            data = [(i.module_path, i.line, i.column + 1)
+                    for i in definitions if not i.in_builtin_module()]
+            success = True
+
         self.wfile.write('{}\r\n'.format(json.dumps({
-            'success': True, 'completions': [
-                '{0}\t{1}'.format(c.name, c.type) for c in completions
+            'success': success, 'goto': data
+        })))
+
+    def usages(self):
+        """Find usages
+        """
+
+        usages = self.script.usages()
+        self.wfile.write('{}\r\n'.format(json.dumps({
+            'success': True, 'usages': [
+                (i.module_path, i.line, i.column)
+                for i in usages if not i.in_builtin_module()
             ]
         })))
+
+    def _parameters_for_complete(self):
+        """Get function / class constructor paremeters completions list
+        """
+
+        completions = []
+        try:
+            in_call = self.script.call_signatures()[0]
+        except IndexError:
+            in_call = None
+
+        parameters = self._get_function_parameters(in_call)
+
+        for parameter in parameters:
+            try:
+                name, value = parameter
+            except ValueError:
+                name = parameter[0]
+                value = None
+
+            if value is None:
+                completions.append((name, '${1:%s}' % name))
+            else:
+                completions.append(
+                    (name + '\t' + value, '%s=${1:%s}' % (name, value))
+                )
+
+        return completions
+
+    def _get_function_parameters(self, call_def):
+        """
+        Return list function parameters, prepared for sublime completion.
+        Tuple contains parameter name and default value
+        """
+
+        if not call_def:
+            return []
+
+        params = []
+        for param in call_def.params:
+            cleaned_param = param.get_code().strip()
+            if '*' in cleaned_param or cleaned_param == 'self':
+                continue
+
+            params.append([s.strip() for s in cleaned_param.split('=')])
+
+        return params
 
 
 class Checker(threading.Thread):
