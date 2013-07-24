@@ -29,6 +29,35 @@ def only_python(func):
     return wrapper
 
 
+def on_linting_enabled(func):
+    """Execute the given function if linting is enabled only
+    """
+
+    @functools.wraps(func)
+    def wrapper(self, view, *args, **kwargs):
+
+        if view.settings().get('linting_enabled') is True:
+            return func(self, view, *args, **kwargs)
+        else:
+            # erase all the linter marks if any
+            self._erase_marks(view)
+
+    return wrapper
+
+
+def not_scratch(func):
+    """Don't execute the given function if the view is scratched
+    """
+
+    @functools.wraps(func)
+    def wrapper(self, view, *args, **kwargs):
+
+        if not view.is_scratch():
+            return func(self, view, *args, **kwargs)
+
+    return wrapper
+
+
 def executor(func):
     """Execute the underlying method retrying if needed
     """

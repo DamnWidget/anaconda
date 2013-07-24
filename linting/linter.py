@@ -19,8 +19,10 @@ that the former lints always for Python3.3 even if we are coding in
 a Python 2 project. Anaconda lints for the configured Python environment
 """
 
+import re
 import _ast
 import pep8
+from functools import cmp_to_key
 
 import pyflakes.checker as pyflakes
 
@@ -184,7 +186,7 @@ class Linter(object):
         return messages
 
     def built_in_check(self, settings, code, filename, vid):
-        """Check built-ins
+        """Check the code to find errors
         """
 
         errors = []
@@ -200,7 +202,7 @@ class Linter(object):
         if not pyflakes_disabled:
             errors.extend(self.pyflakes_check(code, filename, pyflakes_ignore))
 
-        return self._jsonize(errors, vid)
+        return errors
 
     def _handle_syntactic_error(self, code, filename, value):
         """Handle PythonError and OffsetError
@@ -229,13 +231,17 @@ class Linter(object):
 
         return [error]
 
-    def _jsonize(self, errors, vid):
+    def _jsonize(self, errors, vid, ignore_star=False):
         """Convert a list of PyFlakes and PEP-8 errors into JSON
         """
 
+        errors.sort(key=cmp_to_key(lambda a, b: a.lineno < b.lineno))
         for error in errors:
             error_level = 'W' if not hasattr(error, 'level') else error.level
             messages, underlines = self._get_errors_level(error_level, vid)
+
+            if type(error) is pyflakes.messages.ImportStarUsed and ignore_star:
+                continue
 
     def _get_errors_level(self, error_level, vid):
         """Return back the right error levels for messages and underlines
