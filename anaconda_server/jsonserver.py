@@ -59,7 +59,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
                     sys.exit()
             except Exception as error:
                 logger.info('Exception: {0}'.format(error))
-                logger.info(traceback.print_last())
+                log_traceback()
         else:
             self.server.logger.error(
                 '{0} sent something that I dont undertand: {1}'.format(
@@ -87,7 +87,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
             result = {'success': True, 'completions': data}
         except Exception as error:
             result = {
-                'success': False, 'error': error, 'tb': traceback.print_last()
+                'success': False, 'error': error, 'tb': get_log_traceback()
             }
 
         self.wfile.write('{}\r\n'.format(json.dumps(result)))
@@ -232,6 +232,23 @@ def getLogger(path):
     log.addHandler(hdlr)
     return log
 
+
+def log_traceback():
+    """Just log the traceback
+    """
+
+    logging.error(get_log_traceback())
+
+
+def get_log_traceback():
+    """Get the traceback log msg
+    """
+
+    error = []
+    for traceback_line in traceback.format_exc().splitlines():
+        error.append(traceback_line)
+
+    return ''.join(error)
 
 if __name__ == "__main__":
     opt_parser = OptionParser(usage=(
