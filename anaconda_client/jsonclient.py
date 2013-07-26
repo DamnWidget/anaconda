@@ -4,6 +4,7 @@
 # This program is Free Software see LICENSE file for details
 
 import json
+import pickle
 import socket
 
 
@@ -67,6 +68,8 @@ class Client:
 
         try:
             line = self.file.readline()
+            print('LINE')
+            print(line)
         except socket.error as e:
             self.close()
             raise RuntimeError('Connection unexpectedly closed: ' + str(e))

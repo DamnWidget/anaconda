@@ -1,0 +1,42 @@
+/*
+    Anaconda default settings
+*/
+{
+    "linting_enabled": false,
+
+    // Set this to false to turn pep8 checking off completely
+    "pep8": true,
+
+    /*
+        A list of pep8 error numbers to ignore. By default "line too long" errors are ignored.
+        The list of error codes is in this file: https://github.com/jcrocholl/pep8/blob/master/pep8.py.
+        Search for "Ennn:", where nnn is a 3-digit number.
+    */
+    "pep8_ignore":
+    [
+    ],
+
+    /*
+        If you use SublimeLinter for pyflakes checks, you can ignore some of the "undefined name xxx"
+        errors (comes in handy if you work with post-processors, globals/builtins available only at runtime, etc.).
+        You can control what names will be ignored with the user setting "pyflakes_ignore".
+
+        Example:
+
+        "pyflakes_ignore":
+            [
+                "some_custom_builtin_o_mine",
+                "A_GLOBAL_CONSTANT"
+            ],
+    */
+    "pyflakes_ignore":
+    [
+    ],
+
+    /*
+        Ordinarily pyflakes will issue a warning when 'from foo import *' is used,
+        but it is ignored since the warning is not that helpful. If you want to see this warning,
+        set this option to false.
+    */
+    "pyflakes_ignore_import_*": true
+}

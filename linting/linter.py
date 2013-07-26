@@ -19,11 +19,16 @@ that the former lints always for Python3.3 even if we are coding in
 a Python 2 project. Anaconda lints for the configured Python environment
 """
 
+import os
 import re
+import sys
+sys.path.insert(0, os.path.dirname(__file__))
+
 import _ast
-import pep8
 from functools import cmp_to_key
 
+import pep8
+from pyflakes import messages as pyflakes_messages
 import pyflakes.checker as pyflakes
 
 pyflakes.messages.Message.__str__ = (
@@ -58,7 +63,7 @@ class Pep8Error(LintError):
 
     def __init__(self, filename, loc, offset, code, text):
         super(Pep8Error, self).__init__(
-            filename, loc, 'W', '[W] PEP 8 ({0}): {1}'.format(code, text),
+            filename, loc, 'W', '[W] PEP 8 (%s): %s', (code, text),
             offset=offset, text=text
         )
 
@@ -71,7 +76,7 @@ class Pep8Warning(LintError):
 
     def __init__(self, filename, loc, offset, code, text):
         super(Pep8Warning, self).__init__(
-            filename, loc, 'V', '[V] PEP 8 ({0}): {1}'.format(code, text),
+            filename, loc, 'V', '[V] PEP 8 (%s): %s', (code, text),
             offset=offset, text=text
         )
 
@@ -82,7 +87,7 @@ class PythonError(LintError):
 
     def __init__(self, filename, loc, text):
         super(PythonError, self).__init__(
-            filename, loc, 'E', '[E] {0!r}'.format(text), text=text
+            filename, loc, 'E', '[E] %r', (text,), text=text
         )
 
 
@@ -90,7 +95,7 @@ class OffsetError(LintError):
 
     def __init__(self, filename, loc, text, offset):
         super(OffsetError, self).__init__(
-            filename, loc, 'E', '[E] {0!r}'.format(text),
+            filename, loc, 'E', '[E] %s', (text,),
             offset=offset + 1, text=text
         )
 
@@ -99,7 +104,7 @@ class Linter(object):
     """Linter class for Anaconda's Python linter
     """
 
-    def __init__(self, config):
+    def __init__(self):
 
         self.enabled = False
 
@@ -134,6 +139,13 @@ class Linter(object):
         _lines = code.split('\n')
 
         if _lines:
+            class FakeCol:
+                """Fake class to represent a col object for PyFlakes
+                """
+
+                def __init__(self, line_number):
+                    self.lineno = line_number
+
             class SublimeLinterReport(pep8.BaseReport):
                 """Helper class to report PEP 8 problems
                 """
@@ -141,6 +153,7 @@ class Linter(object):
                 def error(self, line_number, offset, text, check):
                     """Report an error, according to options
                     """
+                    col = FakeCol(line_number)
                     code = text[:4]
                     message = text[5:]
 
@@ -153,7 +166,7 @@ class Linter(object):
                         self.counters[code] = 1
                         self.messages[code] = message
 
-                    if code in self.excepted:
+                    if code in self.expected:
                         return
 
                     self.file_errors += 1
@@ -162,7 +175,7 @@ class Linter(object):
                     pep8_error = code.startswith('E')
                     klass = Pep8Error if pep8_error else Pep8Warning
                     messages.append(klass(
-                        filename, line_number, offset, code, message
+                        filename, col, offset, code, message
                     ))
 
                     return code
@@ -178,14 +191,11 @@ class Linter(object):
             if not good_lines[-1]:
                 good_lines = good_lines[:-1]
 
-            try:
-                pep8.Checker(filename, good_lines, options=options).check_all()
-            except Exception as e:
-                print("An exception occured when running pep8 checker: %s" % e)
+            pep8.Checker(filename, good_lines, options=options).check_all()
 
         return messages
 
-    def built_in_check(self, settings, code, filename, vid):
+    def run_linter(self, settings, code, filename):
         """Check the code to find errors
         """
 
@@ -202,7 +212,81 @@ class Linter(object):
         if not pyflakes_disabled:
             errors.extend(self.pyflakes_check(code, filename, pyflakes_ignore))
 
-        return errors
+        return self.parse_errors(errors)
+
+    def parse_errors(self, errors):
+        """Parse errors returned from the PyFlakes and pep8 libraries
+        """
+
+        errors_list = []
+        if errors is None:
+            return errors_list
+
+        errors.sort(key=cmp_to_key(lambda a, b: a.lineno < b.lineno))
+
+        for error in errors:
+            error_level = 'W' if not hasattr(error, 'level') else error.level
+            message = '{0}{1}'.format(
+                error.message[0].upper(), error.message[1:]
+            )
+            error_data = {
+                'pep8': False,
+                'level': error_level,
+                'lineno': error.lineno,
+                'offset': error.offset,
+                'message': message
+            }
+
+            if type(error) in [Pep8Warning, Pep8Error, OffsetError]:
+                error_data['pep8'] = True
+                errors_list.append(error_data)
+            elif type(error) in [
+                    pyflakes_messages.RedefinedWhileUnused,
+                    pyflakes_messages.UndefinedName,
+                    pyflakes_messages.UndefinedExport,
+                    pyflakes_messages.UndefinedLocal,
+                    pyflakes_messages.Redefined,
+                    pyflakes_messages.UnusedVariable]:
+                regex = (
+                    r'((and|or|not|if|elif|while|in)\s+|[+\-*^%%<>=\(\{{])*\s'
+                    '*(?P<underline>[\w\.]*{0}[\w]*)'.format(re.escape(
+                        error.message_args[0]
+                    ))
+                )
+                error_data['regex'] = regex
+                errors_list[error_level].append(error_data)
+            elif type(error) is pyflakes_messages.ImportShadowByLoopVar:
+                regex = 'for\s+(?P<underline>[\w]*{0}[\w*])'.format(
+                    re.escape(error.message_args[0])
+                )
+                error_data['regex'] = regex
+                errors_list[error_level].append(error_data)
+            elif type(error) in [
+                    pyflakes_messages.UnusedImport,
+                    pyflakes_messages.ImportStarUsed]:
+                if type(error) is pyflakes_messages.ImportStarUsed:
+                    word = '*'
+                else:
+                    word = error.message_args[0]
+
+                linematch = '(from\s+[\w_\.]+\s+)?import\s+(?P<match>[^#;]+)'
+                regex = '(^|\s+|,\s*|as\s+)(?P<underline>[\w]*{0}[\w]*)'
+                regex.format(re.escape(word))
+                error_data['regex'] = regex
+                error_data['linematch'] = linematch
+                errors_list[error_level].append(error_data)
+            elif type(error) is pyflakes_messages.DuplicateArgument:
+                regex = 'def [\w_]+\(.*?(?P<underline>[\w]*{0}[\w]*)'.format(
+                    re.escape(error.message_args[0])
+                )
+                error_data['regex'] = regex
+                errors_list[error_level].append(error_data)
+            elif type(error) is pyflakes_messages.LateFutureImport:
+                pass
+            else:
+                print('Oops, we missed an error type!', type(error))
+
+        return errors_list
 
     def _handle_syntactic_error(self, code, filename, value):
         """Handle PythonError and OffsetError
@@ -219,33 +303,14 @@ class Linter(object):
                     filename, lineno, arg[0].strip('\'"')
                 )
             else:
-                error = PythonError(filename, lineno, msg)
+                error = PythonError(filename, value, msg)
         else:
-            line = text.splilines()[-1]
+            line = text.splitlines()[-1]
 
             if offset is not None:
                 offset = offset - (len(text) - len(line))
-                error = OffsetError(filename, lineno, msg, offset)
+                error = OffsetError(filename, value, msg, offset)
             else:
-                error = PythonError(filename, lineno, msg)
+                error = PythonError(filename, value, msg)
 
         return [error]
-
-    def _jsonize(self, errors, vid, ignore_star=False):
-        """Convert a list of PyFlakes and PEP-8 errors into JSON
-        """
-
-        errors.sort(key=cmp_to_key(lambda a, b: a.lineno < b.lineno))
-        for error in errors:
-            error_level = 'W' if not hasattr(error, 'level') else error.level
-            messages, underlines = self._get_errors_level(error_level, vid)
-
-            if type(error) is pyflakes.messages.ImportStarUsed and ignore_star:
-                continue
-
-    def _get_errors_level(self, error_level, vid):
-        """Return back the right error levels for messages and underlines
-        """
-
-        messages, underlines = self.error_level_mapper.get(error_level)
-        return messages[vid], underlines[vid]

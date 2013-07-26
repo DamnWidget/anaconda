@@ -121,6 +121,16 @@ class Worker:
         if result and result['success'] is True:
             return result['completions']
 
+    @executor
+    def run_linter(self, text, settings, filename):
+        """Run the Linters in the client
+        """
+
+        data = {'code': text, 'settings': settings, 'filename': filename}
+        result = self.client.request('run_linter', **data)
+        if result and result['success'] is True:
+            return result['errors']
+
     @staticmethod
     def port():
         """Get a free port

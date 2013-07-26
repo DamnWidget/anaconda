@@ -22,6 +22,7 @@ else:
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 
 import jedi
+from linting import linter
 from contexts import json_decode
 
 
@@ -50,8 +51,10 @@ class JSONHandler(socketserver.StreamRequestHandler):
         if type(self.data) is dict:
             try:
                 method = self.data.pop('method')
-                self.script = self.jedi_script(**self.data)
-                getattr(self, method)()
+                if 'lint' in method:
+                    self.handle_lint_command(method)
+                else:
+                    self.handle_jedi_command(method)
             except IOError as error:
                 if error.errno == errno.EPIPE:
                     logger.error('Error [32]Broken PIPE Killing myself... ')
@@ -67,10 +70,35 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 )
             )
 
+    def handle_lint_command(self, method):
+        """Handle lint related commands
+        """
+
+        getattr(self, method)(**self.data)
+
+    def handle_jedi_command(self, method):
+        """Handle jedi related commands
+        """
+
+        self.script = self.jedi_script(**self.data)
+        getattr(self, method)()
+
     def jedi_script(self, source, line, offset, filename='', encoding='utf-8'):
         return jedi.Script(
             source, int(line), int(offset), filename, encoding
         )
+
+    def run_linter(self, settings, code, filename):
+        """Return linting errors on the given code
+        """
+
+        result = {
+            'success': True, 'errors': linter.Linter().run_linter(
+                settings, code, filename
+            )
+        }
+
+        self.wfile.write('{}\r\n'.format(json.dumps(result)))
 
     def autocomplete(self):
         """Return Jedi completions
