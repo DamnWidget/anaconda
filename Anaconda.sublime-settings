@@ -2,7 +2,7 @@
     Anaconda default settings
 */
 {
-    "linting_enabled": false,
+    "linting_enabled": true,
 
     // Set this to false to turn pep8 checking off completely
     "pep8": true,

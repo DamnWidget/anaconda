@@ -28,7 +28,6 @@ import _ast
 from functools import cmp_to_key
 
 import pep8
-from pyflakes import messages as pyflakes_messages
 import pyflakes.checker as pyflakes
 
 pyflakes.messages.Message.__str__ = (
@@ -113,7 +112,7 @@ class Linter(object):
         """
 
         try:
-            tree = compile(code, filename, 'exec', _ast.PyCF_ONLY_AST)
+            tree = compile(str(code), filename, 'exec', _ast.PyCF_ONLY_AST)
         except (SyntaxError, IndentationError) as value:
             return self._handle_syntactic_error(code, filename, value)
         except ValueError as error:
@@ -229,24 +228,31 @@ class Linter(object):
             message = '{0}{1}'.format(
                 error.message[0].upper(), error.message[1:]
             )
+
+            offset = None
+            if hasattr(error, 'offset'):
+                offset = error.offset
+
             error_data = {
                 'pep8': False,
                 'level': error_level,
                 'lineno': error.lineno,
-                'offset': error.offset,
-                'message': message
+                'offset': offset,
+                'message': message,
+                'raw_error': str(error)
             }
 
-            if type(error) in [Pep8Warning, Pep8Error, OffsetError]:
+            if isinstance(error, (Pep8Error, Pep8Warning, OffsetError)):
                 error_data['pep8'] = True
                 errors_list.append(error_data)
-            elif type(error) in [
-                    pyflakes_messages.RedefinedWhileUnused,
-                    pyflakes_messages.UndefinedName,
-                    pyflakes_messages.UndefinedExport,
-                    pyflakes_messages.UndefinedLocal,
-                    pyflakes_messages.Redefined,
-                    pyflakes_messages.UnusedVariable]:
+            elif isinstance(
+                error, (
+                    pyflakes.messages.RedefinedWhileUnused,
+                    pyflakes.messages.UndefinedName,
+                    pyflakes.messages.UndefinedExport,
+                    pyflakes.messages.UndefinedLocal,
+                    pyflakes.messages.Redefined,
+                    pyflakes.messages.UnusedVariable)):
                 regex = (
                     r'((and|or|not|if|elif|while|in)\s+|[+\-*^%%<>=\(\{{])*\s'
                     '*(?P<underline>[\w\.]*{0}[\w]*)'.format(re.escape(
@@ -254,17 +260,18 @@ class Linter(object):
                     ))
                 )
                 error_data['regex'] = regex
-                errors_list[error_level].append(error_data)
-            elif type(error) is pyflakes_messages.ImportShadowByLoopVar:
+                errors_list.append(error_data)
+            elif isinstance(error, pyflakes.messages.ImportShadowedByLoopVar):
                 regex = 'for\s+(?P<underline>[\w]*{0}[\w*])'.format(
                     re.escape(error.message_args[0])
                 )
                 error_data['regex'] = regex
-                errors_list[error_level].append(error_data)
-            elif type(error) in [
-                    pyflakes_messages.UnusedImport,
-                    pyflakes_messages.ImportStarUsed]:
-                if type(error) is pyflakes_messages.ImportStarUsed:
+                errors_list.append(error_data)
+            elif isinstance(
+                error, (
+                    pyflakes.messages.UnusedImport,
+                    pyflakes.messages.ImportStarUsed)):
+                if isinstance(error, pyflakes.messages.ImportStarUsed):
                     word = '*'
                 else:
                     word = error.message_args[0]
@@ -274,15 +281,17 @@ class Linter(object):
                 regex.format(re.escape(word))
                 error_data['regex'] = regex
                 error_data['linematch'] = linematch
-                errors_list[error_level].append(error_data)
-            elif type(error) is pyflakes_messages.DuplicateArgument:
+                errors_list.append(error_data)
+            elif isinstance(error, pyflakes.messages.DuplicateArgument):
                 regex = 'def [\w_]+\(.*?(?P<underline>[\w]*{0}[\w]*)'.format(
                     re.escape(error.message_args[0])
                 )
                 error_data['regex'] = regex
-                errors_list[error_level].append(error_data)
-            elif type(error) is pyflakes_messages.LateFutureImport:
+                errors_list.append(error_data)
+            elif isinstance(error, pyflakes.messages.LateFutureImport):
                 pass
+            elif isinstance(error, PythonError):
+                print(error)
             else:
                 print('Oops, we missed an error type!', type(error))
 
@@ -298,9 +307,10 @@ class Linter(object):
 
         if text is None:    # encoding problems
             if msg.startswith('duplicate argument'):
-                arg = msg.split('duplicate argument', 1)[1].split(' ', 1)
+                arg = msg.split(
+                    'duplicate argument ', 1)[1].split(' ', 1)[0].strip('\'"')
                 error = pyflakes.messages.DuplicateArgument(
-                    filename, lineno, arg[0].strip('\'"')
+                    filename, lineno, arg
                 )
             else:
                 error = PythonError(filename, value, msg)
@@ -309,6 +319,8 @@ class Linter(object):
 
             if offset is not None:
                 offset = offset - (len(text) - len(line))
+
+            if offset is not None:
                 error = OffsetError(filename, value, msg, offset)
             else:
                 error = PythonError(filename, value, msg)

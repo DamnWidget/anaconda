@@ -68,8 +68,6 @@ class Client:
 
         try:
             line = self.file.readline()
-            print('LINE')
-            print(line)
         except socket.error as e:
             self.close()
             raise RuntimeError('Connection unexpectedly closed: ' + str(e))

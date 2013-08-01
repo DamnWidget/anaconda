@@ -15,17 +15,20 @@ from functools import cmp_to_key, partial
 import sublime
 import sublime_plugin
 
-from anaconda.anaconda import Worker, get_settings
+from anaconda.anaconda import Worker
+from anaconda.utils import get_settings
 from anaconda.linting.pyflakes import messages as pyflakes_messages
 from anaconda.linting.linter import Pep8Error, Pep8Warning, OffsetError
 from anaconda.decorators import only_python, not_scratch, on_linting_enabled
 
-QUEUE = {}
-ERRORS = {}
-WARNINGS = {}
-VIOLATIONS = {}
-UNDERLINES = {}
-TIMES = {}
+ANACONDA = {
+    'QUEUE': {},
+    'ERRORS': {},
+    'WARNINGS': {},
+    'VIOLATIONS': {},
+    'UNDERLINES': {},
+    'TIMES': {}
+}
 
 # For snappier linting, different delays are used for different linting times:
 # (linting time, delays)
@@ -87,7 +90,6 @@ class Linter:
 
     def add_message(self, lineno, lines, message, messages):
         # assume lineno is one-based, ST3 wants zero-based line numbers
-
         lineno -= 1
         lines.add(lineno)
         message = message[0].upper() + message[1:]
@@ -148,87 +150,44 @@ class Linter:
         """Parse errors returned from the PyFlakes and pep8 libraries
         """
 
+        vid = self.view.id()
+
         errors_level = {
-            'E': {'messages': {}, 'underlines': []},
-            'W': {'messages': {}, 'underlines': []},
-            'V': {'messages': {}, 'underlines': []}
+            'E': {'messages': ANACONDA.get('ERRORS')[vid], 'underlines': []},
+            'W': {'messages': ANACONDA.get('WARNINGS')[vid], 'underlines': []},
+            'V': {
+                'messages': ANACONDA.get('VIOLATIONS')[vid], 'underlines': []
+            }
         }
 
         lines = set()
         if errors is None:
             return {'lines': lines, 'results': errors_level}
 
-        errors.sort(key=cmp_to_key(lambda a, b: a.lineno < b.lineno))
         ignore_star = self.view.settings().get(
             'pyflakes_ignore_import_*', True
         )
 
         for error in errors:
-            error_level = 'W' if not hasattr(error, 'level') else error.level
-            messages, underlines = errors_level.get(error_level)
+            error_level = error.get('level', 'W')
+            messages = errors_level[error_level]['messages']
+            underlines = errors_level[error_level]['underlines']
 
-            if type(error) is pyflakes_messages.ImportStarUsed and ignore_star:
+            if 'import *' in error['raw_error'] and ignore_star:
                 continue
 
-            self.add_message(error.lineno, lines, str(error), messages)
-            if type(error) in [Pep8Warning, Pep8Error, OffsetError]:
+            self.add_message(
+                error['lineno'], lines, error['raw_error'], messages
+            )
+
+            if error['pep8'] is True:
                 self.underline_range(
-                    self.view, error.lineno, error.offset, underlines
+                    error['lineno'], error['offset'], underlines
                 )
-            elif type(error) in [
-                    pyflakes_messages.RedefinedWhileUnused,
-                    pyflakes_messages.UndefinedName,
-                    pyflakes_messages.UndefinedExport,
-                    pyflakes_messages.UndefinedLocal,
-                    pyflakes_messages.Redefined,
-                    pyflakes_messages.UnusedVariable]:
-                regex = (
-                    r'((and|or|not|if|elif|while|in)\s+|[+\-*^%%<>=\(\{{])*\s'
-                    '*(?P<underline>[\w\.]*{0}[\w]*)'.format(re.escape(
-                        error.message_args[0]
-                    ))
-                )
-                self.underline_regex(
-                    lineno=error.lineno, regex=regex, lines=lines,
-                    underlines=underlines, wordmatch=error.message_args[0]
-                )
-            elif type(error) is pyflakes_messages.ImportShadowByLoopVar:
-                regex = 'for\s+(?P<underline>[\w]*{0}[\w*])'.format(
-                    re.escape(error.message_args[0])
-                )
-                self.underline_regex(
-                    lineno=error.lineno, regex=regex, lines=lines,
-                    underlines=underlines, wordmatch=error.message_args[0]
-                )
-            elif type(error) in [
-                    pyflakes_messages.UnusedImport,
-                    pyflakes_messages.ImportStarUsed]:
-                if type(error) is pyflakes_messages.ImportStarUsed:
-                    word = '*'
-                else:
-                    word = error.message_args[0]
-
-                linematch = '(from\s+[\w_\.]+\s+)?import\s+(?P<match>[^#;]+)'
-                regex = '(^|\s+|,\s*|as\s+)(?P<underline>[\w]*{0}[\w]*)'
-                regex.format(re.escape(word))
-
-                self.underline_regex(
-                    lineno=error.lineno, regex=regex, lines=lines,
-                    underlines=underlines, wordmatch=word,
-                    linematch=linematch
-                )
-            elif type(error) is pyflakes_messages.DuplicateArgument:
-                regex = 'def [\w_]+\(.*?(?P<underline>[\w]*{0}[\w]*)'.format(
-                    re.escape(error.message_args[0])
-                )
-                self.underline_regex(
-                    lineno=error.lineno, regex=regex, lines=lines,
-                    underlines=underlines, wordmatch=error.message_args[0]
-                )
-            elif type(error) is pyflakes_messages.LateFutureImport:
-                pass
             else:
-                print('Oops, we missed an error type!', type(error))
+                self.underline_regex(
+                    lines=lines, underlines=underlines, **error
+                )
 
         return {'lines': lines, 'results': errors_level}
 
@@ -282,8 +241,7 @@ def add_lint_marks(view, lines, **errors):
     for type_name, underlines in types.items():
         if len(underlines) > 0:
             view.add_regions(
-                'lint-underline-{}'.format(type_name),
-                underlines,
+                'lint-underline-{}'.format(type_name), underlines,
                 'anaconda.underline.{}'.format(type_name),
                 flags=sublime.DRAW_EMPTY_AS_OVERWRITE
             )
@@ -295,11 +253,10 @@ def add_lint_marks(view, lines, **errors):
         for lint_type, lints in get_outlines(view).items():
             if len(lints) > 0:
                 args = [
-                    'lint-outlines-{}'.format(lint_type),
-                    lints,
+                    'lint-outlines-{}'.format(lint_type), lints,
                     'anaconda.outline.{}'.format(lint_type),
                     marks[lint_type],
-                    outline_style.get(style, sublime.DRAW_OUTLINE)
+                    outline_style.get(style, sublime.DRAW_OUTLINED)
                 ]
 
                 view.add_regions(*args)
@@ -308,6 +265,10 @@ def add_lint_marks(view, lines, **errors):
 def get_outlines(view):
     """Return outlines for the given view
     """
+
+    ERRORS = ANACONDA.get('ERRORS')
+    WARNINGS = ANACONDA.get('WARNINGS')
+    VIOLATIONS = ANACONDA.get('VIOLATIONS')
 
     vid = view.id()
     return {
@@ -346,6 +307,10 @@ def get_lineno_msgs(view, lineno):
     """Get lineno error messages and return it back
     """
 
+    ERRORS = ANACONDA.get('ERRORS')
+    WARNINGS = ANACONDA.get('WARNINGS')
+    VIOLATIONS = ANACONDA.get('VIOLATIONS')
+
     errors_msg = []
     if lineno is not None:
         vid = view.id()
@@ -359,6 +324,12 @@ def get_lineno_msgs(view, lineno):
 def run_linter(view):
     """Run the linter for the given view
     """
+
+    TIMES = ANACONDA.get('TIMES')
+    ERRORS = ANACONDA.get('ERRORS')
+    WARNINGS = ANACONDA.get('WARNINGS')
+    VIOLATIONS = ANACONDA.get('VIOLATIONS')
+    UNDERLINES = ANACONDA.get('UNDERLINES')
 
     vid = view.id()
     ERRORS[vid] = {}
@@ -379,8 +350,8 @@ def run_linter(view):
     )
 
     errors = results['results']
-
     lines = results['lines']
+
     UNDERLINES[vid] = errors['E']['underlines'][:]
     UNDERLINES[vid].extend(errors['V']['underlines'])
     UNDERLINES[vid].extend(errors['W']['underlines'])
@@ -400,6 +371,8 @@ def run_linter(view):
 def queue_linter(view, timeout=-1, preemptive=False, event=None):
     """Put the current view in a queue to be examined by a linter
     """
+
+    TIMES = ANACONDA.get('TIMES')
 
     if preemptive:
         timeout = busy_timeout = 0
@@ -453,6 +426,8 @@ def _callback(view, filename, kwargs):
 def background_linter():
     __lock_.acquire()
 
+    QUEUE = ANACONDA.get('QUEUE')
+
     try:
         callbacks = list(QUEUE.values())
         QUEUE.clear()
@@ -478,6 +453,7 @@ def queue(view, callback, kwargs):
     global __signaled_, __signaled_first_
     now = time.time()
     __lock_.acquire()
+    QUEUE = ANACONDA.get('QUEUE')
 
     try:
         QUEUE[view.id()] = callback
@@ -492,8 +468,6 @@ def queue(view, callback, kwargs):
 
         if not __signaled_first_:
             __signaled_first_ = __signaled_
-            #print 'first',
-        #print 'queued in', (__signaled_ - now)
     finally:
         __lock_.release()
 

@@ -98,6 +98,8 @@ class JSONHandler(socketserver.StreamRequestHandler):
             )
         }
 
+        logging.info('RESULT:')
+        logging.info(result)
         self.wfile.write('{}\r\n'.format(json.dumps(result)))
 
     def autocomplete(self):

@@ -10,6 +10,8 @@ Anaconda decorators
 import time
 import functools
 
+from anaconda.utils import get_settings
+
 MAX_RETRIES = 5
 
 
@@ -36,11 +38,9 @@ def on_linting_enabled(func):
     @functools.wraps(func)
     def wrapper(self, view, *args, **kwargs):
 
-        if view.settings().get('linting_enabled', False) is True:
-            print('QUE SIIII')
+        if get_settings(view, 'linting_enabled', False) is True:
             return func(self, view, *args, **kwargs)
         else:
-            print('QUE NOOOO')
             # erase all the linter marks if any
             self._erase_marks(view)
 

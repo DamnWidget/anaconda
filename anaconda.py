@@ -18,6 +18,7 @@ import subprocess
 import sublime
 import sublime_plugin
 
+from anaconda.utils import get_settings
 from anaconda.anaconda_client import Client
 from anaconda.decorators import only_python, executor
 
@@ -216,14 +217,3 @@ class Worker:
         sub_args.extend([str(os.getpid())])
 
         return subprocess.Popen(sub_args, **kwargs)
-
-
-###############################################################################
-# Global functions
-###############################################################################
-def get_settings(view, name, default=None):
-    """Get settings
-    """
-
-    plugin_settings = sublime.load_settings('Anaconda.sublime-settings')
-    return view.settings().get(name, plugin_settings.get(name, default))
