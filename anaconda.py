@@ -36,18 +36,6 @@ WORKERS_LOCK = threading.RLock()
 ###############################################################################
 # Anaconda Plugin Subclasses
 ###############################################################################
-# class AnacondaParamsAutocomplete(sublime_plugin.TextCommand):
-#     """Autocomplete commands using JEDI
-#     """
-
-#     @only_python
-#     def run(self, edit):
-#         """
-#         """
-
-#         pass
-
-
 class AnacondaCompletionsListener(sublime_plugin.EventListener):
     """Jedi autocompletion for Sublime Text
     """

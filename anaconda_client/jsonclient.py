@@ -69,15 +69,24 @@ class Client:
         try:
             line = self.file.readline()
         except socket.error as e:
-            self.close()
-            raise RuntimeError('Connection unexpectedly closed: ' + str(e))
+            print('Connection unexpectedly closed: ' + str(e))
+            line = '{"success": false, "message": "{0}"}'.format(str(e))
 
         if not line:
-            self.close()
-            raise RuntimeError('Connection unexpectedly closed')
+            print('Connection unexpectedly closed')
+            line = (
+                '{"success": false, "message": '
+                '"Connection unexpectedly closed"}'
+            )
+
+        self._clean_socket()
+
+        return json.loads(line)
+
+    def _clean_socket(self):
+        """Close the socket and clean the related resources
+        """
 
         self.file.close()
         self.file = None
         self.close()
-
-        return json.loads(line)
