@@ -2,7 +2,32 @@
     Anaconda default settings
 */
 {
-    "linting_enabled": true,
+    /*
+        Set is a false to deisable Anaconda Linting totally
+    */
+    "anaconda_linting": true,
+
+    /*
+        Sets the linting behaviour for anaconda:
+
+        "always" - Linting works always even while you are writting (in the background)
+        "load-save" - Linting works in file load and save only
+        "save-only" - Linting works in file save only
+    */
+    "anaconda_linting_behaviour": "always",
+
+    /*
+        The minimum delay in seconds (fractional seconds are okay) before
+        a linter is run when the "sublimelinter" setting is true. This allows
+        you to have background linting active, but defer the actual linting
+        until you are idle. When this value is greater than the built in linting delay,
+        errors are erased when the file is modified, since the assumption is
+        you don't want to see errors while you type.
+    */
+    "anaconda_linter_delay": 0.5,
+
+    // If true, anaconda draws gutter amrks on line with errors
+    "anaconda_gutter_marks": false,
 
     // Set this to false to turn pep8 checking off completely
     "pep8": true,
