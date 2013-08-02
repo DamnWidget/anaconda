@@ -10,16 +10,16 @@ Anaconda is a python autocompletion and linting plugin for Sublime Text 3
 import re
 import time
 import threading
-from functools import cmp_to_key, partial
+from functools import partial
 
 import sublime
 import sublime_plugin
 
 from anaconda.anaconda import Worker
 from anaconda.utils import get_settings
-from anaconda.linting.pyflakes import messages as pyflakes_messages
-from anaconda.linting.linter import Pep8Error, Pep8Warning, OffsetError
-from anaconda.decorators import only_python, not_scratch, on_linting_enabled
+from anaconda.decorators import (
+    only_python, not_scratch, on_linting_enabled, on_linting_vehabiour
+)
 
 ANACONDA = {
     'QUEUE': {},
@@ -62,6 +62,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
     @only_python
     @not_scratch
     @on_linting_enabled
+    @on_linting_vehabiour(['always'])
     def on_modified_async(self, view):
         """
         Called after changes have been made to a view.
@@ -70,6 +71,39 @@ class BackgroundLinter(sublime_plugin.EventListener):
         # update the last selected line number
         self.last_selected_line = -1
         queue_linter(view)
+
+    @only_python
+    @on_linting_enabled
+    @on_linting_vehabiour(['always', 'load-save'])
+    def on_load_async(self, view):
+        """Called after load a file
+        """
+
+        queue_linter(view)
+
+    @only_python
+    @not_scratch
+    @on_linting_enabled
+    def on_post_save_async(self, view):
+        """Called post file save event
+        """
+
+        queue_linter(view)
+
+    @only_python
+    @not_scratch
+    @on_linting_enabled
+    def on_selection_modified_async(self, view):
+        """Called on selection modified
+        """
+
+        # on movement, delay queue (to make movement responsive)
+        delay_queue(1000)
+        last_selected_line = last_selected_lineno(view)
+
+        if last_selected_line != self.last_selected_line:
+            self.last_selected_line = last_selected_line
+            update_statusbar(view)
 
     def _erase_marks(self, view):
         """Just a wrapper for erase_lint_marks
@@ -208,7 +242,7 @@ def get_delay(t, view):
 
     # If the user specifies a delay greater than the built in delay,
     # figure they only want to see marks when idle.
-    min_delay = int(view.settings().get('sublimelinter_delay', 0) * 1000)
+    min_delay = get_settings(view, 'anaconda_linter_delay', 0) * 1000
 
     if min_delay > delay[1]:
         erase_lint_marks(view)
@@ -222,9 +256,8 @@ def erase_lint_marks(view):
 
     types = ['illegal', 'warning', 'violation']
     for t in types:
-        view.erase_regions('lint-underline-{}'.format(t))
-        view.erase_regions('lint-outlines-{}'.format(t))
-    view.erase_regions('lint-annotations')
+        view.erase_regions('anaconda-lint-underline-{}'.format(t))
+        view.erase_regions('anaconda-lint-outlines-{}'.format(t))
 
 
 def add_lint_marks(view, lines, **errors):
@@ -241,7 +274,7 @@ def add_lint_marks(view, lines, **errors):
     for type_name, underlines in types.items():
         if len(underlines) > 0:
             view.add_regions(
-                'lint-underline-{}'.format(type_name), underlines,
+                'anaconda-lint-underline-{}'.format(type_name), underlines,
                 'anaconda.underline.{}'.format(type_name),
                 flags=sublime.DRAW_EMPTY_AS_OVERWRITE
             )
@@ -252,10 +285,16 @@ def add_lint_marks(view, lines, **errors):
 
         for lint_type, lints in get_outlines(view).items():
             if len(lints) > 0:
+                if get_settings(view, 'anaconda_gutter_marks', False):
+                    gutter_marks = marks[lint_type]
+                else:
+                    gutter_marks = ''
+
                 args = [
-                    'lint-outlines-{}'.format(lint_type), lints,
+                    'anaconda-lint-outlines-{}'.format(lint_type),
+                    lints,
                     'anaconda.outline.{}'.format(lint_type),
-                    marks[lint_type],
+                    gutter_marks,
                     outline_style.get(style, sublime.DRAW_OUTLINED)
                 ]
 
@@ -314,9 +353,12 @@ def get_lineno_msgs(view, lineno):
     errors_msg = []
     if lineno is not None:
         vid = view.id()
-        errors_msg.extend(ERRORS[vid].get(lineno, []))
-        errors_msg.extend(WARNINGS[vid].get(lineno, []))
-        errors_msg.extend(VIOLATIONS[vid].get(lineno, []))
+        if vid in ERRORS:
+            errors_msg.extend(ERRORS[vid].get(lineno, []))
+        if vid in WARNINGS:
+            errors_msg.extend(WARNINGS[vid].get(lineno, []))
+        if vid in VIOLATIONS:
+            errors_msg.extend(VIOLATIONS[vid].get(lineno, []))
 
     return errors_msg
 

@@ -111,12 +111,15 @@ class Linter(object):
         """Check the code with pyflakes to find errors
         """
 
+        class FakeLoc:
+            lineno = 0
+
         try:
             tree = compile(str(code), filename, 'exec', _ast.PyCF_ONLY_AST)
         except (SyntaxError, IndentationError) as value:
             return self._handle_syntactic_error(code, filename, value)
         except ValueError as error:
-            return [PythonError(filename, 0, error.args[0])]
+            return [PythonError(filename, FakeLoc(), error.args[0])]
         else:
             # the file is syntactically valid, check it now
             if ignore is not None:
@@ -214,7 +217,7 @@ class Linter(object):
         return self.parse_errors(errors)
 
     def parse_errors(self, errors):
-        """Parse errors returned from the PyFlakes and pep8 libraries
+        """Parse errors returned from the PyFlakes and pep8 libraries pepinico manolete
         """
 
         errors_list = []
@@ -277,9 +280,10 @@ class Linter(object):
                     word = error.message_args[0]
 
                 linematch = '(from\s+[\w_\.]+\s+)?import\s+(?P<match>[^#;]+)'
-                regex = '(^|\s+|,\s*|as\s+)(?P<underline>[\w]*{0}[\w]*)'
-                regex.format(re.escape(word))
-                error_data['regex'] = regex
+                r = '(^|\s+|,\s*|as\s+)(?P<underline>[\w]*{0}[\w]*)'.format(
+                    re.escape(word)
+                )
+                error_data['regex'] = r
                 error_data['linematch'] = linematch
                 errors_list.append(error_data)
             elif isinstance(error, pyflakes.messages.DuplicateArgument):

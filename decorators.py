@@ -38,13 +38,35 @@ def on_linting_enabled(func):
     @functools.wraps(func)
     def wrapper(self, view, *args, **kwargs):
 
-        if get_settings(view, 'linting_enabled', False) is True:
+        if get_settings(view, 'anaconda_linting', False) is True:
             return func(self, view, *args, **kwargs)
         else:
             # erase all the linter marks if any
             self._erase_marks(view)
 
     return wrapper
+
+
+def on_linting_vehabiour(modes):
+    """Make sure the correct behaviours are applied
+    """
+
+    def decorator(func):
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            self = args[0]
+            view = args[1]
+            b = get_settings(view, 'anaconda_linting_behaviour', 'always')
+            if b in modes:
+                return func(*args, **kwargs)
+            else:
+                self._erase_marks(view)
+
+        return wrapper
+
+    return decorator
+
 
 
 def not_scratch(func):

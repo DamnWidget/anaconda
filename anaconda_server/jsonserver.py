@@ -115,7 +115,9 @@ class JSONHandler(socketserver.StreamRequestHandler):
             result = {'success': True, 'completions': data}
         except Exception as error:
             result = {
-                'success': False, 'error': error, 'tb': get_log_traceback()
+                'success': False,
+                'error': str(error),
+                'tb': get_log_traceback()
             }
 
         self.wfile.write('{}\r\n'.format(json.dumps(result)))
