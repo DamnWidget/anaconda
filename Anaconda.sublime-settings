@@ -3,6 +3,13 @@
 */
 {
     /*
+        Default python interpreter.
+
+        This can (an should) be overriden byb project settings
+    */
+    "python_interpreter": "python",
+
+    /*
         Set those aas true if you don't want Sublime Text regular completions
     */
     "suppress_word_completions": false,
