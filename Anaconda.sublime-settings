@@ -3,6 +3,12 @@
 */
 {
     /*
+        Set those aas true if you don't want Sublime Text regular completions
+    */
+    "suppress_word_completions": false,
+    "suppress_explicit_completions": false,
+
+    /*
         Set is a false to deisable Anaconda Linting totally
     */
     "anaconda_linting": true,
