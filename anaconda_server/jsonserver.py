@@ -6,11 +6,11 @@
 import os
 import sys
 import json
+import time
 import errno
 import logging
 import threading
 import traceback
-from time import sleep
 from logging import handlers
 from optparse import OptionParser
 
@@ -30,7 +30,8 @@ class ThreadedJSONServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     """Threading JSON Server
     """
 
-    pass
+    locker = threading.RLock()
+    last_call = time.time()
 
 
 class JSONHandler(socketserver.StreamRequestHandler):
@@ -42,6 +43,9 @@ class JSONHandler(socketserver.StreamRequestHandler):
         """
 
         with json_decode(self.rfile.readline().strip()) as self.data:
+            with self.server.locker:
+                self.server.last_call = time.time()
+
             logger.info(
                 '{0} requests: {1}'.format(
                     self.client_address[0], self.data['method']
@@ -64,7 +68,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 logger.info('Exception: {0}'.format(error))
                 log_traceback()
         else:
-            self.server.logger.error(
+            logger.error(
                 '{0} sent something that I dont undertand: {1}'.format(
                     self.client_address[0], self.data
                 )
@@ -120,6 +124,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 'tb': get_log_traceback()
             }
 
+        print(result)
         self.wfile.write('{}\r\n'.format(json.dumps(result)))
 
     def goto(self):
@@ -216,13 +221,22 @@ class Checker(threading.Thread):
     def run(self):
         while not self.die:
             self._check()
-            sleep(self.delta)
+            time.sleep(self.delta)
 
         self.server.shutdown()
 
     def _check(self):
         """Check for the ST3 pid
         """
+
+        with self.server.locker:
+            if time.time() - self.server.last_call > 1800:
+                # is now more than 30 minutes of innactivity
+                self.server.logger.info(
+                    'detected inactivity for more than 30 minutes...'
+                    'shuting down...'
+                )
+                self.die = True
 
         if os.name == 'posix':
             if not os.path.exists('/proc/' + PID):
@@ -245,7 +259,7 @@ class Checker(threading.Thread):
                 pass
 
 
-def getLogger(path):
+def get_logger(path):
     """Build file logger
     """
 
@@ -313,17 +327,21 @@ if __name__ == "__main__":
             if path not in sys.path:
                 sys.path.insert(0, path)
 
-    logger = getLogger(jedi.settings.cache_directory)
-    logger.info(
-        'Anaconda Server started in port {0} with cache dir {1}{2}'.format(
-            port, jedi.settings.cache_directory,
-            ' and extra paths {0}'.format(
-                options.extra_paths
-            ) if options.extra_paths is not None else ''
-        )
-    )
+    logger = get_logger(jedi.settings.cache_directory)
 
-    server = ThreadedJSONServer(('localhost', port), JSONHandler)
+    try:
+        server = ThreadedJSONServer(('localhost', port), JSONHandler)
+        logger.info(
+            'Anaconda Server started in port {0} with cache dir {1}{2}'.format(
+                port, jedi.settings.cache_directory,
+                ' and extra paths {0}'.format(
+                    options.extra_paths
+                ) if options.extra_paths is not None else ''
+            )
+        )
+    except Exception as error:
+        logger.error(error)
+        sys.exit(-1)
 
     # server = socketserver.TCPServer(('localhost', port), JSONHandler)
     server.logger = logger
