@@ -108,16 +108,18 @@ Just set the user setting ``anaconda_linting`` as ``false``
 
 #### Disabling pep8
 
-If you don't care about pep8 linting (you are terribly wrong) you can disable pep8 linting at all setting use user setting ``pep8`` as ``false``
+If you don't care about pep8 linting (you are terribly wrong) you can disable pep8 linting at all setting the user setting ``pep8`` as ``false``
 
 
 #### Disabling certain errors
 
 If what you want to do is just disable some errors like `"line too long"` `E501` error in pep8 (you are terribly wrong again) you can add it to the ``pep8_ignore`` user setting like:
+
     "pep8_ignore":
     [
         "E501"
     ]
+
 There is an equivalen for PyFlakes errors called ``pyflakes_ignore``, look at the default anaconda configuration file for more details.
 
 
