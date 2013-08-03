@@ -68,7 +68,6 @@ def on_linting_vehabiour(modes):
     return decorator
 
 
-
 def not_scratch(func):
     """Don't execute the given function if the view is scratched
     """
