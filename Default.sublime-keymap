@@ -1,0 +1,5 @@
+[
+    {"command": "anaconda_goto", "keys": ["super+g"]},
+    {"command": "anaconda_find_usages", "keys": ["super+f"]},
+    //{"command": "sublime_jedi_params_autocomplete", "keys": ["("]}
+]

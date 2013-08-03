@@ -3,8 +3,14 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
+import sys
 import json
 import socket
+import logging
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler(sys.stdout))
+logger.setLevel(logging.ERROR)
 
 
 class Client:
@@ -68,11 +74,11 @@ class Client:
         try:
             line = self.file.readline()
         except socket.error as e:
-            print('Connection unexpectedly closed: ' + str(e))
+            logger.error('Connection unexpectedly closed: ' + str(e))
             line = '{"success": false, "message": "{0}"}'.format(str(e))
 
         if not line:
-            print('Connection unexpectedly closed')
+            logger.error('Connection unexpectedly closed')
             line = (
                 '{"success": false, "message": '
                 '"Connection unexpectedly closed"}'

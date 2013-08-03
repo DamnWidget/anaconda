@@ -27,7 +27,7 @@ if sys.version_info < (3, 3):
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.WARNING)
 
 WORKERS = {}
 WORKERS_LOCK = threading.RLock()
@@ -51,13 +51,35 @@ class AnacondaCompletionsListener(sublime_plugin.EventListener):
         proposals = Worker.lookup(view).autocomplete(locations[0])
 
         if proposals:
-            completion_flags = (
-                sublime.INHIBIT_WORD_COMPLETIONS |
-                sublime.INHIBIT_EXPLICIT_COMPLETIONS
-            )
+            completion_flags = 0
+
+            if get_settings(view, 'supress_word_completions', False):
+                completion_flags = sublime.INHIBIT_WORD_COMPLETIONS
+
+            if get_settings(view, 'supress_explicit_completions', False):
+                completion_flags |= sublime.INHIBIT_EXPLICIT_COMPLETIONS
+
             return (proposals, completion_flags)
 
         return proposals
+
+
+class AnacondaGoto(sublime_plugin.TextCommand):
+    """Jedi GoTo a Python defunition for Sublime Text
+    """
+
+    def run(self, edit):
+        definitions = Worker.lookup(self.view).goto()
+        if definitions:
+            JediUsages(self).process(definitions)
+
+
+class AnacondaFindUsages(sublime_plugin.TextCommand):
+    """Jedi find usages for Sublime Text
+    """
+
+    def run(self, edit):
+        JediUsages(self).process(Worker.lookup(self.view).usages(), True)
 
 
 ###############################################################################
@@ -95,16 +117,11 @@ class Worker:
 
     @executor
     def autocomplete(self, location):
-        """Call to autocomplete in the client
+        """Call to autocomplete in the server
         """
 
         current_line, current_column = self.view.rowcol(location)
-        data = {
-            'source': self.view.substr(sublime.Region(0, self.view.size())),
-            'line': current_line + 1,
-            'offset': current_column,
-            'filename': self.view.file_name() or ''
-        }
+        data = self._prepare_data((current_line, current_column))
 
         result = self.client.request('autocomplete', **data)
         if result and result['success'] is True:
@@ -112,13 +129,50 @@ class Worker:
 
     @executor
     def run_linter(self, text, settings, filename):
-        """Run the Linters in the client
+        """Run the Linters in the server
         """
 
         data = {'code': text, 'settings': settings, 'filename': filename}
         result = self.client.request('run_linter', **data)
         if result and result['success'] is True:
             return result['errors']
+
+    @executor
+    def goto(self):
+        """Call to goto in the server
+        """
+
+        current_line, current_column = self.view.rowcol(
+            self.view.sel()[0].begin()
+        )
+
+        data = self._prepare_data((current_line, current_column))
+
+        result = self.client.request('goto', **data)
+        if result and result['success'] is True:
+            return result['goto']
+
+    @executor
+    def usages(self):
+        """Call to usages in the server
+        """
+
+        current_line, current_column = self.view.rowcol(
+            self.view.sel()[0].begin()
+        )
+        data = self._prepare_data((current_line, current_column))
+
+        result = self.client.request('usages', **data)
+        if result and result['success'] is True:
+            return result['usages']
+
+    def _prepare_data(self, location):
+        return {
+            'source': self.view.substr(sublime.Region(0, self.view.size())),
+            'line': location[0] + 1,
+            'offset': location[1],
+            'filename': self.view.file_name() or ''
+        }
 
     @staticmethod
     def port():
@@ -205,3 +259,50 @@ class Worker:
         sub_args.extend([str(os.getpid())])
 
         return subprocess.Popen(sub_args, **kwargs)
+
+
+class JediUsages(object):
+    """Work with Jedi definitions
+    """
+
+    def __init__(self, text):
+        self.text = text
+
+    def process(self, definitions, usages=False):
+        """Process the definitions
+        """
+
+        if len(definitions) == 1 and not usages:
+            self._jump(*definitions[0])
+        else:
+            self._show_options(definitions, usages)
+
+    def _jump(self, filename, lineno=None, columno=None):
+        """Jump to a window
+        """
+
+        # process jumps from options window
+        if type(filename) is int:
+            if filename == -1:
+                return
+
+            filename, lineno, columno = self.options[filename]
+
+        sublime.active_window().open_file(
+            '{}:{}:{}'.format(filename, lineno or 0, columno or 0),
+            sublime.ENCODED_POSITION
+        )
+
+    def _show_options(self, defs, usages):
+        """Show a dropdown quickpanel with options to jump
+        """
+
+        if usages:
+            options = [
+                [o[0], 'line: {} column: {}'.format(o[1], o[2])] for o in defs
+            ]
+        else:
+            options = defs[0]
+
+        self.options = defs
+        self.text.view.window().show_quick_panel(options, self._jump)
