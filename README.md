@@ -24,7 +24,9 @@ Because that architecture, **anaconda** can lint or complete with python interpr
 Supported platforms
 -------------------
 
-Anaconda has been tested in Linux and FreeBSD. It has been developed with multi-platform support in mind and there is some specific code for Windows platform but I never tested it. If you find some problem using this plugin in Windows or Mac OS X don't hesitate to open a new ticket.
+Anaconda has been tested in Linux and Windows. It has been developed with multi-platform support in mind and there is some specific code for Windows platform. I am not a Windows user, my only working platform is just Gentoo GNU/Linux, if you find some problem using this plugin in Windows or Mac OS X don't hesitate to open a new ticket.
+
+**note**: I feel the plugin a bit slow on Windows.
 
 
 Installation
