@@ -212,11 +212,11 @@ class Worker:
         if project_name is None:
             folders = window.folders()
             if len(folders) > 0:
-                project_name = window.folders()[0].rsplit('/', 1)[1]
+                project_name = window.folders()[0].rsplit(os.sep, 1)[1]
             else:
                 project_name = 'anaconda-{id}'.format(id=window.window_id)
         else:
-            project_name = project_name.rsplit('/', 1)[1].split('.')[0]
+            project_name = project_name.rsplit(os.sep, 1)[1].split('.')[0]
 
         return project_name
 
@@ -246,19 +246,20 @@ class Worker:
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             kwargs['startupinfo'] = startupinfo
 
-        WORKER_SCRIPT = pipes.quote(
-            os.path.join(
-                os.path.dirname(__file__), 'anaconda_server/jsonserver.py')
+        WORKER_SCRIPT = os.path.join(
+            os.path.dirname(__file__),
+            'anaconda_server{}jsonserver.py'.format(os.sep)
         )
+        
         sub_args = [
             interp, '-B', WORKER_SCRIPT, '-p', project_name, str(self.port)
         ]
         for extra_path in extra_paths.split(','):
             if extra_path != '':
                 sub_args.extend(['-e', extra_path])
-        sub_args.extend([str(os.getpid())])
-
-        return subprocess.Popen(sub_args, **kwargs)
+        sub_args.extend([str(os.getpid())])        
+        
+        return subprocess.Popen(sub_args, **kwargs)        
 
 
 class JediUsages(object):
