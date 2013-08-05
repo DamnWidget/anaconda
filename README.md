@@ -32,6 +32,14 @@ Anaconda has been tested in Linux and Windows. It has been developed with multi-
 Installation
 ------------
 
+#### Using Package Control
+
+Open Sublime Text Command Pallete and type "install" with no quotes
+Select "Install Package" from the dropdown box
+Type "anaconda" with no quotes, select it and press <ENTER>
+
+#### Using git
+
 Go to your sublime text 3 packages directory and clone the repo:
 
     git clone https://github.com/DamnWidget/anaconda.git
