@@ -10,7 +10,11 @@ Anaconda decorators
 import time
 import functools
 
-from anaconda.utils import get_settings
+try:
+    from anaconda.utils import get_settings
+except ImportError:
+    # fix package control installed packages
+    from Anaconda.utils import get_settings
 
 MAX_RETRIES = 5
 

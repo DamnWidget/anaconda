@@ -15,11 +15,19 @@ from functools import partial
 import sublime
 import sublime_plugin
 
-from anaconda.anaconda import Worker
-from anaconda.utils import get_settings
-from anaconda.decorators import (
-    only_python, not_scratch, on_linting_enabled, on_linting_vehabiour
-)
+try:
+    from anaconda.anaconda import Worker
+    from anaconda.utils import get_settings
+    from anaconda.decorators import (
+        only_python, not_scratch, on_linting_enabled, on_linting_vehabiour
+    )
+except ImportError:
+    # fix package control installed ones
+    from Anaconda.anaconda import Worker
+    from Anaconda.utils import get_settings
+    from Anaconda.decorators import (
+        only_python, not_scratch, on_linting_enabled, on_linting_vehabiour
+    )
 
 ANACONDA = {
     'QUEUE': {},
