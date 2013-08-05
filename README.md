@@ -34,9 +34,9 @@ Installation
 
 #### Using Package Control
 
-Open Sublime Text Command Pallete and type "install" with no quotes
-Select "Install Package" from the dropdown box
-Type "anaconda" with no quotes, select it and press <ENTER>
+1. Open Sublime Text Command Pallete and type "install" with no quotes
+2. Select "Install Package" from the dropdown box
+3. Type "anaconda" with no quotes, select it and press <ENTER>
 
 #### Using git
 
