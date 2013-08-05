@@ -4,9 +4,10 @@
 # This program is Free Software see LICENSE file for details
 
 import sys
-import json
 import socket
 import logging
+
+import sublime
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -60,7 +61,7 @@ class Client:
         """
 
         kwargs['method'] = method
-        self.send(json.dumps(kwargs))
+        self.send(sublime.encode_value(kwargs))
 
         return self.getresponse()
 
@@ -86,7 +87,7 @@ class Client:
 
         self._clean_socket()
 
-        return json.loads(line)
+        return sublime.decode_value(line)
 
     def _clean_socket(self):
         """Close the socket and clean the related resources
