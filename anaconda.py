@@ -9,7 +9,6 @@ Anaconda is a python autocompletion and linting plugin for Sublime Text 3
 
 import os
 import sys
-import pipes
 import socket
 import logging
 import threading
@@ -250,16 +249,16 @@ class Worker:
             os.path.dirname(__file__),
             'anaconda_server{}jsonserver.py'.format(os.sep)
         )
-        
+
         sub_args = [
             interp, '-B', WORKER_SCRIPT, '-p', project_name, str(self.port)
         ]
         for extra_path in extra_paths.split(','):
             if extra_path != '':
                 sub_args.extend(['-e', extra_path])
-        sub_args.extend([str(os.getpid())])        
-        
-        return subprocess.Popen(sub_args, **kwargs)        
+        sub_args.extend([str(os.getpid())])
+
+        return subprocess.Popen(sub_args, **kwargs)
 
 
 class JediUsages(object):
