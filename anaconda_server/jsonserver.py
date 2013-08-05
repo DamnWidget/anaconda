@@ -5,7 +5,6 @@
 
 import os
 import sys
-import json
 import time
 import errno
 import logging
@@ -18,6 +17,12 @@ if sys.version_info[0] == 2:
     import SocketServer as socketserver
 else:
     import socketserver
+
+# we use ujson if it's available on the target intrepreter
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 
