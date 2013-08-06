@@ -17,15 +17,9 @@ import subprocess
 import sublime
 import sublime_plugin
 
-try:
-    from anaconda.utils import get_settings
-    from anaconda.anaconda_client import Client
-    from anaconda.decorators import only_python, executor, enable_for_python
-except ImportError:
-    # fix package control installed packages
-    from Anaconda.utils import get_settings
-    from Anaconda.anaconda_client import Client
-    from Anaconda.decorators import only_python, executor, enable_for_python
+from Anaconda.utils import get_settings
+from Anaconda.anaconda_client import Client
+from Anaconda.decorators import only_python, executor, enable_for_python
 
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda only works with Sublime Text 3')

@@ -42,7 +42,7 @@ Installation
 
 Go to your sublime text 3 packages directory and clone the repo:
 
-    git clone https://github.com/DamnWidget/anaconda.git
+    git clone https://github.com/DamnWidget/anaconda.git Anaconda
 
 Anaconda autocompletion
 -----------------------
@@ -92,13 +92,19 @@ Some developers preffer that SublimeText 3 does not autocomplete by itself so yo
 
 With this command you can go to a file where a variable, function or class that your cursor is over is defined.
 
-Shortcut: `super+g`
+Shortcut: Linux and Windows `super+g`, Mac OS X `ctrl+alt+g`
 
 #### Find Usages
 
 With this command you can find all the places where a variable, function or class where your cursor is over is being used.
 
-Shortcut: `super+f`
+Shortcut: Linux and Windows `super+f`, Mac OS X `ctrl+alt+f`
+
+#### Get Documentation
+
+With this command you can get the docstring of whatever function or method. You can just write the function call, for example, sys.exit() and then use this command to get the function signature and docstring without lose the cursor focus from the buffer.
+
+Shortcut: Linux and Windows `super+d`, Mac OS X `ctrl+alt+d`
 
 Anaconda linting
 ----------------
