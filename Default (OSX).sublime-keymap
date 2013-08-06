@@ -1,0 +1,4 @@
+[
+    {"command": "anaconda_goto", "keys": ["ctrl+alt+g"]},
+    {"command": "anaconda_find_usages", "keys": ["ctrl+alt+f"]},
+]
