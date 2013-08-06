@@ -61,7 +61,7 @@ You can of course configure the python interpreter to use in a `per-project` bas
         // ...
 
         "settings": {
-            "python_interpreter_path": "/home/damnwidget/.virtualenvs/mamba-pypy/bin/python"
+            "python_interpreter": "/home/damnwidget/.virtualenvs/mamba-pypy/bin/python"
         }
     }
 
