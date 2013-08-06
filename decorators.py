@@ -51,7 +51,7 @@ def on_linting_enabled(func):
     return wrapper
 
 
-def on_linting_vehabiour(modes):
+def on_linting_behaviour(modes):
     """Make sure the correct behaviours are applied
     """
 

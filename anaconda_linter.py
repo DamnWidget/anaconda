@@ -19,14 +19,14 @@ try:
     from anaconda.anaconda import Worker
     from anaconda.utils import get_settings
     from anaconda.decorators import (
-        only_python, not_scratch, on_linting_enabled, on_linting_vehabiour
+        only_python, not_scratch, on_linting_enabled, on_linting_behaviour
     )
 except ImportError:
     # fix package control installed ones
     from Anaconda.anaconda import Worker
     from Anaconda.utils import get_settings
     from Anaconda.decorators import (
-        only_python, not_scratch, on_linting_enabled, on_linting_vehabiour
+        only_python, not_scratch, on_linting_enabled, on_linting_behaviour
     )
 
 ANACONDA = {
@@ -70,7 +70,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
     @only_python
     @not_scratch
     @on_linting_enabled
-    @on_linting_vehabiour(['always'])
+    @on_linting_behaviour(['always'])
     def on_modified_async(self, view):
         """
         Called after changes have been made to a view.
@@ -82,7 +82,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
 
     @only_python
     @on_linting_enabled
-    @on_linting_vehabiour(['always', 'load-save'])
+    @on_linting_behaviour(['always', 'load-save'])
     def on_load_async(self, view):
         """Called after load a file
         """
