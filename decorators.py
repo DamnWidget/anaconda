@@ -19,6 +19,31 @@ except ImportError:
 MAX_RETRIES = 5
 
 
+def is_python(view):
+    """Determine if the given view location is python code
+    """
+
+    location = view.sel()[0].begin()
+    matcher = 'source.python - string - comment'
+
+    return view.match_selector(location, matcher)
+
+
+def enable_for_python(func):
+    """Returns True or False depending if we are in python sources
+    """
+
+    @functools.wraps(func)
+    def wrapper(self):
+
+        if is_python(self.view):
+            return True
+
+        return False
+
+    return wrapper
+
+
 def only_python(func):
     """Execute the given function if we are on Python source only
     """
@@ -26,10 +51,7 @@ def only_python(func):
     @functools.wraps(func)
     def wrapper(self, view, *args, **kwargs):
 
-        location = view.sel()[0].begin()
-        matcher = 'source.python - string - comment'
-
-        if view.match_selector(location, matcher):
+        if is_python(view):
             return func(self, view, *args, **kwargs)
 
     return wrapper

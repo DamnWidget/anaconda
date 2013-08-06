@@ -139,7 +139,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
         try:
             definitions = self.script.goto_assignments()
             if all(d.type == 'import' for d in definitions):
-                definitions = self.script.get_definition()
+                definitions = self.script.goto_definitions()
         except jedi.api.NotFoundError:
             data = None
             success = False
@@ -162,6 +162,36 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 (i.module_path, i.line, i.column)
                 for i in usages if not i.in_builtin_module()
             ]
+        })))
+
+    def doc(self):
+        """Find documentation
+        """
+
+        try:
+            definitions = self.script.goto_definitions()
+        except jedi.NotFoundError:
+            definitions = []
+        except Exception:
+            definitions = []
+            logger.error('Exception, this shouldn\'t happen')
+            log_traceback()
+
+        if not definitions:
+            success = False
+            docs = []
+        else:
+            success = True
+            docs = [
+                'Docstring for {0}\n{1}\n{2}'.format(
+                    d.full_name, '=' * 40, d.doc
+                ) if d.doc else 'No docstring for {0}'.format(d)
+                for d in definitions
+            ]
+
+        print(docs)
+        self.wfile.write('{}\r\n'.format(json.dumps({
+            'success': success, 'doc': ('\n' + '-' * 79 + '\n').join(docs)
         })))
 
     def _parameters_for_complete(self):

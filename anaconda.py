@@ -20,12 +20,12 @@ import sublime_plugin
 try:
     from anaconda.utils import get_settings
     from anaconda.anaconda_client import Client
-    from anaconda.decorators import only_python, executor
+    from anaconda.decorators import only_python, executor, enable_for_python
 except ImportError:
     # fix package control installed packages
     from Anaconda.utils import get_settings
     from Anaconda.anaconda_client import Client
-    from Anaconda.decorators import only_python, executor
+    from Anaconda.decorators import only_python, executor, enable_for_python
 
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda only works with Sublime Text 3')
@@ -78,6 +78,11 @@ class AnacondaGoto(sublime_plugin.TextCommand):
         if definitions:
             JediUsages(self).process(definitions)
 
+    @enable_for_python
+    def is_enabled(self):
+        """Determine if this command is enabled or not
+        """
+
 
 class AnacondaFindUsages(sublime_plugin.TextCommand):
     """Jedi find usages for Sublime Text
@@ -85,6 +90,47 @@ class AnacondaFindUsages(sublime_plugin.TextCommand):
 
     def run(self, edit):
         JediUsages(self).process(Worker.lookup(self.view).usages(), True)
+
+    @enable_for_python
+    def is_enabled(self):
+        """Determine if this command is enabled or not
+        """
+
+
+class AnacondaDoc(sublime_plugin.TextCommand):
+    """Jedi get documentation string for Sublime Text
+    """
+
+    def run(self, edit):
+        self.edit = edit
+        doc = Worker.lookup(self.view).doc(self.view.sel()[0].begin())
+        self.print_doc(doc)
+
+    @enable_for_python
+    def is_enabled(self):
+        """Determine if this command is enabled or not
+        """
+
+    def print_doc(self, doc):
+        """Print the documentation string into a Sublime Text panel
+        """
+
+        if doc is None:
+            self.view.set_status('anaconda_doc', 'No documentation found')
+            sublime.set_timeout_async(
+                lambda: self.view.erase_status('anaconda_doc'), 5000
+            )
+        else:
+            doc_panel = self.view.window().get_output_panel(
+                'anaconda_documentation'
+            )
+            region = sublime.Region(0, doc_panel.size())
+            doc_panel.erase(self.edit, region)
+            doc_panel.insert(self.edit, 0, doc)
+            doc_panel.show(0)
+            self.view.window().run_command(
+                'show_panel', {'panel': 'output.anaconda_documentation'}
+            )
 
 
 ###############################################################################
@@ -170,6 +216,20 @@ class Worker:
         result = self.client.request('usages', **data)
         if result and result['success'] is True:
             return result['usages']
+
+    @executor
+    def doc(self, location):
+        """Call to doc in the server
+        """
+
+        current_line, current_column = self.view.rowcol(location)
+        if self.view.substr(location) in ['(', ')']:
+            current_column -= 1
+
+        data = self._prepare_data((current_line, current_column))
+        result = self.client.request('doc', **data)
+        if result and result['success'] is True:
+            return result['doc']
 
     def _prepare_data(self, location):
         return {
@@ -278,7 +338,7 @@ class JediUsages(object):
         """Process the definitions
         """
 
-        if len(definitions) == 1 and not usages:
+        if definitions is not None and len(definitions) == 1 and not usages:
             self._jump(*definitions[0])
         else:
             self._show_options(definitions, usages)
