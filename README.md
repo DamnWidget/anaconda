@@ -239,4 +239,4 @@ Donate
 
 [<img src="https://api.flattr.com/button/flattr-badge-large.png" />][0]
 
-[0]: https://flattr.com/submit/auto?user_id=damnwidget&url=https://github.com/DamnWidget/anaconda&title=Anaconda&language=en_US&tags=sublime%20text,programming&category=software
+[0]: http://flattr.com/thing/1765332/DamnWidgetanaconda-on-GitHub
