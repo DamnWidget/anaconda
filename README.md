@@ -233,3 +233,10 @@ To customize the linting marks like you did in SublimeLinter add the following t
 #### License
 
 This program is distributed under the terms of the GNU GPL v3. See the [LICENSE](https://raw.github.com/DamnWidget/anaconda/master/LICENSE) file for details.
+
+Donate
+------
+
+[<img src="https://api.flattr.com/button/flattr-badge-large.png" />][0]
+
+[0]: https://flattr.com/submit/auto?user_id=damnwidget&url=https://github.com/DamnWidget/anaconda&title=Anaconda&language=en_US&tags=sublime%20text,programming&category=software
