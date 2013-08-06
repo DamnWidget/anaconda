@@ -1,0 +1,21 @@
+[
+    {
+        "caption": "Anaconda",
+        "id": "anaconda_context",
+        "children":
+        [
+            {
+                "command": "anaconda_goto",
+                "caption": "Goto Definition"
+            },
+            {
+                "command": "anaconda_find_usages",
+                "caption": "Find Usages"
+            },
+            {
+                "command": "anaconda_doc",
+                "caption": "Show Documentation"
+            }
+        ]
+    }
+]
