@@ -10,7 +10,7 @@ Anaconda was born from my need of use a single plugin to autocomplete and lint p
 
 [SublimeLinter](https://github.com/SublimeLinter/SublimeLinter) is an awesome plugin for Sublime Text and I strongly recommend its use but it support for Sublime Text 3 is not good enough yet and it's python linting is always based on the version of Python that is running by the Sublime Text 3 plugin server that is Python 3.3 so you get error marks for your totally correct python syntax when you work with Python 2 so it make it pretty useles for Python linting in ST3.
 
-[SublimePythonIDE](https://github.com/JulianEberius/SublimePythonIDE) is really great, is a spin off of [SublimeRope](https://github.com/JulianEberius/SublimeRope) for Sublime Text 2 I helped to write a big part of Sublime Rope 2 and part of SublimePythonIDE but the underlying Rope library is not as good for autocompletions as it is for refactors so it doesn't really fit my needs there.
+[SublimePythonIDE](https://github.com/JulianEberius/SublimePythonIDE) is really great, is a spin off of [SublimeRope](https://github.com/JulianEberius/SublimeRope) for Sublime Text 2 I helped to write a big part of Sublime Rope and part of SublimePythonIDE but the underlying Rope library is not as good for autocompletions as it is for refactors so it doesn't really fit my needs there.
 
 [SublimeJEDI](https://github.com/srusskih/SublimeJEDI) is pretty nice and it uses the [Jedi](https://github.com/davidhalter/jedi) library to perform autocompletions, Jedi is much better than Rope for autocompletion purposes but I don't like their inter process communication architecture.
 
@@ -51,7 +51,7 @@ Goto and Find Usages implementations are strongly inspired in SublimeJEDI ones, 
 
 #### Python interpreter settings
 
-**Anaconda** will use your ``PATH`` configured python interpreter by default. You can change it jut editing the ``python_interpreter`` user setting in the **anaconda**'s default configuration file:
+**Anaconda** will use your ``PATH`` configured python interpreter by default. You can change it just editing the ``python_interpreter`` user setting in the **anaconda**'s default configuration file:
 
     "python_interpreter": "/usr/bin/pypy-c2.0"
 
@@ -65,7 +65,7 @@ You can of course configure the python interpreter to use in a `per-project` bas
         }
     }
 
-You can add additional python extra paths that should be used for autocompletion purposes setting a list of paths separated by comma usinf the user setting ``extra_paths``:
+You can add additional python extra paths that should be used for autocompletion purposes setting a list of paths separated by comma using the user setting ``extra_paths``:
 
     {
         // ...
@@ -77,7 +77,7 @@ You can add additional python extra paths that should be used for autocompletion
 
 #### Autocompletion on dot
 
-If you want to trigger autocompletion when you write down the dot character you can setup this desiable behaviour editing your Sublime Text 3 ``Python.sublime-settings`` file in ``Packages/User`` (you may have to create this file yourself):
+If you want to trigger autocompletion when you write down the dot character you can setup this desirable behaviour editing your Sublime Text 3 ``Python.sublime-settings`` file in ``Packages/User`` (you may have to create this file yourself):
 
     {
         // ...
@@ -87,6 +87,9 @@ If you want to trigger autocompletion when you write down the dot character you 
 #### Word and Explicit Sublime Text 3 Completions
 
 Some developers preffer that SublimeText 3 does not autocomplete by itself so you can disable word and explicit autocompletiond setting ``suppress_word_completions`` and ``suppress_explicit_completions`` as ``true``.
+
+Anaconda IDE Features
+---------------------
 
 #### Goto Definition
 
