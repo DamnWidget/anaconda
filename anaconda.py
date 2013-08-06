@@ -115,12 +115,15 @@ class AnacondaDoc(sublime_plugin.TextCommand):
                 lambda: self.view.erase_status('anaconda_doc'), 5000
             )
         else:
-            doc_panel = self.view.window().get_output_panel(
+            doc_panel = self.view.window().create_output_panel(
                 'anaconda_documentation'
             )
+
+            doc_panel.set_read_only(False)
             region = sublime.Region(0, doc_panel.size())
             doc_panel.erase(self.edit, region)
             doc_panel.insert(self.edit, 0, doc)
+            doc_panel.set_read_only(True)
             doc_panel.show(0)
             self.view.window().run_command(
                 'show_panel', {'panel': 'output.anaconda_documentation'}
