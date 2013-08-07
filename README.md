@@ -234,8 +234,34 @@ To customize the linting marks like you did in SublimeLinter add the following t
 
 This program is distributed under the terms of the GNU GPL v3. See the [LICENSE](https://raw.github.com/DamnWidget/anaconda/master/LICENSE) file for details.
 
-Donate
-------
+Contributing with Anaconda
+--------------------------
+
+There are several ways to contribute with anaconda.
+
+#### Feedback
+
+* By giving feedback about the plugin and how it works in your platform.
+* By reporting bugs in the issue tracker
+* By sharing your ideas with us
+
+#### Bug Hunting
+
+Did you found a bug and you know how to fixit? First of all, thank you very much. You just have to report the bug as a new issue, fork the repository, make your changes and send a new pull request.
+
+#### Feature Implementor
+
+So you thougth about a new killer feature to iplement in Anaconda?. Great!. Open an issue tagged as "Feature" and we will discuss it with you.
+
+#### Mac OS X machine donator
+
+Do you have a Mac OS X box that you don't use anymore and its abandoned in a corner? Just send it to us, put yourself in contact with us and lets talk.
+
+*note*: we need only one so this section will disappear in the future
+
+### Donations
+
+Just donate to maintain this project alive.
 
 [<img src="https://api.flattr.com/button/flattr-badge-large.png" />][0]
 
