@@ -156,12 +156,18 @@ class JSONHandler(socketserver.StreamRequestHandler):
         """Find usages
         """
 
-        usages = self.script.usages()
+        try:
+            usages = self.script.usages()
+            success = True
+        except jedi.api.NotFoundError:
+            usages = None
+            success = False
+
         self.wfile.write('{}\r\n'.format(json.dumps({
-            'success': True, 'usages': [
+            'success': success, 'usages': [
                 (i.module_path, i.line, i.column)
                 for i in usages if not i.in_builtin_module()
-            ]
+            ] if usages is not None else []
         })))
 
     def doc(self):

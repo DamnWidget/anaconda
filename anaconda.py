@@ -110,7 +110,9 @@ class AnacondaDoc(sublime_plugin.TextCommand):
         """
 
         if doc is None:
-            self.view.set_status('anaconda_doc', 'No documentation found')
+            self.view.set_status(
+                'anaconda_doc', 'Anaconda: No documentation found'
+            )
             sublime.set_timeout_async(
                 lambda: self.view.erase_status('anaconda_doc'), 5000
             )
@@ -213,6 +215,12 @@ class Worker:
         result = self.client.request('usages', **data)
         if result and result['success'] is True:
             return result['usages']
+        else:
+            self.view.set_status('anaconda_doc', 'Anaconda: No usages found')
+            sublime.set_timeout_async(
+                lambda: self.view.erase_status('anaconda_doc'), 5000
+            )
+            return []
 
     @executor
     def doc(self, location):
