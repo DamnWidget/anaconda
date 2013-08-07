@@ -247,11 +247,11 @@ There are several ways to contribute with anaconda.
 
 #### Bug Hunting
 
-Did you found a bug and you know how to fixit? First of all, thank you very much. You just have to report the bug as a new issue, fork the repository, make your changes and send a new pull request.
+Did you found a bug and you know how to fix it? First of all, thank you very much. You just have to report the bug as a new issue, fork the repository, make your changes and send a new pull request.
 
 #### Feature Implementor
 
-So you thougth about a new killer feature to iplement in Anaconda?. Great!. Open an issue tagged as "Feature" and we will discuss it with you.
+So you thougth about a new killer feature to implement in Anaconda?. Great!. Open an issue tagged as "Feature" and we will discuss it with you.
 
 #### Mac OS X machine donator
 
