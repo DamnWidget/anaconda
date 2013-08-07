@@ -30,6 +30,8 @@ import jedi
 from linting import linter
 from contexts import json_decode
 
+DEBUG_MODE = False
+
 
 class ThreadedJSONServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     """Threading JSON Server
@@ -51,7 +53,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
             with self.server.locker:
                 self.server.last_call = time.time()
 
-            logger.info(
+            logging.info(
                 '{0} requests: {1}'.format(
                     self.client_address[0], self.data['method']
                 )
@@ -66,14 +68,14 @@ class JSONHandler(socketserver.StreamRequestHandler):
                     self.handle_jedi_command(method)
             except IOError as error:
                 if error.errno == errno.EPIPE:
-                    logger.error('Error [32]Broken PIPE Killing myself... ')
+                    logging.error('Error [32]Broken PIPE Killing myself... ')
                     self.shutdown()
                     sys.exit()
             except Exception as error:
-                logger.info('Exception: {0}'.format(error))
+                logging.info('Exception: {0}'.format(error))
                 log_traceback()
         else:
-            logger.error(
+            logging.error(
                 '{0} sent something that I dont undertand: {1}'.format(
                     self.client_address[0], self.data
                 )
@@ -93,6 +95,13 @@ class JSONHandler(socketserver.StreamRequestHandler):
         getattr(self, method)()
 
     def jedi_script(self, source, line, offset, filename='', encoding='utf-8'):
+        if DEBUG_MODE is True:
+            logging.debug(
+                'jedi_script called with the following parameters: '
+                'source: {0}\nline: {1} offset: {2}, filename: {3}'.format(
+                    source, line, offset, filename
+                )
+            )
         return jedi.Script(
             source, int(line), int(offset), filename, encoding
         )
@@ -117,19 +126,23 @@ class JSONHandler(socketserver.StreamRequestHandler):
             data = self._parameters_for_complete()
 
             completions = self.script.completions()
+            if DEBUG_MODE is True:
+                logging.info(completions)
             data.extend([
                 ('{0}\t{1}'.format(comp.name, comp.type), comp.name)
                 for comp in completions
             ])
             result = {'success': True, 'completions': data}
         except Exception as error:
+            logging.error('The underlying Jedi library as raised an exception')
+            logging.error(error)
+            log_traceback()
             result = {
                 'success': False,
                 'error': str(error),
                 'tb': get_log_traceback()
             }
 
-        print(result)
         self.wfile.write('{}\r\n'.format(json.dumps(result)))
 
     def goto(self):
@@ -180,7 +193,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
             definitions = []
         except Exception:
             definitions = []
-            logger.error('Exception, this shouldn\'t happen')
+            logging.error('Exception, this shouldn\'t happen')
             log_traceback()
 
         if not definitions:
@@ -195,7 +208,6 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 for d in definitions
             ]
 
-        print(docs)
         self.wfile.write('{}\r\n'.format(json.dumps({
             'success': success, 'doc': ('\n' + '-' * 79 + '\n').join(docs)
         })))
@@ -281,7 +293,7 @@ class Checker(threading.Thread):
 
         if os.name == 'posix':
             try:
-                os.kill(PID, 0)
+                os.kill(int(PID), 0)
             except OSError:
                 self.server.logger.info(
                     'process {0} does not exists stopping server...'.format(
@@ -335,7 +347,7 @@ def get_log_traceback():
     for traceback_line in traceback.format_exc().splitlines():
         error.append(traceback_line)
 
-    return ''.join(error)
+    return '\n'.join(error)
 
 if __name__ == "__main__":
     opt_parser = OptionParser(usage=(
