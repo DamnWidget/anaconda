@@ -52,10 +52,11 @@ class AnacondaCompletionsListener(sublime_plugin.EventListener):
         if proposals:
             completion_flags = 0
 
-            if get_settings(view, 'supress_word_completions', False):
+            print(get_settings(view, 'suppress_word_completions'))
+            if get_settings(view, 'suppress_word_completions', False):
                 completion_flags = sublime.INHIBIT_WORD_COMPLETIONS
 
-            if get_settings(view, 'supress_explicit_completions', False):
+            if get_settings(view, 'suppress_explicit_completions', False):
                 completion_flags |= sublime.INHIBIT_EXPLICIT_COMPLETIONS
 
             return (proposals, completion_flags)
