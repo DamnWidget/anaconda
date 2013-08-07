@@ -281,12 +281,16 @@ class Checker(threading.Thread):
 
         if os.name == 'posix':
             if not os.path.exists('/proc/' + PID):
-                self.server.logger.info(
-                    'process {0} does not exists stopping server...'.format(
-                        PID
-                    )
-                )
-                self.die = True
+                # OS X workaround
+                try:
+                    os.kill(PID, 0)
+                except OSError:
+                    self.server.logger.info(
+                        'process {0} does not exists stopping server...'.format(
+                            PID
+                            )
+                        )
+                    self.die = True
         elif os.name == 'nt':
             try:
                 from win32com.client import GetObject
