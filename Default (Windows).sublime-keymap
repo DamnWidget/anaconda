@@ -1,5 +1,5 @@
 [
-    {"command": "anaconda_goto", "keys": ["super+g"]},
-    {"command": "anaconda_find_usages", "keys": ["super+f"]},
-    {"command": "anaconda_doc", "keys": ["super+d"]}
+    {"command": "anaconda_goto", "keys": ["ctrl+alt+g"]},
+    {"command": "anaconda_find_usages", "keys": ["ctrl+alt+f"]},
+    {"command": "anaconda_doc", "keys": ["ctrl+alt+d"]}
 ]

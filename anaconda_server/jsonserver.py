@@ -29,7 +29,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 
 import jedi
 from linting import linter
-from decorators import timeit
 from contexts import json_decode
 
 DEBUG_MODE = False
