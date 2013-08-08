@@ -13,7 +13,7 @@ import pstats
 import functools
 
 try:
-    import cProfile as profiler
+    import cProfile
     CPROFILE_AVAILABLE = True
 except ImportError:
     print('cProfile doesn\'t seems to can be imported on ST3 + Linux, sorry')
