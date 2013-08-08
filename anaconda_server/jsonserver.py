@@ -9,6 +9,7 @@ import time
 import errno
 import logging
 import threading
+import functools
 import traceback
 import subprocess
 from logging import handlers
@@ -32,6 +33,50 @@ from linting import linter
 from contexts import json_decode
 
 DEBUG_MODE = False
+
+
+def get_logger(path):
+    """Build file logger
+    """
+
+    log = logging.getLogger('')
+    log.setLevel(logging.DEBUG)
+    hdlr = handlers.RotatingFileHandler(
+        filename=os.path.join(path, 'anaconda_jsonserver.log'),
+        maxBytes=10000000,
+        backupCount=5,
+        encoding='utf-8'
+    )
+    formatter = logging.Formatter('%(asctime)s: %(levelname)-8s: %(message)s')
+    hdlr.setFormatter(formatter)
+    log.addHandler(hdlr)
+    return log
+
+logger = get_logger(jedi.settings.cache_directory)
+
+
+def timeit(logger):
+    """Decorator for timeit timeit timeit
+    """
+
+    def decorator(func):
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            starttime = time.time()
+            result = func(*args, **kwargs)
+            endtime = time.time()
+
+            total = endtime - starttime
+            logger.debug(
+                'Func {} took {} secs'.format(func.__name__, total)
+            )
+
+            return result
+
+        return wrapper
+
+    return decorator
 
 
 class ThreadedJSONServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -119,6 +164,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
 
         self.wfile.write('{}\r\n'.format(json.dumps(result)))
 
+    # @timeit(logger)
     def autocomplete(self):
         """Return Jedi completions
         """
@@ -319,24 +365,6 @@ class Checker(threading.Thread):
                     )
                 )
                 self.die = True
-
-
-def get_logger(path):
-    """Build file logger
-    """
-
-    log = logging.getLogger('')
-    log.setLevel(logging.DEBUG)
-    hdlr = handlers.RotatingFileHandler(
-        filename=os.path.join(path, 'anaconda_jsonserver.log'),
-        maxBytes=10000000,
-        backupCount=5,
-        encoding='utf-8'
-    )
-    formatter = logging.Formatter('%(asctime)s: %(levelname)-8s: %(message)s')
-    hdlr.setFormatter(formatter)
-    log.addHandler(hdlr)
-    return log
 
 
 def log_traceback():
