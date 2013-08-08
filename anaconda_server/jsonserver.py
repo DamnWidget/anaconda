@@ -32,26 +32,7 @@ from linting import linter
 from contexts import json_decode
 
 DEBUG_MODE = False
-
-
-def get_logger(path):
-    """Build file logger
-    """
-
-    log = logging.getLogger('')
-    log.setLevel(logging.DEBUG)
-    hdlr = handlers.RotatingFileHandler(
-        filename=os.path.join(path, 'anaconda_jsonserver.log'),
-        maxBytes=10000000,
-        backupCount=5,
-        encoding='utf-8'
-    )
-    formatter = logging.Formatter('%(asctime)s: %(levelname)-8s: %(message)s')
-    hdlr.setFormatter(formatter)
-    log.addHandler(hdlr)
-    return log
-
-logger = get_logger(jedi.settings.cache_directory)
+logger = logging.getLogger('')
 
 
 class ThreadedJSONServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -66,41 +47,56 @@ class JSONHandler(socketserver.StreamRequestHandler):
     """Handler Class for the Anaconda JSON server
     """
 
+    def send(self, data):
+        """Send data back to the client
+        """
+
+        if data is not None:
+            self.wfile.write(data)
+            self.wfile.flush()
+
     def handle(self):
         """This function handles requests from anaconda plugin
         """
 
-        with json_decode(self.rfile.readline().strip()) as self.data:
-            with self.server.locker:
-                self.server.last_call = time.time()
+        while True:
+            with json_decode(self.rfile.readline().strip()) as self.data:
+                if not self.data:
+                    logging.info('No data received stopping the handler...')
+                    break
 
-            logging.info(
-                '{0} requests: {1}'.format(
-                    self.client_address[0], self.data['method']
-                )
-            )
+                with self.server.locker:
+                    self.server.last_call = time.time()
 
-        if type(self.data) is dict:
-            try:
-                method = self.data.pop('method')
-                if 'lint' in method:
-                    self.handle_lint_command(method)
-                else:
-                    self.handle_jedi_command(method)
-            except IOError as error:
-                if error.errno == errno.EPIPE:
-                    logging.error('Error [32]Broken PIPE Killing myself... ')
-                    self.shutdown()
-                    sys.exit()
-            except Exception as error:
-                logging.info('Exception: {0}'.format(error))
-                log_traceback()
-        else:
-            logging.error(
-                '{0} sent something that I dont undertand: {1}'.format(
-                    self.client_address[0], self.data
+                logging.info(
+                    '{0} requests: {1}'.format(
+                        self.client_address[0], self.data['method']
+                    )
                 )
-            )
+
+            if type(self.data) is dict:
+                try:
+                    method = self.data.pop('method')
+                    if 'lint' in method:
+                        self.handle_lint_command(method)
+                    else:
+                        self.handle_jedi_command(method)
+                except IOError as error:
+                    if error.errno == errno.EPIPE:
+                        logging.error(
+                            'Error [32]Broken PIPE Killing myself... '
+                        )
+                        self.shutdown()
+                        sys.exit()
+                except Exception as error:
+                    logging.info('Exception: {0}'.format(error))
+                    log_traceback()
+            else:
+                logging.error(
+                    '{0} sent something that I dont undertand: {1}'.format(
+                        self.client_address[0], self.data
+                    )
+                )
 
     def handle_lint_command(self, method):
         """Handle lint related commands
@@ -137,7 +133,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
             )
         }
 
-        self.wfile.write('{}\r\n'.format(json.dumps(result)))
+        self.send('{}\r\n'.format(json.dumps(result)))
 
     def autocomplete(self):
         """Return Jedi completions
@@ -164,7 +160,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 'tb': get_log_traceback()
             }
 
-        self.wfile.write('{}\r\n'.format(json.dumps(result)))
+        self.send('{}\r\n'.format(json.dumps(result)))
 
     def goto(self):
         """Goto a Python definition
@@ -182,7 +178,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
                     for i in definitions if not i.in_builtin_module()]
             success = True
 
-        self.wfile.write('{}\r\n'.format(json.dumps({
+        self.send('{}\r\n'.format(json.dumps({
             'success': success, 'goto': data
         })))
 
@@ -197,7 +193,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
             usages = None
             success = False
 
-        self.wfile.write('{}\r\n'.format(json.dumps({
+        self.send('{}\r\n'.format(json.dumps({
             'success': success, 'usages': [
                 (i.module_path, i.line, i.column)
                 for i in usages if not i.in_builtin_module()
@@ -229,7 +225,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 for d in definitions
             ]
 
-        self.wfile.write('{}\r\n'.format(json.dumps({
+        self.send('{}\r\n'.format(json.dumps({
             'success': success, 'doc': ('\n' + '-' * 79 + '\n').join(docs)
         })))
 
@@ -339,6 +335,24 @@ class Checker(threading.Thread):
                     )
                 )
                 self.die = True
+
+
+def get_logger(path):
+    """Build file logger
+    """
+
+    log = logging.getLogger('')
+    log.setLevel(logging.DEBUG)
+    hdlr = handlers.RotatingFileHandler(
+        filename=os.path.join(path, 'anaconda_jsonserver.log'),
+        maxBytes=10000000,
+        backupCount=5,
+        encoding='utf-8'
+    )
+    formatter = logging.Formatter('%(asctime)s: %(levelname)-8s: %(message)s')
+    hdlr.setFormatter(formatter)
+    log.addHandler(hdlr)
+    return log
 
 
 def log_traceback():

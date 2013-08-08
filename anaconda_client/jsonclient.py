@@ -3,8 +3,8 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
-import os
 import sys
+import errno
 import socket
 import logging
 
@@ -25,17 +25,19 @@ class Client:
         self.host = host
         self.port = port
         self.sock = None
-        self.file = None
+        self.rfile = None
+        self.wfile = None
+        self.rbufsize = -1
+        self.wbufsize = 0
 
     def connect(self):
         """Connect to the specified host and port in constructor time
         """
 
-        if os.name == 'posix':
-            self.sock = socket.create_connection((self.host, self.port))
-        else:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.connect((self.host, self.port))
+        self.sock = socket.create_connection((self.host, self.port))
+
+        self.rfile = self.sock.makefile('r')
+        self.wfile = self.sock.makefile('w')
 
     def close(self):
         """Close the connection to the anaconda server
@@ -54,7 +56,14 @@ class Client:
         if self.sock is None:
             self.connect()
 
-        self.sock.send(bytes('{}\r\n'.format(data), 'UTF-8'))
+        try:
+            self.wfile.write('{}\r\n'.format(data))
+            self.wfile.flush()
+        except socket.error as error:
+            if error.errno == errno.EPIPE:
+                logger.error('Connection unexpectedly closed with EPIPE')
+                self._clean_socket()
+                return {'success': False, 'message': 'EPIPE'}
 
     def request(self, method, **kwargs):
         """Send a request to the server
@@ -69,14 +78,12 @@ class Client:
         """Get the response from the server
         """
 
-        if self.file is None:
-            self.file = self.sock.makefile('r')
-
         try:
-            line = self.file.readline()
+            line = self.rfile.readline()
         except socket.error as e:
             logger.error('Connection unexpectedly closed: ' + str(e))
             line = '{"success": false, "message": "{0}"}'.format(str(e))
+            self._clean_socket()
 
         if not line:
             logger.error('Connection unexpectedly closed')
@@ -84,8 +91,7 @@ class Client:
                 '{"success": false, "message": '
                 '"Connection unexpectedly closed"}'
             )
-
-        self._clean_socket()
+            self._clean_socket()
 
         return sublime.decode_value(line)
 
@@ -93,6 +99,7 @@ class Client:
         """Close the socket and clean the related resources
         """
 
-        self.file.close()
+        self.rfile.close()
+        self.wfile.close()
         self.file = None
         self.close()
