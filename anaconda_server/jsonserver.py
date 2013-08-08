@@ -9,7 +9,6 @@ import time
 import errno
 import logging
 import threading
-import functools
 import traceback
 import subprocess
 from logging import handlers
@@ -30,6 +29,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 
 import jedi
 from linting import linter
+from decorators import timeit
 from contexts import json_decode
 
 DEBUG_MODE = False
@@ -53,30 +53,6 @@ def get_logger(path):
     return log
 
 logger = get_logger(jedi.settings.cache_directory)
-
-
-def timeit(logger):
-    """Decorator for timeit timeit timeit
-    """
-
-    def decorator(func):
-
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            starttime = time.time()
-            result = func(*args, **kwargs)
-            endtime = time.time()
-
-            total = endtime - starttime
-            logger.debug(
-                'Func {} took {} secs'.format(func.__name__, total)
-            )
-
-            return result
-
-        return wrapper
-
-    return decorator
 
 
 class ThreadedJSONServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -152,6 +128,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
             source, int(line), int(offset), filename, encoding
         )
 
+    @timeit(logger)
     def run_linter(self, settings, code, filename):
         """Return linting errors on the given code
         """
@@ -164,7 +141,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
 
         self.wfile.write('{}\r\n'.format(json.dumps(result)))
 
-    # @timeit(logger)
+    @timeit(logger)
     def autocomplete(self):
         """Return Jedi completions
         """

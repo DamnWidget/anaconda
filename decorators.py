@@ -10,7 +10,11 @@ Anaconda decorators
 import time
 import functools
 
-from Anaconda.utils import get_settings
+try:
+    from Anaconda.utils import get_settings
+except ImportError:
+    # we just imported the file from jsonserver so we don't need get_settings
+    pass
 
 MAX_RETRIES = 5
 
@@ -129,3 +133,27 @@ def executor(func):
         return result
 
     return wrapper
+
+
+def timeit(logger):
+    """Decorator for timeit timeit timeit
+    """
+
+    def decorator(func):
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            starttime = time.time()
+            result = func(*args, **kwargs)
+            endtime = time.time()
+
+            total = endtime - starttime
+            logger.debug(
+                'Func {} took {} secs'.format(func.__name__, total)
+            )
+
+            return result
+
+        return wrapper
+
+    return decorator

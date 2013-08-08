@@ -9,9 +9,11 @@ import logging
 
 import sublime
 
+from Anaconda.decorators import timeit
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 
 class Client:
@@ -56,6 +58,7 @@ class Client:
 
         self.sock.send(bytes('{}\r\n'.format(data), 'UTF-8'))
 
+    # @timeit(logger)
     def request(self, method, **kwargs):
         """Send a request to the server
         """
