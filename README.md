@@ -24,10 +24,15 @@ Because that architecture, **anaconda** can lint or complete with python interpr
 Supported platforms
 -------------------
 
-Anaconda has been tested in Linux and Windows. It has been developed with multi-platform support in mind and there is some specific code for Windows platform. I am not a Windows user, my only working platform is just Gentoo GNU/Linux, if you find some problem using this plugin in Windows or Mac OS X don't hesitate to open a new ticket.
+Anaconda has been tested in Linux, Windows and Mac OS X with possitive results. I don't have any option to test the plugin in Mac OS X so I depend completely on the community for this task. Several users tested the plugin in Mac OS X with really possitive feedback.
 
-**note**: I feel the plugin a bit slow on Windows.
+There are some performance problems on Windows that have to ve fixed. You can follow the discussion about that in https://github.com/DamnWidget/anaconda/issues/10
 
+The status of the plugin in the different platforms is:
+
+* **Linux**: Stable
+* **Mac OS X**: Stable
+* **Windows**: Performance Problems (almost unusable)
 
 Installation
 ------------
