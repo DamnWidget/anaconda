@@ -20,11 +20,8 @@ class Client:
     """JSON Connection to anaconda server
     """
 
-    def __init__(self, host, port=None, timeout=None):
+    def __init__(self, host, port=None):
 
-        if timeout is None:
-            timeout = socket._GLOBAL_DEFAULT_TIMEOUT
-        self.timeout = timeout
 
         self.host = host
         self.port = port
@@ -35,9 +32,9 @@ class Client:
         """Connect to the specified host and port in constructor time
         """
 
-        self.sock = socket.create_connection(
-            (self.host, self.port), self.timeout
-        )
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((self.host, self.port))
+
 
     def close(self):
         """Close the connection to the anaconda server
@@ -58,7 +55,6 @@ class Client:
 
         self.sock.send(bytes('{}\r\n'.format(data), 'UTF-8'))
 
-    # @timeit(logger)
     def request(self, method, **kwargs):
         """Send a request to the server
         """
