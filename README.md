@@ -32,7 +32,7 @@ The status of the plugin in the different platforms is:
 
 * **Linux**: Stable
 * **Mac OS X**: Stable
-* **Windows**: Performance Problems (almost unusable)
+* **Windows**: Performance Problems (autocompletion almost unusable, linting is ok)
 
 Installation
 ------------
