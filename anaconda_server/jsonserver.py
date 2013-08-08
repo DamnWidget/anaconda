@@ -10,6 +10,7 @@ import errno
 import logging
 import threading
 import traceback
+import subprocess
 from logging import handlers
 from optparse import OptionParser
 
@@ -302,16 +303,22 @@ class Checker(threading.Thread):
                 )
                 self.die = True
         elif os.name == 'nt':
-            try:
-                from win32com.client import GetObject
-                pid = sys.argv[2]
-                WMI = GetObject('winmgmts:')
-                proc = WMI.InstancesOf('Win32_Process')
-
-                if pid not in [p.Properties_('ProcessID').Value for p in proc]:
-                    self.die = True
-            except:
-                pass
+            # win32com is not present in every Python installation on Windows
+            # we need something that always work so we are forced here to use
+            # the Windows tasklist command and check its output
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            output = subprocess.check_output(
+                ['tasklist', '/FI', 'PID eq {0}'.format(PID)],
+                startupinfo=startupinfo
+            )
+            if not PID in output:
+                self.server.logger.info(
+                    'process {0} doe snot exists stopping server...'.format(
+                        PID
+                    )
+                )
+                self.die = True
 
 
 def get_logger(path):
