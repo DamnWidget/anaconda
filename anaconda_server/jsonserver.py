@@ -128,7 +128,6 @@ class JSONHandler(socketserver.StreamRequestHandler):
             source, int(line), int(offset), filename, encoding
         )
 
-    @timeit(logger)
     def run_linter(self, settings, code, filename):
         """Return linting errors on the given code
         """
@@ -141,7 +140,6 @@ class JSONHandler(socketserver.StreamRequestHandler):
 
         self.wfile.write('{}\r\n'.format(json.dumps(result)))
 
-    @timeit(logger)
     def autocomplete(self):
         """Return Jedi completions
         """

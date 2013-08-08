@@ -26,13 +26,11 @@ Supported platforms
 
 Anaconda has been tested in Linux, Windows and Mac OS X with possitive results. I don't have any option to test the plugin in Mac OS X so I depend completely on the community for this task. Several users tested the plugin in Mac OS X with really possitive feedback.
 
-There are some performance problems on Windows that have to ve fixed. You can follow the discussion about that in https://github.com/DamnWidget/anaconda/issues/10
-
 The status of the plugin in the different platforms is:
 
 * **Linux**: Stable
 * **Mac OS X**: Stable
-* **Windows**: Performance Problems (autocompletion almost unusable, linting is ok)
+* **Windows**: Stable
 
 Installation
 ------------
