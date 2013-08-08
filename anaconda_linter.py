@@ -383,7 +383,7 @@ def run_linter(view):
         'pep8': get_settings(view, 'pep8', True),
         'pep8_ignore': get_settings(view, 'pep8_ignore', []),
         'pyflakes_ignore': get_settings(view, 'pyflakes_ignore', []),
-        'pyflaked_disabled': get_settings(view, 'pyflakes_disabled', False)
+        'pyflakes_disabled': get_settings(view, 'pyflakes_disabled', False)
     }
     text = view.substr(sublime.Region(0, view.size()))
 
