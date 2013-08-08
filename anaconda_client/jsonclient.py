@@ -3,13 +3,13 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
+import os
 import sys
 import socket
 import logging
 
 import sublime
 
-from Anaconda.decorators import timeit
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -22,7 +22,6 @@ class Client:
 
     def __init__(self, host, port=None):
 
-
         self.host = host
         self.port = port
         self.sock = None
@@ -32,9 +31,11 @@ class Client:
         """Connect to the specified host and port in constructor time
         """
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((self.host, self.port))
-
+        if os.name == 'posix':
+            self.sock = socket.create_connection((self.host, self.port))
+        else:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.connect((self.host, self.port))
 
     def close(self):
         """Close the connection to the anaconda server
