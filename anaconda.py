@@ -17,8 +17,8 @@ import subprocess
 import sublime
 import sublime_plugin
 
-from Anaconda.utils import get_settings
 from Anaconda.anaconda_client import Client
+from Anaconda.utils import get_settings, active_view, prepare_send_data
 from Anaconda.decorators import (
     only_python, executor, enable_for_python, profile
 )
@@ -49,8 +49,9 @@ class AnacondaCompletionsListener(sublime_plugin.EventListener):
         """Sublime Text autocompletion event handler
         """
 
-        logger.info('Anaconda completion has been called')
-        proposals = Worker.lookup(view).autocomplete(locations[0])
+        location = view.rowcol(locations[0])
+        proposals = Worker.lookup().autocomplete(**prepare_send_data(location))
+        # proposals = Worker.lookup(view).autocomplete(locations[0])
 
         if proposals:
             completion_flags = 0
@@ -71,9 +72,14 @@ class AnacondaGoto(sublime_plugin.TextCommand):
     """
 
     def run(self, edit):
-        definitions = Worker.lookup(self.view).goto()
-        if definitions:
-            JediUsages(self).process(definitions)
+        try:
+            location = active_view().rowcol(self.view.sel()[0].begin())
+            definitions = Worker.lookup().goto(**prepare_send_data(location))
+            # definitions = Worker.lookup(self.view).goto()
+            if definitions:
+                JediUsages(self).process(definitions)
+        except:
+            pass
 
     @enable_for_python
     def is_enabled(self):
@@ -86,7 +92,14 @@ class AnacondaFindUsages(sublime_plugin.TextCommand):
     """
 
     def run(self, edit):
-        JediUsages(self).process(Worker.lookup(self.view).usages(), True)
+        try:
+            location = active_view().rowcol(self.view.sel()[0].begin())
+            JediUsages(self).process(
+                Worker.lookup().usages(**prepare_send_data(location)), True
+            )
+            # JediUsages(self).process(Worker.lookup(self.view).usages(), True)
+        except:
+            pass
 
     @enable_for_python
     def is_enabled(self):
@@ -99,9 +112,16 @@ class AnacondaDoc(sublime_plugin.TextCommand):
     """
 
     def run(self, edit):
-        self.edit = edit
-        doc = Worker.lookup(self.view).doc(self.view.sel()[0].begin())
-        self.print_doc(doc)
+        try:
+            self.edit = edit
+            location = self.view.rowcol(self.view.sel()[0].begin())
+            if self.view.substr(location) in ['(', ')']:
+                location[1] -= 1
+            doc = Worker.lookup().doc(**prepare_send_data(location))
+            # doc = Worker.lookup(self.view).doc(self.view.sel()[0].begin())
+            self.print_doc(doc)
+        except:
+            pass
 
     @enable_for_python
     def is_enabled(self):
@@ -142,8 +162,7 @@ class Worker:
     """Worker class for subprocess manipulation
     """
 
-    def __init__(self, view):
-        self.view = view
+    def __init__(self):
         self.client = None
         self.proccess = None
         self.restart()
@@ -169,12 +188,9 @@ class Worker:
             self.process = None
 
     @executor
-    def autocomplete(self, location):
+    def autocomplete(self, **data):
         """Call to autocomplete in the server
         """
-
-        current_line, current_column = self.view.rowcol(location)
-        data = self._prepare_data((current_line, current_column))
 
         result = self.client.request('autocomplete', **data)
         if result and result['success'] is True:
@@ -191,37 +207,27 @@ class Worker:
             return result['errors']
 
     @executor
-    def goto(self):
+    def goto(self, **data):
         """Call to goto in the server
         """
-
-        current_line, current_column = self.view.rowcol(
-            self.view.sel()[0].begin()
-        )
-
-        data = self._prepare_data((current_line, current_column))
 
         result = self.client.request('goto', **data)
         if result and result['success'] is True:
             return result['goto']
 
     @executor
-    def usages(self):
+    def usages(self, **data):
         """Call to usages in the server
         """
-
-        current_line, current_column = self.view.rowcol(
-            self.view.sel()[0].begin()
-        )
-        data = self._prepare_data((current_line, current_column))
 
         result = self.client.request('usages', **data)
         if result and result['success'] is True:
             return result['usages']
         else:
-            self.view.set_status('anaconda_doc', 'Anaconda: No usages found')
+            view = active_view()
+            view.set_status('anaconda_doc', 'Anaconda: No usages found')
             sublime.set_timeout_async(
-                lambda: self.view.erase_status('anaconda_doc'), 5000
+                lambda: view.erase_status('anaconda_doc'), 5000
             )
             return []
 
@@ -239,14 +245,6 @@ class Worker:
         if result and result['success'] is True:
             return result['doc']
 
-    def _prepare_data(self, location):
-        return {
-            'source': self.view.substr(sublime.Region(0, self.view.size())),
-            'line': location[0] + 1,
-            'offset': location[1],
-            'filename': self.view.file_name() or ''
-        }
-
     @staticmethod
     def port():
         """Get a free port
@@ -260,14 +258,14 @@ class Worker:
         return port
 
     @staticmethod
-    def lookup(view):
+    def lookup():
         """Lookup a Worker in the Workers stack
         """
 
-        window = view.window()
+        window = sublime.active_window()
         if window.window_id not in WORKERS:
             with WORKERS_LOCK:
-                WORKERS[window.window_id] = Worker(view)
+                WORKERS[window.window_id] = Worker()
 
         return WORKERS[window.window_id]
 
@@ -299,7 +297,7 @@ class Worker:
         """
 
         self.port = Worker.port()
-        window = self.view.window()
+        window = sublime.active_window()
         project_name = Worker.generate_project_name(window)
 
         interp = get_settings(

@@ -388,7 +388,7 @@ def run_linter(view):
     text = view.substr(sublime.Region(0, view.size()))
 
     results = Linter(view).parse_errors(
-        Worker.lookup(view).run_linter(text, settings, view.file_name())
+        Worker.lookup().run_linter(text, settings, view.file_name())
     )
 
     errors = results['results']
