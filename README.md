@@ -32,6 +32,10 @@ The status of the plugin in the different platforms is:
 * **Mac OS X**: Stable
 * **Windows**: Stable
 
+You can run the plugin in profiling mode on Windows (Sublime Text doesn't support cProfile in POSIX platforms) setting the user variable `anaconda_debug` to `profiler`, then you will get a profiling support of where the plugin is spending the processor time.
+
+Those profiles are really helpful for us to fix bugs and solve performance problems on Windows, add it to your issues reports always that you can.
+
 Installation
 ------------
 
