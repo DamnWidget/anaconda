@@ -10,13 +10,12 @@ Anaconda contexts
 import json
 from contextlib import contextmanager
 
-
 @contextmanager
 def json_decode(data):
     try:
-        yield json.loads(data)
+        yield json.loads(data.decode('utf8'))
     except ValueError:
         try:
             yield eval(data)
         except Exception:
-            yield str(data)
+            yield str(data.decode('utf8'))

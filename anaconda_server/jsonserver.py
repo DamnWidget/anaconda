@@ -52,6 +52,9 @@ class JSONHandler(socketserver.StreamRequestHandler):
         """
 
         if data is not None:
+            if sys.version_info >= (3,):
+                data = bytes(data, 'utf8')
+
             self.wfile.write(data)
             self.wfile.flush()
 
@@ -328,9 +331,9 @@ class Checker(threading.Thread):
                 ['tasklist', '/FI', 'PID eq {0}'.format(PID)],
                 startupinfo=startupinfo
             )
-            if not PID in output.decode():
+            if not PID in output.decode('utf8'):
                 self.server.logger.info(
-                    'process {0} doe snot exists stopping server...'.format(
+                    'process {0} does not exists stopping server...'.format(
                         PID
                     )
                 )
