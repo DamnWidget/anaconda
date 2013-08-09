@@ -328,7 +328,7 @@ class Checker(threading.Thread):
                 ['tasklist', '/FI', 'PID eq {0}'.format(PID)],
                 startupinfo=startupinfo
             )
-            if not PID in output:
+            if not PID in output.decode():
                 self.server.logger.info(
                     'process {0} doe snot exists stopping server...'.format(
                         PID
