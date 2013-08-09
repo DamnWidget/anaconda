@@ -19,7 +19,9 @@ import sublime_plugin
 
 from Anaconda.utils import get_settings
 from Anaconda.anaconda_client import Client
-from Anaconda.decorators import only_python, executor, enable_for_python
+from Anaconda.decorators import (
+    only_python, executor, enable_for_python, profile
+)
 
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda only works with Sublime Text 3')
@@ -42,6 +44,7 @@ class AnacondaCompletionsListener(sublime_plugin.EventListener):
     completions = []
 
     @only_python
+    @profile
     def on_query_completions(self, view, prefix, locations):
         """Sublime Text autocompletion event handler
         """

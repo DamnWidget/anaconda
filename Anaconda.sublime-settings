@@ -76,5 +76,25 @@
         but it is ignored since the warning is not that helpful. If you want to see this warning,
         set this option to false.
     */
-    "pyflakes_ignore_import_*": true
+    "pyflakes_ignore_import_*": true,
+
+    /*
+        Debug and development options
+
+        Use those options only for debugging and devleopment purposes, them can
+        and will slowdown your Sublime Text
+
+        anconda_debug can be set as: false or profiler
+
+        If this is set as profiler, Aanconda will run a profiler on autocompelte
+        and print it results in the Sublime Text console.
+
+        NOTE: cProfile can't be imported in all the platforms, at least no in
+        Linux, this is an already reported bug:
+
+            http://www.sublimetext.com/forum/viewtopic.php?f=3&t=13698
+            https://github.com/SublimeText/Issues/issues/127
+
+    */
+    "anaconda_debug": false
 }

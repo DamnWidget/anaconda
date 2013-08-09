@@ -16,10 +16,16 @@ try:
     import cProfile
     CPROFILE_AVAILABLE = True
 except ImportError:
-    print('cProfile doesn\'t seems to can be imported on ST3 + Linux, sorry')
+    print(
+        'cProfile doesn\'t seems to can be imported on ST3 + {}, sorry.'
+        'You may want to use @timeit instead, so sorry really'.format(
+            sys.platform
+        )
+    )
     CPROFILE_AVAILABLE = False
 
 try:
+    import sublime
     from Anaconda.utils import get_settings
 except ImportError:
     # we just imported the file from jsonserver so we don't need get_settings
@@ -155,7 +161,6 @@ def timeit(logger):
             starttime = time.time()
             result = func(*args, **kwargs)
             endtime = time.time()
-
             total = endtime - starttime
             logger.debug(
                 'Func {} took {} secs'.format(func.__name__, total)
@@ -168,23 +173,26 @@ def timeit(logger):
     return decorator
 
 
-if CPROFILE_AVAILABLE is True:
-    def profile(func):
-        """Run the profiler in the given function
-        """
+def profile(func):
+    """Run the profiler in the given function
+    """
 
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            pr = cProfile.Profile()
-            pr.enable()
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        view = sublime.active_window().active_view()
+        if CPROFILE_AVAILABLE:
+            if get_settings(view, 'anaconda_debug', False) == 'profiler':
+                pr = cProfile.Profile()
+                pr.enable()
 
-            result = func(*args, **kwargs)
+        result = func(*args, **kwargs)
+        if CPROFILE_AVAILABLE:
+            if get_settings(view, 'anaconda_debug', False) == 'profiler':
+                pr.disable()
+                ps = pstats.Stats(pr, stream=sys.stdout)
+                ps.sort_stats('time')
+                ps.print_stats(15)
 
-            pr.disable()
-            ps = pstats.Stats(pr, stream=sys.stdout)
-            ps.sort_stats('time')
-            ps.print_stats(15)
+        return result
 
-            return result
-
-        return wrapper
+    return wrapper
