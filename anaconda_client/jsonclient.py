@@ -27,8 +27,6 @@ class Client:
         self.sock = None
         self.rfile = None
         self.wfile = None
-        self.rbufsize = -1
-        self.wbufsize = 0
 
     def connect(self):
         """Connect to the specified host and port in constructor time
