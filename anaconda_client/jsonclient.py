@@ -13,6 +13,7 @@ import logging
 import asyncore
 import asynchat
 import threading
+import traceback
 
 try:
     import sublime
@@ -21,8 +22,6 @@ except ImportError:
         import ujson as json
     except ImportError:
         import json
-
-MAX_ATTEMPS = 10
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -74,7 +73,12 @@ class AsynClient(asynchat.async_chat):
                 'to handle it. Aborting....'.format(message)
             )
 
-        callback(data)
+        try:
+            callback(data)
+        except Exception as error:
+            logging.error(error)
+            for traceback_line in traceback.format_exc().splitlines():
+                logging.error(traceback_line)
 
     def send_command(self, callback, **data):
         """Send the given command that should be handled bu the given callback
@@ -86,10 +90,10 @@ class AsynClient(asynchat.async_chat):
 
         try:
             self.push(
-                bytes('{}\r\n'.format(sublime.encode_value(data)), 'utf8')
+                bytes('{};aend;'.format(sublime.encode_value(data)), 'utf8')
             )
         except NameError:
-            self.push(bytes('{}\r\n'.format(json.dumps(data)), 'utf8'))
+            self.push(bytes('{};aend;'.format(json.dumps(data)), 'utf8'))
 
 
 class AnacondaLooper(threading.Thread):
@@ -103,4 +107,4 @@ class AnacondaLooper(threading.Thread):
     def run(self):
         logger.info('Starting Anaconda event loop')
         self.loop_started = True
-        asyncore.loop()
+        asyncore.loop(0.01)

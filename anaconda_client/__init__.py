@@ -6,4 +6,4 @@
 from .jsonclient import AsynClient, AnacondaLooper
 
 
-__all__ = ['AsynClient', 'looper']
+__all__ = ['AsynClient', 'AnacondaLooper']

@@ -188,7 +188,7 @@ class Worker(object):
             self.reconnecting = True
             self.build_server()
             self.reconnecting = False
-            time.sleep(1.5)
+            time.sleep(1.0)
 
         self.client = AsynClient(self.port)
         self.loop = AnacondaLooper()

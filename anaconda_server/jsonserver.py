@@ -7,7 +7,10 @@ import os
 import sys
 import time
 import errno
+import socket
 import logging
+import asyncore
+import asynchat
 import threading
 import traceback
 import subprocess
@@ -33,94 +36,85 @@ from contexts import json_decode
 
 DEBUG_MODE = False
 logger = logging.getLogger('')
+PY3 = True if sys.version_info >= (3,) else False
 
 
-class ThreadedJSONServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-    """Threading JSON Server
+class JSONHandler(asynchat.async_chat):
+    """Hadnles JSON messages from a client
     """
 
-    last_call = time.time()
+    def __init__(self, sock, server):
+        self.server = server
+        self.rbuffer = []
+        asynchat.async_chat.__init__(self, sock)
+        self.set_terminator(b";aend;" if PY3 else ";aend;")
 
-
-class JSONHandler(socketserver.StreamRequestHandler):
-    """Handler Class for the Anaconda JSON server
-    """
-
-    def send(self, data):
+    def return_back(self, data):
         """Send data back to the client
         """
 
         if data is not None:
-            data['uid'] = self.uid
             data = '{0}\r\n'.format(json.dumps(data))
+            data = bytes(data, 'utf8') if PY3 else data
 
-            if sys.version_info >= (3,):
-                data = bytes(data, 'utf8')
+            self.push(data)
 
-            self.wfile.write(data)
-            self.wfile.flush()
-
-    def handle(self):
-        """This function handles requests from anaconda plugin
+    def collect_incoming_data(self, data):
+        """Called when data is ready to be read
         """
 
-        while True:
-            with json_decode(self.rfile.readline().strip()) as self.data:
-                if not self.data:
-                    logging.info('No data received in the handler...')
-                    break
+        self.rbuffer.append(data)
 
-                if self.data['method'] == 'check':
-                    self.send('Ok')
-                    continue
+    def found_terminator(self):
+        """Called when the terminator is found in the buffer
+        """
 
-                self.server.last_call = time.time()
+        message = b''.join(self.rbuffer) if PY3 else ''.join(self.rbuffer)
+        self.rbuffer = []
 
-                logging.info(
-                    '{0} requests: {1}'.format(
-                        self.client_address[0], self.data['method']
-                    )
-                )
+        with json_decode(message) as self.data:
+            if not self.data:
+                logging.info('No data received in the handler')
+                return
 
-            if type(self.data) is dict:
-                try:
-                    method = self.data.pop('method')
-                    self.uid = self.data.pop('uid')
-                    if 'lint' in method:
-                        self.handle_lint_command(method)
-                    else:
-                        self.handle_jedi_command(method)
-                except IOError as error:
-                    if error.errno == errno.EPIPE:
-                        logging.error(
-                            'Error [32]Broken PIPE Killing myself... '
-                        )
-                        self.shutdown()
-                        sys.exit()
-                except Exception as error:
-                    logging.info('Exception: {0}'.format(error))
-                    log_traceback()
+            if self.data['method'] == 'check':
+                self.return_back('Ok')
+                return
+
+            self.server.last_call = time.time()
+
+        if type(self.data) is dict:
+            logging.info(
+                'client requests: {0}'.format(self.data['method'])
+            )
+
+            method = self.data.pop('method')
+            uid = self.data.pop('uid')
+            if 'lint' in method:
+                self.handle_lint_command(method, uid)
             else:
-                logging.error(
-                    '{0} sent something that I dont undertand: {1}'.format(
-                        self.client_address[0], self.data
-                    )
+                self.handle_jedi_command(method, uid)
+        else:
+            logging.error(
+                'client sent somethinf that I don\'t understand: {0}'.format(
+                    self.data
                 )
+            )
 
-    def handle_lint_command(self, method):
-        """Handle lint related commands
+    def handle_lint_command(self, method, uid):
+        """Handle lint command
         """
 
-        getattr(self, method)(**self.data)
+        getattr(self, method)(uid, **self.data)
 
-    def handle_jedi_command(self, method):
+    def handle_jedi_command(self, method, uid):
         """Handle jedi related commands
         """
 
         self.script = self.jedi_script(**self.data)
-        getattr(self, method)()
+        getattr(self, method)(uid)
 
-    def jedi_script(self, source, line, offset, filename='', encoding='utf-8'):
+    def jedi_script(self, source, line, offset, filename='', encoding='utf8'):
         if DEBUG_MODE is True:
             logging.debug(
                 'jedi_script called with the following parameters: '
@@ -132,19 +126,17 @@ class JSONHandler(socketserver.StreamRequestHandler):
             source, int(line), int(offset), filename, encoding
         )
 
-    def run_linter(self, settings, code, filename):
-        """Return linting errors on the given code
+    def run_linter(self, uid, settings, code, filename):
+        """Return lintin errors on the given code
         """
 
-        result = {
-            'success': True, 'errors': linter.Linter().run_linter(
-                settings, code, filename
-            )
-        }
+        self.return_back({
+            'success': True,
+            'errors': linter.Linter().run_linter(settings, code, filename),
+            'uid': uid
+        })
 
-        self.send(result)
-
-    def autocomplete(self):
+    def autocomplete(self, uid):
         """Return Jedi completions
         """
 
@@ -158,7 +150,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 ('{0}\t{1}'.format(comp.name, comp.type), comp.name)
                 for comp in completions
             ])
-            result = {'success': True, 'completions': data}
+            result = {'success': True, 'completions': data, 'uid': uid}
         except Exception as error:
             logging.error('The underlying Jedi library as raised an exception')
             logging.error(error)
@@ -166,12 +158,13 @@ class JSONHandler(socketserver.StreamRequestHandler):
             result = {
                 'success': False,
                 'error': str(error),
-                'tb': get_log_traceback()
+                'tb': get_log_traceback(),
+                'uid': uid
             }
 
-        self.send(result)
+        self.return_back(result)
 
-    def goto(self):
+    def goto(self, uid):
         """Goto a Python definition
         """
 
@@ -187,9 +180,9 @@ class JSONHandler(socketserver.StreamRequestHandler):
                     for i in definitions if not i.in_builtin_module()]
             success = True
 
-        self.send({'success': success, 'goto': data})
+        self.return_back({'success': success, 'goto': data, 'uid': uid})
 
-    def usages(self):
+    def usages(self, uid):
         """Find usages
         """
 
@@ -200,14 +193,16 @@ class JSONHandler(socketserver.StreamRequestHandler):
             usages = None
             success = False
 
-        self.send({
-            'success': success, 'usages': [
+        self.return_back({
+            'success': success,
+            'usages': [
                 (i.module_path, i.line, i.column)
                 for i in usages if not i.in_builtin_module()
-            ] if usages is not None else []
+            ] if usages is not None else [],
+            'uid': uid
         })
 
-    def doc(self):
+    def doc(self, uid):
         """Find documentation
         """
 
@@ -232,8 +227,10 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 for d in definitions
             ]
 
-        self.send({
-            'success': success, 'doc': ('\n' + '-' * 79 + '\n').join(docs)
+        self.return_back({
+            'success': success,
+            'doc': ('\n' + '-' * 79 + '\n').join(docs),
+            'uid': uid
         })
 
     def _parameters_for_complete(self):
@@ -282,6 +279,53 @@ class JSONHandler(socketserver.StreamRequestHandler):
             params.append([s.strip() for s in cleaned_param.split('=')])
 
         return params
+
+
+class JSONServer(asyncore.dispatcher):
+    """Asynchronous standard library TCP JSON server
+    """
+
+    allow_reuse_address = False
+    request_queue_size = 5
+    address_familty = socket.AF_INET
+    socket_type = socket.SOCK_STREAM
+
+    def __init__(self, address, handler=JSONHandler):
+        self.address = address
+        self.handler = handler
+
+        asyncore.dispatcher.__init__(self)
+        self.create_socket(self.address_familty, self.socket_type)
+        self.last_call = time.time()
+
+        self.bind(self.address)
+        logging.debug('bind: address=%s' % (address,))
+        self.listen(self.request_queue_size)
+        logging.debug('listen: backlog=%d' % (self.request_queue_size,))
+
+    @property
+    def fileno(self):
+        return self.socket.fileno()
+
+    def serve_forever(self):
+        asyncore.loop(0.01)
+
+    def shutdown(self):
+    	self.handle_close()
+
+    def handle_accept(self):
+        """Called when we accept and incomming connection
+        """
+        sock, addr = self.accept()
+        self.logger.info('Incomming connection from {0}'.format(repr(addr)))
+        handler = self.handler(sock, self)
+
+    def handle_close(self):
+        """Called when close
+        """
+
+        logging.info('Closing the socket, server will be shutdown now...')
+        self.close()
 
 
 class Checker(threading.Thread):
@@ -334,7 +378,8 @@ class Checker(threading.Thread):
                 ['tasklist', '/FI', 'PID eq {0}'.format(PID)],
                 startupinfo=startupinfo
             )
-            if not PID in output.decode('utf8'):
+            pid = PID if not PY3 else bytes(PID, 'utf8')
+            if not pid in output:
                 self.server.logger.info(
                     'process {0} does not exists stopping server...'.format(
                         PID
@@ -414,23 +459,25 @@ if __name__ == "__main__":
     logger = get_logger(jedi.settings.cache_directory)
 
     try:
-        server = ThreadedJSONServer(('localhost', port), JSONHandler)
+        server = JSONServer(('localhost', port))
         logger.info(
-            'Anaconda Server started in port {0} with cache dir {1}{2}'.format(
-                port, jedi.settings.cache_directory,
+            'Anaconda Server started in port {0} for '
+            'PID {1} with cache dir {2}{3}'.format(
+                port, PID, jedi.settings.cache_directory,
                 ' and extra paths {0}'.format(
                     options.extra_paths
                 ) if options.extra_paths is not None else ''
             )
         )
     except Exception as error:
+        log_traceback()
         logger.error(error)
         sys.exit(-1)
 
     server.logger = logger
 
     # start PID checker thread
-    checker = Checker(server, delta=0.1)
+    checker = Checker(server, delta=1)
     checker.start()
 
     # start the server
