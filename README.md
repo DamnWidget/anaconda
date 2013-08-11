@@ -124,7 +124,10 @@ With this command you can get the docstring of whatever function or method. You 
 Anaconda linting
 ----------------
 
-Anaconda linting is mainly based/inspired/ported from SublimeLinter because that I add the SublimeLinter LICENSE file in the repo.
+Anaconda linting is mainly based/inspired/ported from SublimeLinter because that we add the SublimeLinter LICENSE file in the repo. Although anaconda linter is inspired in SublimeLinter, our linting is much faster for serveral reasons:
+
+1. Anaconda does not use a delayed queue to perform the lintin work, instead of that we fire a single call to the linter methods `n` seconds after the last key was pressend by the user while typing. Those `n` seconds can be configured by the user.
+2. Anaconda is totally asynchronous so we should never block the gui, because that, our linting is smooth and flawless.
 
 #### Disabling the linter
 
