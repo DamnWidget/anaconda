@@ -131,7 +131,7 @@ class AnacondaDoc(sublime_plugin.TextCommand):
             try:
                 location = self.view.rowcol(self.view.sel()[0].begin())
                 if self.view.substr(self.view.sel()[0].begin()) in ['(', ')']:
-                    location[1] -= 1
+                    location = (location[0], location[1] - 1)
 
                 data = prepare_send_data(location)
                 data['method'] = 'doc'
