@@ -39,7 +39,6 @@ class ThreadedJSONServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     """Threading JSON Server
     """
 
-    locker = threading.RLock()
     last_call = time.time()
 
 
@@ -52,6 +51,9 @@ class JSONHandler(socketserver.StreamRequestHandler):
         """
 
         if data is not None:
+            data['uid'] = self.uid
+            data = '{0}\r\n'.format(json.dumps(data))
+
             if sys.version_info >= (3,):
                 data = bytes(data, 'utf8')
 
@@ -65,11 +67,14 @@ class JSONHandler(socketserver.StreamRequestHandler):
         while True:
             with json_decode(self.rfile.readline().strip()) as self.data:
                 if not self.data:
-                    logging.info('No data received stopping the handler...')
+                    logging.info('No data received in the handler...')
                     break
 
-                with self.server.locker:
-                    self.server.last_call = time.time()
+                if self.data['method'] == 'check':
+                    self.send('Ok')
+                    continue
+
+                self.server.last_call = time.time()
 
                 logging.info(
                     '{0} requests: {1}'.format(
@@ -80,6 +85,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
             if type(self.data) is dict:
                 try:
                     method = self.data.pop('method')
+                    self.uid = self.data.pop('uid')
                     if 'lint' in method:
                         self.handle_lint_command(method)
                     else:
@@ -136,7 +142,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
             )
         }
 
-        self.send('{}\r\n'.format(json.dumps(result)))
+        self.send(result)
 
     def autocomplete(self):
         """Return Jedi completions
@@ -163,7 +169,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 'tb': get_log_traceback()
             }
 
-        self.send('{}\r\n'.format(json.dumps(result)))
+        self.send(result)
 
     def goto(self):
         """Goto a Python definition
@@ -181,9 +187,7 @@ class JSONHandler(socketserver.StreamRequestHandler):
                     for i in definitions if not i.in_builtin_module()]
             success = True
 
-        self.send('{}\r\n'.format(json.dumps({
-            'success': success, 'goto': data
-        })))
+        self.send({'success': success, 'goto': data})
 
     def usages(self):
         """Find usages
@@ -196,12 +200,12 @@ class JSONHandler(socketserver.StreamRequestHandler):
             usages = None
             success = False
 
-        self.send('{}\r\n'.format(json.dumps({
+        self.send({
             'success': success, 'usages': [
                 (i.module_path, i.line, i.column)
                 for i in usages if not i.in_builtin_module()
             ] if usages is not None else []
-        })))
+        })
 
     def doc(self):
         """Find documentation
@@ -228,9 +232,9 @@ class JSONHandler(socketserver.StreamRequestHandler):
                 for d in definitions
             ]
 
-        self.send('{}\r\n'.format(json.dumps({
+        self.send({
             'success': success, 'doc': ('\n' + '-' * 79 + '\n').join(docs)
-        })))
+        })
 
     def _parameters_for_complete(self):
         """Get function / class constructor paremeters completions list
@@ -302,14 +306,13 @@ class Checker(threading.Thread):
         """Check for the ST3 pid
         """
 
-        with self.server.locker:
-            if time.time() - self.server.last_call > 1800:
-                # is now more than 30 minutes of innactivity
-                self.server.logger.info(
-                    'detected inactivity for more than 30 minutes...'
-                    'shuting down...'
-                )
-                self.die = True
+        if time.time() - self.server.last_call > 1800:
+            # is now more than 30 minutes of innactivity
+            self.server.logger.info(
+                'detected inactivity for more than 30 minutes...'
+                'shuting down...'
+            )
+            self.die = True
 
         if os.name == 'posix':
             try:
@@ -424,11 +427,10 @@ if __name__ == "__main__":
         logger.error(error)
         sys.exit(-1)
 
-    # server = socketserver.TCPServer(('localhost', port), JSONHandler)
     server.logger = logger
 
     # start PID checker thread
-    checker = Checker(server)
+    checker = Checker(server, delta=0.1)
     checker.start()
 
     # start the server
