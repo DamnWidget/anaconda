@@ -89,7 +89,7 @@ class AnacondaGoto(sublime_plugin.TextCommand):
             location = active_view().rowcol(self.view.sel()[0].begin())
             data = prepare_send_data(location)
             data['method'] = 'goto'
-            Worker().execute(JediUsages(self).process, **data)
+            Worker().execute(partial(JediUsages(self).process, False), **data)
         except:
             pass
 
@@ -189,7 +189,7 @@ class JediUsages(object):
     def __init__(self, text):
         self.text = text
 
-    def process(self, data, usages=False):
+    def process(self, usages=False, data=None):
         """Process the definitions
         """
 
