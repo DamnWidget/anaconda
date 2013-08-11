@@ -15,11 +15,12 @@ from functools import partial
 import sublime
 import sublime_plugin
 
-from Anaconda.anaconda import Worker
+from Anaconda.worker import Worker
 from Anaconda.utils import get_settings
 from Anaconda.decorators import (
     only_python, not_scratch, on_linting_enabled, on_linting_behaviour
 )
+
 
 ANACONDA = {
     'QUEUE': {},
@@ -27,19 +28,9 @@ ANACONDA = {
     'WARNINGS': {},
     'VIOLATIONS': {},
     'UNDERLINES': {},
-    'TIMES': {}
+    'LAST_PULSE': time.time(),
+    'ALREADY_LINTED': False
 }
-
-# For snappier linting, different delays are used for different linting times:
-# (linting time, delays)
-DELAYS = (
-    (50, (50, 100)),
-    (100, (100, 300)),
-    (200, (200, 500)),
-    (400, (400, 1000)),
-    (800, (800, 2000)),
-    (1600, (1600, 3000)),
-)
 
 marks = {
     'warning': 'dot',
@@ -70,7 +61,9 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """
         # update the last selected line number
         self.last_selected_line = -1
-        queue_linter(view)
+        ANACONDA['LAST_PULSE'] = time.time()
+        ANACONDA['ALREADY_LINTED'] = False
+        erase_lint_marks(view)
 
     @only_python
     @on_linting_enabled
@@ -79,7 +72,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """Called after load a file
         """
 
-        queue_linter(view)
+        run_linter(view)
 
     @only_python
     @not_scratch
@@ -88,7 +81,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """Called post file save event
         """
 
-        queue_linter(view)
+        run_linter(view)
 
     @only_python
     @not_scratch
@@ -97,8 +90,6 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """Called on selection modified
         """
 
-        # on movement, delay queue (to make movement responsive)
-        delay_queue(1000)
         last_selected_line = last_selected_lineno(view)
 
         if last_selected_line != self.last_selected_line:
@@ -115,6 +106,23 @@ class BackgroundLinter(sublime_plugin.EventListener):
 ###############################################################################
 # Classes
 ###############################################################################
+class TypeMonitor(threading.Thread):
+    """Monitoring the typying
+    """
+
+    def run(self):
+
+        while True:
+            if not ANACONDA['ALREADY_LINTED']:
+                view = sublime.active_window().active_view()
+                delay = get_settings(view, 'anaconda_linter_delay', 0.5)
+                if time.time() - ANACONDA['LAST_PULSE'] >= delay:
+                    ANACONDA['ALREADY_LINTED'] = True
+                    run_linter(view)
+
+            time.sleep(0.1)
+
+
 class Linter:
     """Linter class that can interacts with Sublime Linter GUI
     """
@@ -229,27 +237,6 @@ class Linter:
 ###############################################################################
 # Global functions
 ###############################################################################
-def get_delay(t, view):
-    """Get the delay for the related view
-    """
-
-    delay = 0
-    for _t, d in DELAYS:
-        if _t <= t:
-            delay = d
-
-    delay = delay or DELAYS[0][1]
-
-    # If the user specifies a delay greater than the built in delay,
-    # figure they only want to see marks when idle.
-    min_delay = get_settings(view, 'anaconda_linter_delay', 0) * 1000
-
-    if min_delay > delay[1]:
-        erase_lint_marks(view)
-
-    return (min_delay, min_delay) if min_delay > delay[1] else delay
-
-
 def erase_lint_marks(view):
     """Erase all the lint marks
     """
@@ -367,7 +354,25 @@ def run_linter(view):
     """Run the linter for the given view
     """
 
-    TIMES = ANACONDA.get('TIMES')
+    settings = {
+        'pep8': get_settings(view, 'pep8', True),
+        'pep8_ignore': get_settings(view, 'pep8_ignore', []),
+        'pyflakes_ignore': get_settings(view, 'pyflakes_ignore', []),
+        'pyflakes_disabled': get_settings(view, 'pyflakes_disabled', False)
+    }
+    text = view.substr(sublime.Region(0, view.size()))
+    data = {'code': text, 'settings': settings, 'filename': view.file_name()}
+    data['method'] = 'run_linter'
+    Worker().execute(partial(parse_results, view), **data)
+
+
+def parse_results(view, data):
+    """Parse the results from the server
+    """
+
+    if data and data['success'] is False:
+        return
+
     ERRORS = ANACONDA.get('ERRORS')
     WARNINGS = ANACONDA.get('WARNINGS')
     VIOLATIONS = ANACONDA.get('VIOLATIONS')
@@ -378,19 +383,7 @@ def run_linter(view):
     WARNINGS[vid] = {}
     VIOLATIONS[vid] = {}
 
-    start = time.time()
-    settings = {
-        'pep8': get_settings(view, 'pep8', True),
-        'pep8_ignore': get_settings(view, 'pep8_ignore', []),
-        'pyflakes_ignore': get_settings(view, 'pyflakes_ignore', []),
-        'pyflakes_disabled': get_settings(view, 'pyflakes_disabled', False)
-    }
-    text = view.substr(sublime.Region(0, view.size()))
-
-    results = Linter(view).parse_errors(
-        Worker.lookup().run_linter(text, settings, view.file_name())
-    )
-
+    results = Linter(view).parse_errors(data['errors'])
     errors = results['results']
     lines = results['lines']
 
@@ -406,196 +399,9 @@ def run_linter(view):
     add_lint_marks(view, lines, **errors)
 
     update_statusbar(view)
-    end = time.time()
-    TIMES[vid] = (end - start) * 1000
 
 
-def queue_linter(view, timeout=-1, preemptive=False, event=None):
-    """Put the current view in a queue to be examined by a linter
-    """
+monitor = TypeMonitor()
 
-    TIMES = ANACONDA.get('TIMES')
-
-    if preemptive:
-        timeout = busy_timeout = 0
-    elif timeout == -1:
-        timeout, busy_timeout = get_delay(TIMES.get(view.id(), 100), view)
-    else:
-        busy_timeout = timeout
-
-    kwargs = {
-        'timeout': timeout,
-        'busy_timeout': busy_timeout,
-        'preemptive': preemptive,
-        'event': event
-    }
-    queue(view, partial(
-        _update_view, view, view.file_name(), **kwargs), kwargs
-    )
-
-
-def _update_view(view, filename, **kwargs):
-    """
-    It is possible that by the time the queue is run,
-    the original file is no longer being displayed in the view,
-    or the view may be gone. This happens especially when
-    viewing files temporarily by single-clicking on a filename
-    in the sidebar or when selecting a file through the choose file palette.
-    """
-
-    valid_view = False
-    view_id = view.id()
-
-    for window in sublime.windows():
-        for v in window.views():
-            if v.id() == view_id:
-                valid_view = True
-                break
-
-    if not valid_view or view.is_loading() or view.file_name() != filename:
-        return
-
-    try:
-        run_linter(view)
-    except RuntimeError as error:
-        print(error)
-
-
-def _callback(view, filename, kwargs):
-    kwargs['callback'](view, filename, **kwargs)
-
-
-def background_linter():
-    __lock_.acquire()
-
-    QUEUE = ANACONDA.get('QUEUE')
-
-    try:
-        callbacks = list(QUEUE.values())
-        QUEUE.clear()
-    finally:
-        __lock_.release()
-
-    for callback in callbacks:
-        sublime.set_timeout(callback, 0)
-
-
-###############################################################################
-# SublimeLinter's Queue dispatcher system - (To be revisited later)
-###############################################################################
-queue_dispatcher = background_linter
-queue_thread_name = 'background linter'
-MAX_DELAY = 10
-
-
-def queue(view, callback, kwargs):
-    """Queue lint calls
-    """
-
-    global __signaled_, __signaled_first_
-    now = time.time()
-    __lock_.acquire()
-    QUEUE = ANACONDA.get('QUEUE')
-
-    try:
-        QUEUE[view.id()] = callback
-        timeout = kwargs['timeout']
-        busy_timeout = kwargs['busy_timeout']
-
-        if now < __signaled_ + timeout * 4:
-            timeout = busy_timeout or timeout
-
-        __signaled_ = now
-        _delay_queue(timeout, kwargs['preemptive'])
-
-        if not __signaled_first_:
-            __signaled_first_ = __signaled_
-    finally:
-        __lock_.release()
-
-
-def queue_loop():
-    """
-    An infinite loop running the linter in a background thread meant to
-    update the view after user modifies it and then does no further
-    modifications for some time as to not slow down the UI with linting
-    """
-
-    global __signaled_, __signaled_first_
-
-    while __loop_:
-        __semaphore_.acquire()
-        __signaled_first_ = 0
-        __signaled_ = 0
-        queue_dispatcher()
-
-
-def delay_queue(timeout):
-    __lock_.acquire()
-    try:
-        _delay_queue(timeout, False)
-    finally:
-        __lock_.release()
-
-
-def _delay_queue(timeout, preemptive):
-    global __signaled_, __queued_
-    now = time.time()
-
-    if not preemptive and now <= __queued_ + 0.01:
-        return  # never delay queues too fast (except preemptively)
-
-    __queued_ = now
-    _timeout = float(timeout) / 1000
-
-    if __signaled_first_:
-        if MAX_DELAY > 0 and now - __signaled_first_ + _timeout > MAX_DELAY:
-            _timeout -= now - __signaled_first_
-            if _timeout < 0:
-                _timeout = 0
-            timeout = int(round(_timeout * 1000, 0))
-
-    new__signaled_ = now + _timeout - 0.01
-
-    if __signaled_ >= now - 0.01 and (
-            preemptive or new__signaled_ >= __signaled_ - 0.01):
-        __signaled_ = new__signaled_
-
-        def _signal():
-            if time.time() < __signaled_:
-                return
-            __semaphore_.release()
-
-        sublime.set_timeout(_signal, timeout)
-
-# only start the thread once - otherwise the plugin will get laggy
-# when saving it often.
-__semaphore_ = threading.Semaphore(0)
-__lock_ = threading.Lock()
-__queued_ = 0
-__signaled_ = 0
-__signaled_first_ = 0
-
-# First finalize old standing threads:
-__loop_ = False
-__pre_initialized_ = False
-
-
-def queue_finalize(timeout=None):
-    global __pre_initialized_
-
-    for thread in threading.enumerate():
-        if thread.isAlive() and thread.name == queue_thread_name:
-            __pre_initialized_ = True
-            thread.__semaphore_.release()
-            thread.join(timeout)
-
-queue_finalize()
-
-# Initialize background thread:
-__loop_ = True
-__active_linter_thread = threading.Thread(
-    target=queue_loop, name=queue_thread_name
-)
-__active_linter_thread.__semaphore_ = __semaphore_
-__active_linter_thread.start()
+if not monitor.is_alive():
+    monitor.start()
