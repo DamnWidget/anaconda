@@ -24,7 +24,7 @@ Because that architecture, **anaconda** can lint or complete with python interpr
 Supported platforms
 -------------------
 
-Anaconda has been tested in Linux, Windows and Mac OS X with possitive results. I don't have any option to test the plugin in Mac OS X so I depend completely on the community for this task. Several users tested the plugin in Mac OS X with really possitive feedback.
+Anaconda has been tested in Linux, Windows and Mac OS X with possitive results. I don't have any way to test the plugin in Mac OS X so I depend completely on the community for this task. Several users tested the plugin in Mac OS X with really possitive feedback.
 
 The status of the plugin in the different platforms is:
 
@@ -124,7 +124,7 @@ With this command you can get the docstring of whatever function or method. You 
 Anaconda linting
 ----------------
 
-Anaconda linting is mainly based/inspired/ported from SublimeLinter because that we add the SublimeLinter LICENSE file in the repo. Although anaconda linter is inspired in SublimeLinter, our linting is much faster for serveral reasons:
+Anaconda linting is mainly based/inspired/ported from SublimeLinter because that I added the SublimeLinter LICENSE file in the repo. Although anaconda linter is inspired in SublimeLinter, anaconda linting is much faster for serveral reasons:
 
 1. Anaconda does not use a delayed queue to perform the lintin work, instead of that we fire a single call to the linter methods `n` seconds after the last key was pressend by the user while typing. Those `n` seconds can be configured by the user.
 2. Anaconda is totally asynchronous so we should never block the gui, because that, our linting is smooth and flawless.
