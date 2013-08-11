@@ -7,41 +7,33 @@
 Anaconda is a python autocompletion and linting plugin for Sublime Text 3
 """
 
-import os
+
 import sys
-import socket
 import logging
-import threading
-import subprocess
+
+from functools import partial
 
 import sublime
 import sublime_plugin
 
-from Anaconda.anaconda_client import Client
+from Anaconda.worker import Worker
 from Anaconda.utils import get_settings, active_view, prepare_send_data
-from Anaconda.decorators import (
-    only_python, executor, enable_for_python, profile
-)
+from Anaconda.decorators import only_python, enable_for_python, profile
 
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda only works with Sublime Text 3')
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
-logger.setLevel(logging.WARNING)
-
-WORKERS = {}
-WORKERS_LOCK = threading.RLock()
+logger.setLevel(logging.DEBUG)
 
 
-###############################################################################
-# Anaconda Plugin Subclasses
-###############################################################################
-class AnacondaCompletionsListener(sublime_plugin.EventListener):
-    """Jedi autocompletion for Sublime Text
+class AnacondaEventListener(sublime_plugin.EventListener):
+    """Anaconda events listener class
     """
 
     completions = []
+    ready_from_defer = False
 
     @only_python
     @profile
@@ -49,11 +41,7 @@ class AnacondaCompletionsListener(sublime_plugin.EventListener):
         """Sublime Text autocompletion event handler
         """
 
-        location = view.rowcol(locations[0])
-        proposals = Worker.lookup().autocomplete(**prepare_send_data(location))
-        # proposals = Worker.lookup(view).autocomplete(locations[0])
-
-        if proposals:
+        if self.ready_from_defer is True:
             completion_flags = 0
 
             if get_settings(view, 'suppress_word_completions', False):
@@ -62,9 +50,34 @@ class AnacondaCompletionsListener(sublime_plugin.EventListener):
             if get_settings(view, 'suppress_explicit_completions', False):
                 completion_flags |= sublime.INHIBIT_EXPLICIT_COMPLETIONS
 
-            return (proposals, completion_flags)
+            cpl = self.completions
+            self.completions = []
+            self.ready_from_defer = False
 
-        return proposals
+            return (cpl, completion_flags)
+
+        location = view.rowcol(locations[0])
+        data = prepare_send_data(location)
+        data['method'] = 'autocomplete'
+
+        Worker().execute(self._complete, **data)
+        return
+
+    def _complete(self, data):
+
+        proposals = data['completions'] if data['success'] else []
+
+        if proposals:
+            active_view().run_command("hide_auto_complete")
+            self.completions = proposals
+            self.ready_from_defer = True
+
+            active_view().run_command("auto_complete", {
+                'disable_auto_insert': True,
+                'api_completions_only': True,
+                'next_completion_if_showing': False,
+                'auto_complete_commit_on_tab': True,
+            })
 
 
 class AnacondaGoto(sublime_plugin.TextCommand):
@@ -74,10 +87,9 @@ class AnacondaGoto(sublime_plugin.TextCommand):
     def run(self, edit):
         try:
             location = active_view().rowcol(self.view.sel()[0].begin())
-            definitions = Worker.lookup().goto(**prepare_send_data(location))
-            # definitions = Worker.lookup(self.view).goto()
-            if definitions:
-                JediUsages(self).process(definitions)
+            data = prepare_send_data(location)
+            data['method'] = 'goto'
+            Worker().execute(JediUsages(self).process, **data)
         except:
             pass
 
@@ -94,10 +106,11 @@ class AnacondaFindUsages(sublime_plugin.TextCommand):
     def run(self, edit):
         try:
             location = active_view().rowcol(self.view.sel()[0].begin())
-            JediUsages(self).process(
-                Worker.lookup().usages(**prepare_send_data(location)), True
+            data = prepare_send_data(location)
+            data['method'] = 'usages'
+            Worker().execute(
+                partial(JediUsages(self).process, True), **data
             )
-            # JediUsages(self).process(Worker.lookup(self.view).usages(), True)
         except:
             pass
 
@@ -111,226 +124,62 @@ class AnacondaDoc(sublime_plugin.TextCommand):
     """Jedi get documentation string for Sublime Text
     """
 
+    documentation = None
+
     def run(self, edit):
-        try:
-            self.edit = edit
-            location = self.view.rowcol(self.view.sel()[0].begin())
-            if self.view.substr(location) in ['(', ')']:
-                location[1] -= 1
-            doc = Worker.lookup().doc(**prepare_send_data(location))
-            # doc = Worker.lookup(self.view).doc(self.view.sel()[0].begin())
-            self.print_doc(doc)
-        except:
-            pass
+        if self.documentation is None:
+            try:
+                location = self.view.rowcol(self.view.sel()[0].begin())
+                if self.view.substr(self.view.sel()[0].begin()) in ['(', ')']:
+                    location[1] -= 1
+
+                data = prepare_send_data(location)
+                data['method'] = 'doc'
+                Worker().execute(self.prepare_data, **data)
+            except Exception as error:
+                print('\n'.join(error))
+        else:
+            self.print_doc(edit)
 
     @enable_for_python
     def is_enabled(self):
         """Determine if this command is enabled or not
         """
 
-    def print_doc(self, doc):
+    def prepare_data(self, data):
+        """Prepare the returned data
+        """
+
+        if data['success']:
+            self.documentation = data['doc']
+            if self.documentation is None:
+                self.view.set_status(
+                    'anaconda_doc', 'Anaconda: No documentation found'
+                )
+                sublime.set_timeout_async(
+                    lambda: self.view.erase_status('anaconda_doc'), 5000
+                )
+            else:
+                sublime.active_window().run_command('anaconda_doc')
+
+    def print_doc(self, edit):
         """Print the documentation string into a Sublime Text panel
         """
 
-        if doc is None:
-            self.view.set_status(
-                'anaconda_doc', 'Anaconda: No documentation found'
-            )
-            sublime.set_timeout_async(
-                lambda: self.view.erase_status('anaconda_doc'), 5000
-            )
-        else:
-            doc_panel = self.view.window().create_output_panel(
-                'anaconda_documentation'
-            )
-
-            doc_panel.set_read_only(False)
-            region = sublime.Region(0, doc_panel.size())
-            doc_panel.erase(self.edit, region)
-            doc_panel.insert(self.edit, 0, doc)
-            doc_panel.set_read_only(True)
-            doc_panel.show(0)
-            self.view.window().run_command(
-                'show_panel', {'panel': 'output.anaconda_documentation'}
-            )
-
-
-###############################################################################
-# Classes
-###############################################################################
-class Worker:
-    """Worker class for subprocess manipulation
-    """
-
-    def __init__(self):
-        self.client = None
-        self.proccess = None
-        self.restart()
-
-    def restart(self):
-        """Restart the server
-        """
-
-        self.proccess = self.start_worker(self)
-        logger.info('starting anaconda server on port {}'.format(self.port))
-        self.client = Client('localhost', self.port)
-
-    def stop(self):
-        """Stop any configured server for this Worker
-        """
-
-        if self.client is not None:
-            self.client.close()
-            self.client = None
-
-        if self.proccess is not None:
-            self.proccess.terminate()
-            self.process = None
-
-    @executor
-    def autocomplete(self, **data):
-        """Call to autocomplete in the server
-        """
-
-        result = self.client.request('autocomplete', **data)
-        if result and result['success'] is True:
-            return result['completions']
-
-    @executor
-    def run_linter(self, text, settings, filename):
-        """Run the Linters in the server
-        """
-
-        data = {'code': text, 'settings': settings, 'filename': filename}
-        result = self.client.request('run_linter', **data)
-        if result and result['success'] is True:
-            return result['errors']
-
-    @executor
-    def goto(self, **data):
-        """Call to goto in the server
-        """
-
-        result = self.client.request('goto', **data)
-        if result and result['success'] is True:
-            return result['goto']
-
-    @executor
-    def usages(self, **data):
-        """Call to usages in the server
-        """
-
-        result = self.client.request('usages', **data)
-        if result and result['success'] is True:
-            return result['usages']
-        else:
-            view = active_view()
-            view.set_status('anaconda_doc', 'Anaconda: No usages found')
-            sublime.set_timeout_async(
-                lambda: view.erase_status('anaconda_doc'), 5000
-            )
-            return []
-
-    @executor
-    def doc(self, location):
-        """Call to doc in the server
-        """
-
-        current_line, current_column = self.view.rowcol(location)
-        if self.view.substr(location) in ['(', ')']:
-            current_column -= 1
-
-        data = self._prepare_data((current_line, current_column))
-        result = self.client.request('doc', **data)
-        if result and result['success'] is True:
-            return result['doc']
-
-    @staticmethod
-    def port():
-        """Get a free port
-        """
-
-        s = socket.socket()
-        s.bind(('', 0))
-        port = s.getsockname()[1]
-        s.close()
-
-        return port
-
-    @staticmethod
-    def lookup():
-        """Lookup a Worker in the Workers stack
-        """
-
-        window = sublime.active_window()
-        if window.window_id not in WORKERS:
-            with WORKERS_LOCK:
-                WORKERS[window.window_id] = Worker()
-
-        return WORKERS[window.window_id]
-
-    @staticmethod
-    def generate_project_name(window):
-        """
-        Generates and returns back a valid project name for the window
-
-        If there is not worker yet for this window, we create it and set a
-        name for it. If we don't have a project file we just use the first
-        folder name in the window's folders as name, if we don't have any
-        folders in the window we just use the window.window_id
-        """
-        project_name = window.project_file_name()
-        if project_name is None:
-            folders = window.folders()
-            if len(folders) > 0:
-                project_name = window.folders()[0].rsplit(os.sep, 1)[1]
-            else:
-                project_name = 'anaconda-{id}'.format(id=window.window_id)
-        else:
-            project_name = project_name.rsplit(os.sep, 1)[1].split('.')[0]
-
-        return project_name
-
-    @staticmethod
-    def start_worker(self):
-        """Start a worker subprocess
-        """
-
-        self.port = Worker.port()
-        window = sublime.active_window()
-        project_name = Worker.generate_project_name(window)
-
-        interp = get_settings(
-            window.active_view(), 'python_interpreter', default='python'
-        )
-        extra_paths = get_settings(
-            window.active_view(), 'extra_paths', default=''
+        doc_panel = self.view.window().create_output_panel(
+            'anaconda_documentation'
         )
 
-        kwargs = {
-            'cwd': os.path.dirname(os.path.abspath(__file__)),
-            'bufsize': -1
-        }
-
-        if sublime.platform() == 'windows':
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            kwargs['startupinfo'] = startupinfo
-
-        WORKER_SCRIPT = os.path.join(
-            os.path.dirname(__file__),
-            'anaconda_server{}jsonserver.py'.format(os.sep)
+        doc_panel.set_read_only(False)
+        region = sublime.Region(0, doc_panel.size())
+        doc_panel.erase(edit, region)
+        doc_panel.insert(edit, 0, self.documentation)
+        self.documentation = None
+        doc_panel.set_read_only(True)
+        doc_panel.show(0)
+        self.view.window().run_command(
+            'show_panel', {'panel': 'output.anaconda_documentation'}
         )
-
-        sub_args = [
-            interp, '-B', WORKER_SCRIPT, '-p', project_name, str(self.port)
-        ]
-        for extra_path in extra_paths.split(','):
-            if extra_path != '':
-                sub_args.extend(['-e', extra_path])
-        sub_args.extend([str(os.getpid())])
-
-        return subprocess.Popen(sub_args, **kwargs)
 
 
 class JediUsages(object):
@@ -340,10 +189,14 @@ class JediUsages(object):
     def __init__(self, text):
         self.text = text
 
-    def process(self, definitions, usages=False):
+    def process(self, data, usages=False):
         """Process the definitions
         """
 
+        if not data['success']:
+            return
+
+        definitions = data['goto'] if not usages else data['usages']
         if definitions is not None and len(definitions) == 1 and not usages:
             self._jump(*definitions[0])
         else:
