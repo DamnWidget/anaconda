@@ -10,6 +10,7 @@ Anaconda decorators
 import sys
 import time
 import pstats
+import asyncore
 import functools
 
 try:
@@ -23,6 +24,7 @@ except ImportError:
         )
     )
     CPROFILE_AVAILABLE = False
+    import profile as pyProfile
 
 try:
     import sublime
@@ -122,34 +124,6 @@ def not_scratch(func):
     return wrapper
 
 
-def executor(func):
-    """Execute the underlying method retrying if needed
-    """
-
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        result = None
-        retries = 0
-        while retries < MAX_RETRIES:
-            try:
-                result = func(self, *args, **kwargs)
-                break
-            except Exception as error:
-                retries += 1
-                print(error)
-                if self.proccess.poll() is None:
-                    # proccess is ok, just retry
-                    time.sleep(0.1)
-                else:
-                    # proccess died, restart
-                    self.restart()
-                    time.sleep(0.1)
-
-        return result
-
-    return wrapper
-
-
 def timeit(logger):
     """Decorator for timeit timeit timeit
     """
@@ -180,18 +154,21 @@ def profile(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         view = sublime.active_window().active_view()
-        if CPROFILE_AVAILABLE:
-            if get_settings(view, 'anaconda_debug', False) == 'profiler':
+
+        if get_settings(view, 'anaconda_debug', False) == 'profiler':
+
+            if CPROFILE_AVAILABLE:
                 pr = cProfile.Profile()
                 pr.enable()
-
-        result = func(*args, **kwargs)
-        if CPROFILE_AVAILABLE:
-            if get_settings(view, 'anaconda_debug', False) == 'profiler':
+                result = func(*args, **kwargs)
                 pr.disable()
                 ps = pstats.Stats(pr, stream=sys.stdout)
                 ps.sort_stats('time')
                 ps.print_stats(15)
+            else:
+                result = func(*args, **kwargs)
+        else:
+            result = func(*args, **kwargs)
 
         return result
 
