@@ -3,7 +3,7 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
-from .jsonclient import Client
+from .jsonclient import AsynClient, AnacondaLooper
 
 
-__all__ = ['Client']
+__all__ = ['AsynClient', 'looper']

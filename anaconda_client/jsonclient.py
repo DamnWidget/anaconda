@@ -3,101 +3,104 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
+"""Minimalist standard library Asynchronous JSON Client
+"""
+
 import sys
-import errno
+import uuid
 import socket
 import logging
+import asyncore
+import asynchat
+import threading
 
-import sublime
+try:
+    import sublime
+except ImportError:
+    try:
+        import ujson as json
+    except ImportError:
+        import json
 
+MAX_ATTEMPS = 10
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.setLevel(logging.DEBUG)
 
 
-class Client:
-    """JSON Connection to anaconda server
+class AsynClient(asynchat.async_chat):
+    """Asynchronous JSON connection to anaconda server
     """
 
-    def __init__(self, host, port=None):
-
-        self.host = host
+    def __init__(self, port):
         self.port = port
-        self.sock = None
-        self.rfile = None
-        self.wfile = None
+        self.callbacks = {}
+        self.rbuffer = []
+        asynchat.async_chat.__init__(self)
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        logger.debug('Connecting to localhost on port {}'.format(port))
+        self.connect(('localhost', port))
 
-    def connect(self):
-        """Connect to the specified host and port in constructor time
+    def handle_connect(self):
+        """Called on connection stablished
         """
 
-        self.sock = socket.create_connection((self.host, self.port))
+        logger.debug('The connection has been stablished')
+        self.set_terminator(b"\r\n")
 
-        self.rfile = self.sock.makefile('r')
-        self.wfile = self.sock.makefile('w')
-
-    def close(self):
-        """Close the connection to the anaconda server
+    def collect_incoming_data(self, data):
+        """Called when data is ready to be read
         """
 
-        if self.sock:
-            self.sock.close()
-            self.sock = None
+        self.rbuffer.append(data)
 
-    def send(self, data):
-        """
-        Send data to the anaconda server in JSON formated string with
-        new line ending
+    def found_terminator(self):
+        """Called when a terminator is found
         """
 
-        if self.sock is None:
-            self.connect()
+        message = b''.join(self.rbuffer)
+        self.rbuffer = []
 
         try:
-            self.wfile.write('{}\r\n'.format(data))
-            self.wfile.flush()
-        except socket.error as error:
-            if error.errno == errno.EPIPE:
-                logger.error('Connection unexpectedly closed with EPIPE')
-                self._clean_socket()
-                return {'success': False, 'message': 'EPIPE'}
+            data = sublime.decode_value(message.decode('utf8'))
+        except NameError:
+            data = json.loads(message.decode('utf8'))
 
-    def request(self, method, **kwargs):
-        """Send a request to the server
-        """
-
-        kwargs['method'] = method
-        self.send(sublime.encode_value(kwargs))
-
-        return self.getresponse()
-
-    def getresponse(self):
-        """Get the response from the server
-        """
-
-        try:
-            line = self.rfile.readline()
-        except socket.error as e:
-            logger.error('Connection unexpectedly closed: ' + str(e))
-            line = '{"success": false, "message": "{0}"}'.format(str(e))
-            self._clean_socket()
-
-        if not line:
-            logger.error('Connection unexpectedly closed')
-            line = (
-                '{"success": false, "message": '
-                '"Connection unexpectedly closed"}'
+        callback = self.callbacks.pop(data.pop('uid'))
+        if callback is None:
+            logger.error(
+                'Received {} from the JSONServer but there is not callback '
+                'to handle it. Aborting....'.format(message)
             )
-            self._clean_socket()
 
-        return sublime.decode_value(line)
+        callback(data)
 
-    def _clean_socket(self):
-        """Close the socket and clean the related resources
+    def send_command(self, callback, **data):
+        """Send the given command that should be handled bu the given callback
         """
 
-        self.rfile.close()
-        self.wfile.close()
-        self.file = None
-        self.close()
+        uid = uuid.uuid4()
+        self.callbacks[uid.hex] = callback
+        data['uid'] = uid.hex
+
+        try:
+            self.push(
+                bytes('{}\r\n'.format(sublime.encode_value(data)), 'utf8')
+            )
+        except NameError:
+            self.push(bytes('{}\r\n'.format(json.dumps(data)), 'utf8'))
+
+
+class AnacondaLooper(threading.Thread):
+    """Asynchronous Anaconda Loop thread
+    """
+
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.loop_started = False
+
+    def run(self):
+        logger.info('Starting Anaconda event loop')
+        self.loop_started = True
+        asyncore.loop()
