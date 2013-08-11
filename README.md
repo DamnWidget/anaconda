@@ -17,7 +17,7 @@ Anaconda was born from my need of use a single plugin to autocomplete and lint p
 Anaconda architecture
 ---------------------
 
-Anaconda is a client-server architecture application. The plugin start a python standard library ``ThreadingMixIn`` server per Sublime Text 3 open window that receive and send text messages in JSON format.
+Anaconda is a client-server architecture application. The plugin start a python standard library ``asynchronous`` server that receive and send text messages in JSON format from every single open Sublime Text 3 window in the system.
 
 Because that architecture, **anaconda** can lint or complete with python interpreters different than the built-in Sublime Text 3 python interpreter (3.3). It can complete all the python code that the configured interpreter can see and lint files for that version of the interpreter.
 
