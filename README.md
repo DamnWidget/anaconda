@@ -72,6 +72,8 @@ You can of course configure the python interpreter to use in a `per-project` bas
         }
     }
 
+**NOTE**: Only one interpreter can be used, so if you try to work with Python3 in a Window and Python2 in another one, you are going to be stuck. There are plans to support several versions at the same time.
+
 You can add additional python extra paths that should be used for autocompletion purposes setting a list of paths separated by comma using the user setting ``extra_paths``:
 
     {
@@ -81,6 +83,7 @@ You can add additional python extra paths that should be used for autocompletion
             "extra_paths": "/opt/sublime_text_3,/usr/share/mypythonpackage"
         }
     }
+
 
 #### Autocompletion on dot
 
