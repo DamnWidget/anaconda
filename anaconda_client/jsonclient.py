@@ -32,11 +32,11 @@ class AsynClient(asynchat.async_chat):
     """Asynchronous JSON connection to anaconda server
     """
 
-    def __init__(self, port):
+    def __init__(self, port, loop_map):
         self.port = port
         self.callbacks = {}
         self.rbuffer = []
-        asynchat.async_chat.__init__(self)
+        asynchat.async_chat.__init__(self, map=loop_map)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         logger.debug('Connecting to localhost on port {}'.format(port))
         self.connect(('localhost', port))
@@ -94,17 +94,3 @@ class AsynClient(asynchat.async_chat):
             )
         except NameError:
             self.push(bytes('{};aend;'.format(json.dumps(data)), 'utf8'))
-
-
-class AnacondaLooper(threading.Thread):
-    """Asynchronous Anaconda Loop thread
-    """
-
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.loop_started = False
-
-    def run(self):
-        logger.info('Starting Anaconda event loop')
-        self.loop_started = True
-        asyncore.loop(0.01)
