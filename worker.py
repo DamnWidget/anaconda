@@ -15,12 +15,15 @@ import subprocess
 
 import sublime
 
-from Anaconda.utils import get_settings
-from Anaconda.anaconda_client import AnacondaLooper, AsynClient
+from Anaconda.anaconda_client import AsynClient
+from Anaconda.utils import get_settings, get_traceback, project_name
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.setLevel(logging.WARNING)
+
+WORKERS = {}
+WORKERS_LOCK = threading.RLock()
 
 
 class Worker(object):
@@ -36,10 +39,8 @@ class Worker(object):
 
         self.reconnecting = False
         self.client = None
-        self.loop = AnacondaLooper()
         self.json_server = None
         self.paths = paths
-        self.start()
 
         self.initialized = True
 
@@ -48,49 +49,63 @@ class Worker(object):
         """Get first available port
         """
 
-        if not hasattr(self, '_port') or self.reconnecting:
-            s = socket.socket()
-            s.bind(('', 0))
-            port = s.getsockname()[1]
-            s.close()
-            self._port = port
+        s = socket.socket()
+        s.bind(('', 0))
+        port = s.getsockname()[1]
+        s.close()
 
-        return self._port
+        return port
 
     def start(self):
-        """Start the client and the loop is there are any clients
+        """Start this worker
         """
 
-        self.start_json_server()
-        while not self.server_is_active():
-            time.sleep(0.1)
+        try:
+            with WORKERS_LOCK:
+                window_id = sublime.active_window().id()
+                if not window_id in WORKERS:
+                    loop_map = {}
+                    WORKERS[window_id] = {
+                        'loop_map': loop_map, 'port': self.port
+                    }
 
-        self.client = AsynClient(self.port)
-        if self.loop is None:
-            self.loop = AnacondaLooper()
+            worker = WORKERS[window_id]
+            self.start_json_server(worker['port'])
 
-        self.loop.start()
+            while not self.server_is_active(worker['port']):
+                time.sleep(0.1)
 
-    def start_json_server(self):
+            worker['client'] = AsynClient(worker['port'], worker['loop_map'])
+            worker['runner'] = threading.Thread(
+                target=asyncore.loop,
+                kwargs={'timeout': 0.01, 'map': worker['loop_map']}
+            )
+            worker['runner'].start()
+        except Exception as error:
+            logging.error(error)
+            logging.error(get_traceback())
+
+    def start_json_server(self, port):
         """Starts the JSON server
         """
 
-        if self.server_is_active():
-            if self.server_is_healthy():
+        if self.server_is_active(port):
+            if self.server_is_healthy(port):
                 return
 
             self.sanitize_server()
+            return
 
         logger.info('Starting anaconda JSON server...')
-        self.build_server()
+        self.build_server(port)
 
-    def server_is_active(self):
+    def server_is_active(self, port):
         """Checks if the server is already active
         """
 
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(('localhost', self.port))
+            s.connect(('localhost', port))
             s.close()
         except socket.error as error:
             if error.errno == errno.ECONNREFUSED:
@@ -103,7 +118,7 @@ class Worker(object):
         else:
             return True
 
-    def server_is_healthy(self):
+    def server_is_healthy(self, port):
         """Check if the server process is healthy
         """
 
@@ -111,7 +126,7 @@ class Worker(object):
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.settimeout(0.5)
-                s.connect(('localhost', self.port))
+                s.connect(('localhost', port))
                 s.sendall(bytes('{"method": "check"}', 'utf8'))
                 data = sublime.value_decode(s.recv(1024))
                 s.close()
@@ -122,7 +137,7 @@ class Worker(object):
         else:
             logger.error(
                 'Something is using the port {} in your system'.format(
-                    self.port
+                    port
                 )
             )
             return True
@@ -131,13 +146,11 @@ class Worker(object):
         """Disconnect all the clients and terminate the server process
         """
 
-        asyncore.close_all()
-        self.clients = {}
-        self.json_server.terminate()
-        if self.json_server.poll() is None:
-            self.json_server.kill()
+        worker = WORKERS[sublime.active_window().id()]
+        cl = AsynClient(worker['port'], worker['loop_map'])
+        worker['client'] = cl
 
-    def build_server(self):
+    def build_server(self, port):
         """Create the subprocess for the anaconda json server
         """
 
@@ -161,7 +174,7 @@ class Worker(object):
         except:
             python = 'python'
 
-        args = [python, '-B', script_file,  str(self.port)]
+        args = [python, '-B', script_file,  '-p', project_name(), str(port)]
         if self.paths is not None:
             args.extend(['-e', ','.join(self.paths)])
 
@@ -172,24 +185,15 @@ class Worker(object):
         """Execute the given method in the remote server
         """
 
-        if not self.client.connected and not self.loop.is_alive():
-            if self.json_server.poll() is not None:
-                if not self.reconnecting:
-                    threading.Thread(target=self.reconnect).start()
+        window_id = sublime.active_window().id()
+        if not window_id in WORKERS:
+            self.start()
 
-        self.client.send_command(callback, **data)
-
-    def reconnect(self):
-        """Reconnect
-        """
-
-        print('Server crashed... reconnecting...')
-        while not self.server_is_active():
-            self.reconnecting = True
-            self.build_server()
-            self.reconnecting = False
-            time.sleep(1.0)
-
-        self.client = AsynClient(self.port)
-        self.loop = AnacondaLooper()
-        self.loop.start()
+        worker = WORKERS[window_id]
+        client = worker.get('client')
+        if client is not None:
+            if not client.connected and not worker['runner'].is_alive:
+                print('Me la comes')
+                self.start()
+            else:
+                client.send_command(callback, **data)
