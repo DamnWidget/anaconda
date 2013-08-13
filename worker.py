@@ -78,10 +78,14 @@ class Worker(object):
             while not self.server_is_active(worker['port']):
                 time.sleep(0.1)
 
+            timeout = get_settings(
+                sublime.active_window().active_view(),
+                'asyncore_socket_timeout', 0.1
+            )
             worker['client'] = AsynClient(worker['port'], worker['loop_map'])
             worker['runner'] = threading.Thread(
                 target=asyncore.loop,
-                kwargs={'timeout': 0.01, 'map': worker['loop_map']}
+                kwargs={'timeout': timeout, 'map': worker['loop_map']}
             )
             worker['runner'].start()
         except Exception as error:

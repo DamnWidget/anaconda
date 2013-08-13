@@ -3,6 +3,15 @@
 */
 {
     /*
+        If you get a big amount of log linessaying that the connection has been stablished
+        but anaconda doesn't work you have to increase the timeout here and restarting
+        Suboime Text 3.
+
+        Default 0.1, as suggestion, try increasing by 0.1 each time.
+    */
+    "asyncore_socket_timeout": 0.1,
+
+    /*
         Default python interpreter.
 
         This can (an should) be overriden byb project settings

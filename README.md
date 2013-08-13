@@ -245,6 +245,27 @@ To customize the linting marks like you did in SublimeLinter add the following t
 
 This program is distributed under the terms of the GNU GPL v3. See the [LICENSE](https://raw.github.com/DamnWidget/anaconda/master/LICENSE) file for details.
 
+Troubleshoting
+--------------
+
+If the plugin does not work at all and you get a lot of lines like those ones in the Sublime Text 3 console:
+
+    Connecting to localhost on port 41818
+    The connection has been stablished
+    reloading plugin Anaconda.worker
+    Connecting to localhost on port 45651
+    The connection has been stablished
+    Connecting to localhost on port 50556
+    The connection has been stablished
+    Connecting to localhost on port 35519
+    The connection has been stablished
+
+This is a problem related with the timeout of the `asyncore.loop` and the underlying `select` socket system call. You can solve it increasing the value of the `asyncore_socket_timeout` user setting.
+
+By default that value is 0.1, if you run into this problem, you can try to raise this value in 0.1 and perform try-error tests until you get it solved. Be careful if you increase this value too much, anaconda will slow down and performance will be affected.
+
+Note: Asyncore sucks by the way.
+
 Contributing with Anaconda
 --------------------------
 
