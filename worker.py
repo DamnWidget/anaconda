@@ -70,6 +70,9 @@ class Worker(object):
                     }
 
             worker = WORKERS[window_id]
+            if self.reconnecting is True:
+                worker['port'] = self.port
+
             self.start_json_server(worker['port'])
 
             while not self.server_is_active(worker['port']):
@@ -192,8 +195,8 @@ class Worker(object):
         worker = WORKERS[window_id]
         client = worker.get('client')
         if client is not None:
-            if not client.connected and not worker['runner'].is_alive:
-                print('Me la comes')
+            if not client.connected and not worker['runner'].is_alive():
+                self.reconnecting = True
                 self.start()
             else:
                 client.send_command(callback, **data)
