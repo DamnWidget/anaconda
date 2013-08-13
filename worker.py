@@ -204,9 +204,8 @@ def plugin_unloaded():
     """
 
     global WORKERS
-
     with WORKERS_LOCK:
-        for worker in WORKERS:
+        for worker in WORKERS.values():
             worker.get('client').close()
 
         WORKERS = {}
