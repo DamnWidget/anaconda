@@ -197,3 +197,16 @@ class Worker(object):
                 self.start()
             else:
                 client.send_command(callback, **data)
+
+
+def plugin_unloaded():
+    """Called directly from sublime on plugin unload
+    """
+
+    global WORKERS
+
+    with WORKERS_LOCK:
+        for worker in WORKERS:
+            worker.get('client').close()
+
+        WORKERS = {}
