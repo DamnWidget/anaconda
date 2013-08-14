@@ -308,7 +308,7 @@ class JSONServer(asyncore.dispatcher):
         return self.socket.fileno()
 
     def serve_forever(self):
-        asyncore.loop(timeout=0.01)
+        asyncore.loop()
 
     def shutdown(self):
     	self.handle_close()
