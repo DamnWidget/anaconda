@@ -76,7 +76,7 @@ class Worker(object):
             self.start_json_server(worker['port'])
 
             while not self.server_is_active(worker['port']):
-                time.sleep(0.1)
+                time.sleep(0.01)
 
             timeout = get_settings(
                 sublime.active_window().active_view(),

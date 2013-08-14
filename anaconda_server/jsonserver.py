@@ -47,7 +47,7 @@ class JSONHandler(asynchat.async_chat):
         self.server = server
         self.rbuffer = []
         asynchat.async_chat.__init__(self, sock)
-        self.set_terminator(b";aend;" if PY3 else ";aend;")
+        self.set_terminator(b"\r\n" if PY3 else "\r\n")
 
     def return_back(self, data):
         """Send data back to the client
@@ -308,7 +308,7 @@ class JSONServer(asyncore.dispatcher):
         return self.socket.fileno()
 
     def serve_forever(self):
-        asyncore.loop(timeout=0.05)
+        asyncore.loop(timeout=0.01)
 
     def shutdown(self):
     	self.handle_close()

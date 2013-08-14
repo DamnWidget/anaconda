@@ -90,7 +90,7 @@ class AsynClient(asynchat.async_chat):
 
         try:
             self.push(
-                bytes('{};aend;'.format(sublime.encode_value(data)), 'utf8')
+                bytes('{}\r\n'.format(sublime.encode_value(data)), 'utf8')
             )
         except NameError:
-            self.push(bytes('{};aend;'.format(json.dumps(data)), 'utf8'))
+            self.push(bytes('{}\r\n'.format(json.dumps(data)), 'utf8'))
