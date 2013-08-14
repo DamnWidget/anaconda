@@ -10,9 +10,7 @@ import sys
 import uuid
 import socket
 import logging
-import asyncore
 import asynchat
-import threading
 import traceback
 
 try:
