@@ -72,7 +72,7 @@ class IOHandlers(object):
         """Register a new handler
         """
 
-        print('Registering handler with addres {}'.format(handler.address))
+        print('Registering handler with address {}'.format(handler.address))
 
         with self._lock:
             if handler.fileno() not in self._handler_pool:
@@ -228,6 +228,7 @@ def loop():
     def inner_loop():
         while NOT_TERMINATE:
             poll()
+            time.sleep(0.01)
 
     threading.Thread(target=inner_loop).start()
 
