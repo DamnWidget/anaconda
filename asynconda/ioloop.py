@@ -101,8 +101,13 @@ class EventHandler(object):
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.sock.connect(address)
+        self.connected = True
         self.sock.setblocking(False)
         IOHandlers().register(self)
+
+    def __del__(self):
+        if self in IOHandlers._handler_pool.values():
+            IOHandlers().unregister(self)
 
     def fileno(self):
         """Return the associated file descriptor
@@ -122,6 +127,9 @@ class EventHandler(object):
                 except socket.error as error:
                     if error.args[0] == errno.EAGAIN:
                         time.sleep(0.1)
+                except:
+                    self.close()
+                    raise
 
     def recv(self):
         """Receive some data
@@ -192,8 +200,10 @@ class EventHandler(object):
         """Close the socket and unregister the handler
         """
 
-        self.close()
-        IOHandlers().unregister(self)
+        self.connected = False
+        self.sock.close()
+        if self in IOHandlers()._handler_pool.values():
+            IOHandlers().unregister(self)
 
 
 def poll():
@@ -226,9 +236,15 @@ def loop():
     """
 
     def inner_loop():
+
         while NOT_TERMINATE:
             poll()
             time.sleep(0.01)
+
+        # cleanup
+        for handler in IOHandlers()._handler_pool.values():
+            handler.close()
+
 
     threading.Thread(target=inner_loop).start()
 
@@ -239,3 +255,16 @@ def terminate():
 
     global NOT_TERMINATE
     NOT_TERMINATE = False
+
+
+def restart():
+    """Restart the loop
+    """
+
+    global NOT_TERMINATE
+    if NOT_TERMINATE is True:
+        NOT_TERMINATE = False
+
+    terminate()
+    NOT_TERMINATE = True
+    loop()

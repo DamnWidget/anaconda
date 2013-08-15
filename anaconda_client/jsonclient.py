@@ -8,9 +8,7 @@
 
 import sys
 import uuid
-import socket
 import logging
-import asynchat
 import traceback
 
 try:
@@ -21,39 +19,36 @@ except ImportError:
     except ImportError:
         import json
 
+from Anaconda.asynconda import EventHandler
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.setLevel(logging.DEBUG)
 
 
-class AsynClient(asynchat.async_chat):
+class AsynClient(EventHandler):
     """Asynchronous JSON connection to anaconda server
     """
 
-    def __init__(self, port, loop_map):
-        self.port = port
+    def __init__(self, port):
+        EventHandler.__init__(self, ('localhost', port))
         self.callbacks = {}
         self.rbuffer = []
-        asynchat.async_chat.__init__(self, map=loop_map)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        logger.debug('Connecting to localhost on port {}'.format(port))
-        self.connect(('localhost', port))
 
-    def handle_connect(self):
-        """Called on connection stablished
+    def ready_to_write(self):
+        """I am ready to send some data?
         """
 
-        logger.debug('The connection has been stablished')
-        self.set_terminator(b"\r\n")
+        return True if self.outbuffer else False
 
-    def collect_incoming_data(self, data):
+    def handle_read(self, data):
         """Called when data is ready to be read
         """
 
         self.rbuffer.append(data)
 
-    def found_terminator(self):
-        """Called when a terminator is found
+    def process_message(self):
+        """Called when a full line has been read from the socket
         """
 
         message = b''.join(self.rbuffer)

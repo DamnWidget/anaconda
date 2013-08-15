@@ -15,6 +15,7 @@ import subprocess
 
 import sublime
 
+from Anaconda.asynconda import ioloop
 from Anaconda.anaconda_client import AsynClient
 from Anaconda.utils import get_settings, get_traceback, project_name
 
@@ -24,6 +25,7 @@ logger.setLevel(logging.WARNING)
 
 WORKERS = {}
 WORKERS_LOCK = threading.RLock()
+LOOP_RUNNING = False
 
 
 class Worker(object):
@@ -78,16 +80,17 @@ class Worker(object):
             while not self.server_is_active(worker['port']):
                 time.sleep(0.01)
 
-            timeout = get_settings(
-                sublime.active_window().active_view(),
-                'asyncore_socket_timeout', 0.1
-            )
-            worker['client'] = AsynClient(worker['port'], worker['loop_map'])
-            worker['runner'] = threading.Thread(
-                target=asyncore.loop,
-                kwargs={'timeout': timeout, 'map': worker['loop_map']}
-            )
-            worker['runner'].start()
+            # timeout = get_settings(
+            #     sublime.active_window().active_view(),
+            #     'asyncore_socket_timeout', 0.1
+            # )
+            # worker['client'] = AsynClient(worker['port'], worker['loop_map'])
+            worker['client'] = AsynClient(worker['port'])
+            # worker['runner'] = threading.Thread(
+            #     target=asyncore.loop,
+            #     kwargs={'timeout': timeout, 'map': worker['loop_map']}
+            # )
+            # worker['runner'].start()
         except Exception as error:
             logging.error(error)
             logging.error(get_traceback())
@@ -199,20 +202,28 @@ class Worker(object):
         worker = WORKERS[window_id]
         client = worker.get('client')
         if client is not None:
-            if not client.connected and not worker['runner'].is_alive():
+            if not client.connected:
                 self.reconnecting = True
                 self.start()
             else:
                 client.send_command(callback, **data)
 
 
+def plugin_loaded():
+    """Called directly from sublime on pugin load
+    """
+
+    global LOOP_RUNNING
+
+    if not LOOP_RUNNING:
+        ioloop.loop()
+
+
 def plugin_unloaded():
     """Called directly from sublime on plugin unload
     """
 
-    global WORKERS
-    with WORKERS_LOCK:
-        for worker in WORKERS.values():
-            worker.get('client').close()
+    global LOOP_RUNNING
 
-        WORKERS = {}
+    if LOOP_RUNNING:
+        ioloop.terminate()
