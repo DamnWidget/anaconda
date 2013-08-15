@@ -353,8 +353,7 @@ class Checker(threading.Thread):
         if time.time() - self.server.last_call > 1800:
             # is now more than 30 minutes of innactivity
             self.server.logger.info(
-                'detected inactivity for more than 30 minutes...'
-                'shuting down...'
+                'detected inactivity for more than 30 minutes, shuting down...'
             )
             self.die = True
 

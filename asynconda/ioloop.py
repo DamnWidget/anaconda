@@ -106,7 +106,7 @@ class EventHandler(object):
         IOHandlers().register(self)
 
     def __del__(self):
-        if self in IOHandlers._handler_pool.values():
+        if self in IOHandlers()._handler_pool.values():
             IOHandlers().unregister(self)
 
     def fileno(self):
@@ -127,9 +127,14 @@ class EventHandler(object):
                 except socket.error as error:
                     if error.args[0] == errno.EAGAIN:
                         time.sleep(0.1)
-                except:
-                    self.close()
-                    raise
+                    elif error.args[0] in (
+                        errno.ECONNRESET, errno.ENOTCONN, errno.ESHUTDOWN,
+                        errno.ECONNABORTED, errno.EPIPE, errno.EBADFD
+                    ):
+                        self.close()
+                        return 0
+                    else:
+                        raise
 
     def recv(self):
         """Receive some data
@@ -200,10 +205,10 @@ class EventHandler(object):
         """Close the socket and unregister the handler
         """
 
-        self.connected = False
         self.sock.close()
         if self in IOHandlers()._handler_pool.values():
             IOHandlers().unregister(self)
+        self.connected = False
 
 
 def poll():
@@ -238,13 +243,21 @@ def loop():
     def inner_loop():
 
         while NOT_TERMINATE:
-            poll()
-            time.sleep(0.01)
+            try:
+                poll()
+                time.sleep(0.01)
+            except Exception as error:
+                print(
+                    'Unhandled exception in poll, restarting the poll request'
+                )
+                print(error)
+                for handler in IOHandlers()._handler_pool.values():
+                    handler.close()
+                IOHandlers()._handler_pool = {}
 
         # cleanup
         for handler in IOHandlers()._handler_pool.values():
             handler.close()
-
 
     threading.Thread(target=inner_loop).start()
 
