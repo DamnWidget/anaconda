@@ -31,6 +31,7 @@ class TestClient(ioloop.EventHandler):
 
 """
 
+import os
 import sys
 import time
 import errno
@@ -215,10 +216,20 @@ def poll():
     """Poll the select
     """
 
+    recv = send = []
     try:
-        recv, send, _ = select.select(
-            IOHandlers().ready_to_read(), IOHandlers().ready_to_write(), [], 0
-        )
+        if os.name != 'posix':
+            if IOHandlers()._handler_pool:
+                recv, send, _ = select.select(
+                    IOHandlers().ready_to_read(),
+                    IOHandlers().ready_to_write(),
+                    [], 0
+                )
+        else:
+            recv, send, _ = select.select(
+                IOHandlers().ready_to_read(), IOHandlers().ready_to_write(),
+                [], 0
+            )
     except select.error:
         err = sys.exc_info()[1]
         if err.args[0] == errno.EINTR:
