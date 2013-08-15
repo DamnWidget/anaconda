@@ -1,0 +1,12 @@
+Changes in 0.1.4
+================
+
+ - Asyncore and asynchat has been replaced with our own asynchronous library
+ - Snippets can be now hiden or show in autocompletion setting configuration
+   options
+
+Fixes
+=====
+
+ - #16, #17
+
