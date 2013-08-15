@@ -37,6 +37,7 @@ import time
 import errno
 import socket
 import select
+import traceback
 import threading
 
 NOT_TERMINATE = True
@@ -142,10 +143,19 @@ class EventHandler(object):
         """
 
         try:
-            data = self.sock.recv(8192)
-        except socket.error:
+            data = self.sock.recv(4096)
+        except socket.error as error:
+            if error.args[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
+                return None
+            elif error.args[0] == errno.ECONNRESET:
+                self.close()
+                return None
+            else:
+                raise
+
+        if not data:
             self.close()
-            raise
+            return None
 
         self.inbuffer += data
 
@@ -262,6 +272,8 @@ def loop():
                     'Unhandled exception in poll, restarting the poll request'
                 )
                 print(error)
+                for traceback_line in traceback.format_exc().splitlines():
+                    print(traceback_line)
                 for handler in IOHandlers()._handler_pool.values():
                     handler.close()
                 IOHandlers()._handler_pool = {}

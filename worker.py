@@ -66,10 +66,7 @@ class Worker(object):
             with WORKERS_LOCK:
                 window_id = sublime.active_window().id()
                 if not window_id in WORKERS:
-                    loop_map = {}
-                    WORKERS[window_id] = {
-                        'loop_map': loop_map, 'port': self.port
-                    }
+                    WORKERS[window_id] = {'port': self.port}
 
             worker = WORKERS[window_id]
             if self.reconnecting is True:
@@ -80,17 +77,7 @@ class Worker(object):
             while not self.server_is_active(worker['port']):
                 time.sleep(0.01)
 
-            # timeout = get_settings(
-            #     sublime.active_window().active_view(),
-            #     'asyncore_socket_timeout', 0.1
-            # )
-            # worker['client'] = AsynClient(worker['port'], worker['loop_map'])
             worker['client'] = AsynClient(worker['port'])
-            # worker['runner'] = threading.Thread(
-            #     target=asyncore.loop,
-            #     kwargs={'timeout': timeout, 'map': worker['loop_map']}
-            # )
-            # worker['runner'].start()
         except Exception as error:
             logging.error(error)
             logging.error(get_traceback())
@@ -157,7 +144,7 @@ class Worker(object):
         """
 
         worker = WORKERS[sublime.active_window().id()]
-        cl = AsynClient(worker['port'], worker['loop_map'])
+        cl = AsynClient(worker['port'])
         worker['client'] = cl
 
     def build_server(self, port):
