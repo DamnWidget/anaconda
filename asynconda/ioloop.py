@@ -1,0 +1,240 @@
+# -*- coding: utf8 -*-
+
+# Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
+# This program is Free Software see LICENSE file for details
+
+"""
+Minimalist asynchronous network library just to fit Anaconda's needs and
+replace the horrible asyncore/asynchat
+
+Example of usage:
+
+import ioloop
+
+class TestClient(ioloop.EventHandler):
+    '''Client for test
+    '''
+
+    def __init__(self, host, port):
+        ioloop.EventHandler.__init__(self, (host, port))
+        self.message = []
+
+    def ready_to_write(self):
+        return True if self.outbuffer else False
+
+    def handle_read(self, data):
+        self.message.append(data)
+
+    def process_message(self):
+        print(b''.join(self.message))
+        self.message = []
+
+"""
+
+import sys
+import time
+import errno
+import socket
+import select
+import threading
+
+NOT_TERMINATE = True
+
+
+class IOHandlers(object):
+    """Class that register and unregister IOHandler
+    """
+
+    _shared_state = {}
+
+    def __init__(self):
+        self.__dict__ = IOHandlers._shared_state
+        if hasattr(self, 'instanced') and self.instanced is True:
+            return
+
+        self._handler_pool = {}
+        self._lock = threading.RLock()
+        self.instanced = True
+
+    def ready_to_read(self):
+        """Return back all the handlers that are ready to read
+        """
+
+        return [h for h in self._handler_pool.values() if h.ready_to_read()]
+
+    def ready_to_write(self):
+        """Return back all the handlers that are ready to write
+        """
+
+        return [h for h in self._handler_pool.values() if h.ready_to_write()]
+
+    def register(self, handler):
+        """Register a new handler
+        """
+
+        print('Registering handler with addres {}'.format(handler.address))
+
+        with self._lock:
+            if handler.fileno() not in self._handler_pool:
+                self._handler_pool.update({handler.fileno(): handler})
+
+    def unregister(self, handler):
+        """Unregister the given handler
+        """
+
+        with self._lock:
+            if handler.fileno() in self._handler_pool:
+                self._handler_pool.pop(handler.fileno())
+
+
+class EventHandler(object):
+    """Event handler class
+    """
+
+    def __init__(self, address, sock=None):
+        self._write_lock = threading.RLock()
+        self._read_lock = threading.RLock()
+        self.address = address
+        self.outbuffer = b''
+        self.inbuffer = b''
+        if sock is None:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        self.sock.connect(address)
+        self.sock.setblocking(False)
+        IOHandlers().register(self)
+
+    def fileno(self):
+        """Return the associated file descriptor
+        """
+
+        return self.sock.fileno()
+
+    def send(self):
+        """Send outgoing data
+        """
+
+        with self._write_lock:
+            while len(self.outbuffer) > 0:
+                try:
+                    sent = self.sock.send(self.outbuffer)
+                    self.outbuffer = self.outbuffer[sent:]
+                except socket.error as error:
+                    if error.args[0] == errno.EAGAIN:
+                        time.sleep(0.1)
+
+    def recv(self):
+        """Receive some data
+        """
+
+        try:
+            data = self.sock.recv(8192)
+        except socket.error:
+            self.close()
+            raise
+
+        self.inbuffer += data
+
+        while self.inbuffer:
+            match = b'\r\n'
+            index = self.inbuffer.find(match)
+            if index != -1:
+                if index > 0:
+                    self.handle_read(self.inbuffer[:index])
+
+                self.inbuffer = self.inbuffer[index+len(match):]
+                self.process_message()
+            else:
+                index = len(match) - 1
+                while index and not self.inbuffer.endswith(match[:index]):
+                    index -= 1
+
+                if index:
+                    if index != len(self.inbuffer):
+                        self.handle_read(self.inbuffer[:-index])
+                        self.inbuffer = self.inbuffer[-index:]
+                    break
+                else:
+                    self.handle_read(self.inbuffer)
+                    self.inbuffer = b''
+
+    def push(self, data):
+        """Push some bytes into the write buffer
+        """
+
+        self.outbuffer += data
+
+    def handle_read(self, data):
+        """Handle data readign from select
+        """
+
+        raise RuntimeError('You have to implement this method')
+
+    def process_message(self):
+        """Process the full message
+        """
+
+        raise RuntimeError('You have to implement this method')
+
+    def ready_to_read(self):
+        """This handler is ready to read
+        """
+
+        return True
+
+    def ready_to_write(self):
+        """This handler is ready to write
+        """
+
+        return True
+
+    def close(self):
+        """Close the socket and unregister the handler
+        """
+
+        self.close()
+        IOHandlers().unregister(self)
+
+
+def poll():
+    """Poll the select
+    """
+
+    try:
+        recv, send, _ = select.select(
+            IOHandlers().ready_to_read(), IOHandlers().ready_to_write(), [], 0
+        )
+    except select.error:
+        err = sys.exc_info()[1]
+        if err.args[0] == errno.EINTR:
+            return
+        raise
+
+    for handler in recv:
+        if handler is None or handler.ready_to_read() is not True:
+            continue
+        handler.recv()
+
+    for handler in send:
+        if handler is None or handler.ready_to_write() is not True:
+            continue
+        handler.send()
+
+
+def loop():
+    """Main event loop
+    """
+
+    def inner_loop():
+        while NOT_TERMINATE:
+            poll()
+
+    threading.Thread(target=inner_loop).start()
+
+
+def terminate():
+    """Terminate the loop
+    """
+
+    global NOT_TERMINATE
+    NOT_TERMINATE = False
