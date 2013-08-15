@@ -96,6 +96,10 @@ If you want to trigger autocompletion when you write down the dot character you 
 
 Some developers preffer that SublimeText 3 does not autocomplete by itself so you can disable word and explicit autocompletiond setting ``suppress_word_completions`` and ``suppress_explicit_completions`` as ``true``.
 
+#### Python snippets
+
+You can choose to don't show Python snippets in your autocompletion results placing a user setting `hide_snippets_on_completion` as true in your settings.
+
 Anaconda IDE Features
 ---------------------
 
@@ -248,23 +252,15 @@ This program is distributed under the terms of the GNU GPL v3. See the [LICENSE]
 Troubleshoting
 --------------
 
-If the plugin does not work at all and you get a lot of lines like those ones in the Sublime Text 3 console:
+Guide to solve common trobleshootings
 
-    Connecting to localhost on port 41818
-    The connection has been stablished
-    reloading plugin Anaconda.worker
-    Connecting to localhost on port 45651
-    The connection has been stablished
-    Connecting to localhost on port 50556
-    The connection has been stablished
-    Connecting to localhost on port 35519
-    The connection has been stablished
+#### Anaconda does not appear in the available packages list on Package Control
 
-This is a problem related with the timeout of the `asyncore.loop` and the underlying `select` socket system call. You can solve it increasing the value of the `asyncore_socket_timeout` user setting.
+You have to update your package control version to the version 2.0 or better
 
-By default that value is 0.1, if you run into this problem, you can try to raise this value in 0.1 and perform try-error tests until you get it solved. Be careful if you increase this value too much, anaconda will slow down and performance will be affected.
+#### I get errors in the console about "the file can't be open" in worker.py file
 
-Note: Asyncore sucks by the way.
+Your sublime text can't find the interpreter that you set in your configuration, by default, anaconda set this as `python` so it will get your configured Python interpreter in your PATH (if any)
 
 Contributing with Anaconda
 --------------------------
