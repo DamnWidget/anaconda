@@ -25,6 +25,16 @@
     "suppress_explicit_completions": false,
 
     /*
+        If complete_parameters is true, anaconda will add function and class
+        parameters to its completions.
+
+        If complete_all_parameters is true, it will add all the possible
+        parameters, if it's false, it will add only required parameters
+    */
+    "complete_parameters": true,
+    "complete_all_parameters": true,
+
+    /*
         Set is a false to deisable Anaconda Linting totally
     */
     "anaconda_linting": true,

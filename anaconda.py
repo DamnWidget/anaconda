@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.setLevel(logging.DEBUG)
 
+JUST_COMPLETED = False
+
 
 class AnacondaEventListener(sublime_plugin.EventListener):
     """Anaconda events listener class
@@ -40,6 +42,8 @@ class AnacondaEventListener(sublime_plugin.EventListener):
         """Sublime Text autocompletion event handler
         """
 
+        global JUST_COMPLETED
+
         if self.ready_from_defer is True:
             completion_flags = 0
 
@@ -52,6 +56,7 @@ class AnacondaEventListener(sublime_plugin.EventListener):
             cpl = self.completions
             self.completions = []
             self.ready_from_defer = False
+            JUST_COMPLETED = True
 
             return (cpl, completion_flags)
 
@@ -61,6 +66,18 @@ class AnacondaEventListener(sublime_plugin.EventListener):
 
         Worker().execute(self._complete, **data)
         return
+
+    @only_python
+    def on_modified_async(self, view):
+        """Called after changes has been made to a view.
+        """
+        global JUST_COMPLETED
+
+        if view.substr(view.sel()[0].begin() - 1) == '(':
+            if JUST_COMPLETED:
+                view.run_command('anaconda_complete_funcargs')
+
+            JUST_COMPLETED = False
 
     def _complete(self, data):
 
@@ -78,6 +95,66 @@ class AnacondaEventListener(sublime_plugin.EventListener):
                 'next_completion_if_showing': False,
                 'auto_complete_commit_on_tab': True,
             })
+
+
+class AnacondaCompleteFuncargs(sublime_plugin.TextCommand):
+    """
+    Function / Class constructor autocompletion command
+
+    This is directly ported fronm SublimeJEDI
+    """
+
+    def run(self, edit, characters=''):
+        if not get_settings(self.view, 'complete_parameters', False):
+            return
+
+        self._insert_characters(edit)
+
+        location = active_view().rowcol(self.view.sel()[0].begin())
+        data = prepare_send_data(location)
+        data['method'] = 'parameters'
+        data['settings'] = {
+            'complete_parameters': get_settings(
+                self.view, 'complete_parameters', False
+            ),
+            'complete_all_parameters': get_settings(
+                self.view, 'complete_all_parameters', False
+            )
+        }
+        Worker().execute(self.insert_snippet, **data)
+
+    @enable_for_python
+    def is_enabled(self):
+        """Determine if this command is enabled or not
+        """
+
+    def _insert_characters(self, edit):
+        """
+        Insert autocomplete character with closed pair
+        and update selection regions
+
+        :param edit: sublime.Edit
+        :param characters: str
+        """
+
+        regions = [a for a in self.view.sel()]
+        self.view.sel().clear()
+
+        for region in reversed(regions):
+
+            if self.view.settings().get('auto_match_enabled', True):
+                position = region.end()
+            else:
+                position = region.begin()
+
+            self.view.sel().add(sublime.Region(position, position))
+
+    def insert_snippet(self, data):
+        """Insert the snippet in the buffer
+        """
+
+        template = data['template']
+        active_view().run_command('insert_snippet', {'contents': template})
 
 
 class AnacondaGoto(sublime_plugin.TextCommand):

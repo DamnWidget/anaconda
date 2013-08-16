@@ -6,7 +6,6 @@
 import os
 import sys
 import time
-import errno
 import socket
 import logging
 import asyncore
@@ -16,11 +15,6 @@ import traceback
 import subprocess
 from logging import handlers
 from optparse import OptionParser
-
-if sys.version_info[0] == 2:
-    import SocketServer as socketserver
-else:
-    import socketserver
 
 # we use ujson if it's available on the target intrepreter
 try:
@@ -111,8 +105,12 @@ class JSONHandler(asynchat.async_chat):
         """Handle jedi related commands
         """
 
+        kwargs = {}
+        if 'settings' in self.data:
+            kwargs.update({'settings': self.data.pop('settings')})
+
         self.script = self.jedi_script(**self.data)
-        getattr(self, method)(uid)
+        getattr(self, method)(uid, **kwargs)
 
     def jedi_script(self, source, line, offset, filename='', encoding='utf8'):
         if DEBUG_MODE is True:
@@ -130,13 +128,17 @@ class JSONHandler(asynchat.async_chat):
         """Return lintin errors on the given code
         """
 
-        self.return_back({
-            'success': True,
-            'errors': linter.Linter().run_linter(settings, code, filename),
-            'uid': uid
-        })
+        try:
+            self.return_back({
+                'success': True,
+                'errors': linter.Linter().run_linter(settings, code, filename),
+                'uid': uid
+            })
+        except Exception as error:
+            logging.error(error)
+            log_traceback()
 
-    def autocomplete(self, uid):
+    def autocomplete(self, uid, settings=None):
         """Return Jedi completions
         """
 
@@ -233,6 +235,39 @@ class JSONHandler(asynchat.async_chat):
             'uid': uid
         })
 
+    def parameters(self, uid, settings):
+        """Get callable or class parameters
+        """
+
+        completions = []
+        complete_all = settings.get('complete_all_parameters', False)
+
+        try:
+            signatures = self.script.call_signatures()[0]
+        except IndexError:
+            signatures = None
+
+        params = self._get_function_parameters(signatures)
+        for i, p in enumerate(params):
+            try:
+                name, value = p
+            except ValueError:
+                name = p[0]
+                value = None
+
+            if value is None:
+                completions.append('${%d:%s}' % (i + 1, name))
+            else:
+                if complete_all is True:
+                    completions.append('%s=${%d:%s}' % (name, i + 1, value))
+
+        logging.debug(', '.join(completions))
+        self.return_back({
+            'success': True,
+            'template': ', '.join(completions),
+            'uid': uid
+        })
+
     def _parameters_for_complete(self):
         """Get function / class constructor paremeters completions list
         """
@@ -311,14 +346,14 @@ class JSONServer(asyncore.dispatcher):
         asyncore.loop()
 
     def shutdown(self):
-    	self.handle_close()
+        self.handle_close()
 
     def handle_accept(self):
         """Called when we accept and incomming connection
         """
         sock, addr = self.accept()
         self.logger.info('Incomming connection from {0}'.format(repr(addr)))
-        handler = self.handler(sock, self)
+        self.handler(sock, self)
 
     def handle_close(self):
         """Called when close
