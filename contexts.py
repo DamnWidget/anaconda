@@ -10,8 +10,10 @@ Anaconda contexts
 import json
 from contextlib import contextmanager
 
+
 @contextmanager
 def json_decode(data):
+    data = data.replace('\t', '\\t')
     try:
         yield json.loads(data.decode('utf8'))
     except ValueError:
