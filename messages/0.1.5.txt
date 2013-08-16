@@ -1,0 +1,14 @@
+Changes in 0.1.4
+================
+
+ - Added function and class parameters auto completion
+
+Fixes
+=====
+
+ - #21
+
+Resolves
+========
+
+  - #13
