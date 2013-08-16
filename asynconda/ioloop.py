@@ -216,9 +216,10 @@ class EventHandler(object):
         """Close the socket and unregister the handler
         """
 
-        self.sock.close()
         if self in IOHandlers()._handler_pool.values():
             IOHandlers().unregister(self)
+
+        self.sock.close()
         self.connected = False
 
 
