@@ -9,7 +9,6 @@ import time
 import errno
 import socket
 import logging
-import asyncore
 import threading
 import subprocess
 
