@@ -7,7 +7,6 @@
 Anaconda is a python autocompletion and linting plugin for Sublime Text 3
 """
 
-
 import sys
 import logging
 
@@ -75,7 +74,7 @@ class AnacondaEventListener(sublime_plugin.EventListener):
             active_view().run_command("auto_complete", {
                 'disable_auto_insert': True,
                 'api_completions_only': get_settings(
-                    active_view(), 'api_completion_only', False),
+                    active_view(), 'hide_snippets_on_completion', False),
                 'next_completion_if_showing': False,
                 'auto_complete_commit_on_tab': True,
             })
