@@ -100,6 +100,14 @@ Some developers preffer that SublimeText 3 does not autocomplete by itself so yo
 
 You can choose to don't show Python snippets in your autocompletion results placing a user setting `hide_snippets_on_completion` as true in your settings.
 
+#### Complete function and class parameters
+
+If `complete_parameters` is `true`, anaconda will add function and class parameters to its completions when you type `(` after a completion.
+
+If `complete_all_parameters` is `true`, it will add all the possible parameters, if it's false, it will add only required parameters
+
+No key binding is needed to use this feature so it doesn't interfere in any way with your Sublime Text 3 normal operations.
+
 Anaconda IDE Features
 ---------------------
 
