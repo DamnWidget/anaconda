@@ -33,7 +33,7 @@ class Worker(object):
 
     _shared_state = {}
 
-    def __init__(self, paths=None):
+    def __init__(self):
         self.__dict__ = Worker._shared_state
         if hasattr(self, 'initialized') and self.initialized is True:
             return
@@ -41,7 +41,9 @@ class Worker(object):
         self.reconnecting = False
         self.client = None
         self.json_server = None
-        self.paths = paths
+
+        view = sublime.active_window().active_view()
+        self.paths = get_settings(view, 'extra_paths', [])
 
         self.initialized = True
 
@@ -164,6 +166,8 @@ class Worker(object):
             'anaconda_server{}jsonserver.py'.format(os.sep)
         )
 
+        self.paths.extend(sublime.active_window().folders())
+
         try:
             view = sublime.active_window().active_view()
             python = get_settings(view, 'python_interpreter', 'python')
@@ -171,7 +175,7 @@ class Worker(object):
             python = 'python'
 
         args = [python, '-B', script_file,  '-p', project_name(), str(port)]
-        if self.paths is not None:
+        if self.paths:
             args.extend(['-e', ','.join(self.paths)])
 
         args.extend([str(os.getpid())])

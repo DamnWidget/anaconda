@@ -32,7 +32,7 @@
         parameters, if it's false, it will add only required parameters
     */
     "complete_parameters": true,
-    "complete_all_parameters": true,
+    "complete_all_parameters": false,
 
     /*
         Set is a false to deisable Anaconda Linting totally
