@@ -73,7 +73,8 @@ class AnacondaEventListener(sublime_plugin.EventListener):
         """
         global JUST_COMPLETED
 
-        if view.substr(view.sel()[0].begin() - 1) == '(':
+        if (view.substr(view.sel()[0].begin() - 1) == '('
+                and view.substr(view.sel()[0].begin()) == ')'):
             if JUST_COMPLETED:
                 view.run_command('anaconda_complete_funcargs')
 
