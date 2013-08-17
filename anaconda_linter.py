@@ -18,7 +18,8 @@ import sublime_plugin
 from Anaconda.worker import Worker
 from Anaconda.utils import get_settings
 from Anaconda.decorators import (
-    only_python, not_scratch, on_linting_enabled, on_linting_behaviour
+    only_python, not_scratch, on_linting_enabled, on_linting_behaviour,
+    is_python
 )
 
 
@@ -68,7 +69,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
     @only_python
     @on_linting_enabled
     @on_linting_behaviour(['always', 'load-save'])
-    def on_load_async(self, view):
+    def on_load(self, view):
         """Called after load a file
         """
 
@@ -79,6 +80,15 @@ class BackgroundLinter(sublime_plugin.EventListener):
     @on_linting_enabled
     def on_post_save_async(self, view):
         """Called post file save event
+        """
+
+        run_linter(view)
+
+    @only_python
+    @on_linting_enabled
+    @on_linting_behaviour(['always', 'load-save'])
+    def on_activated_async(self, view):
+        """Called when a view gain the focus
         """
 
         run_linter(view)
@@ -115,6 +125,9 @@ class TypeMonitor(threading.Thread):
         while True:
             if not ANACONDA['ALREADY_LINTED']:
                 view = sublime.active_window().active_view()
+                if not is_python(view):
+                    continue
+
                 delay = get_settings(view, 'anaconda_linter_delay', 0.5)
                 if time.time() - ANACONDA['LAST_PULSE'] >= delay:
                     ANACONDA['ALREADY_LINTED'] = True

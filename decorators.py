@@ -10,7 +10,6 @@ Anaconda decorators
 import sys
 import time
 import pstats
-import asyncore
 import functools
 
 try:
@@ -24,7 +23,6 @@ except ImportError:
         )
     )
     CPROFILE_AVAILABLE = False
-    import profile as pyProfile
 
 try:
     import sublime
@@ -42,8 +40,10 @@ def is_python(view):
 
     location = view.sel()[0].begin()
     matcher = 'source.python - string - comment'
-
-    return view.match_selector(location, matcher)
+    return(
+        view.match_selector(location, matcher)
+        or view.file_name().endswith('.py')
+    )
 
 
 def enable_for_python(func):
