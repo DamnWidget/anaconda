@@ -78,6 +78,9 @@ class AnacondaEventListener(sublime_plugin.EventListener):
                 view.run_command('anaconda_complete_funcargs')
 
             JUST_COMPLETED = False
+        elif view.substr(sublime.Region(
+                view.sel()[0].begin() - 7, view.sel()[0].end())) == 'import ':
+            view.run_command('auto_complete')
 
     def _complete(self, data):
 
