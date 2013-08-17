@@ -1,0 +1,15 @@
+Changes in 0.1.4
+================
+
+ - Anaconda can now autocomplete with the code contained in the folders that we are working on
+ - Anaconda now show a list of possible imports after typing `from <package> import `
+
+Fixes
+=====
+
+ - #15
+
+Resolves
+========
+
+  - #8, #14
