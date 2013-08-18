@@ -15,6 +15,10 @@
             {
                 "command": "anaconda_doc",
                 "caption": "Show Documentation"
+            },
+            {
+                "command": "anaconda_rename",
+                "caption": "Rename object under cursor"
             }
         ]
     }

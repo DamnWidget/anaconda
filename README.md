@@ -138,6 +138,12 @@ With this command you can get the docstring of whatever function or method. You 
 
 *note*: Context menu only works on Python code (no comments, no docstrings)
 
+#### Refactor Rename
+
+With this command you can rename the object under the cursor in a project basis scope in a safe way.
+
+* Context Menu: `Anaconda > Rename object under cursor`
+
 Anaconda linting
 ----------------
 

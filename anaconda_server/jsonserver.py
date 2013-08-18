@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 import jedi
 from linting import linter
 from contexts import json_decode
+from jedi import refactoring as jedi_refactor
 
 DEBUG_MODE = False
 logger = logging.getLogger('')
@@ -86,6 +87,8 @@ class JSONHandler(asynchat.async_chat):
             uid = self.data.pop('uid')
             if 'lint' in method:
                 self.handle_lint_command(method, uid)
+            elif 'refactor' in method:
+                self.handle_refactor_command(method, uid)
             else:
                 self.handle_jedi_command(method, uid)
         else:
@@ -100,6 +103,19 @@ class JSONHandler(asynchat.async_chat):
         """
 
         getattr(self, method)(uid, **self.data)
+
+    def handle_refactor_command(self, method, uid):
+        """Handle refactor command
+        """
+
+        self.script = self.jedi_script(
+            self.data.pop('source'),
+            self.data.pop('line'),
+            self.data.pop('offset'),
+            filename=self.data.pop('filename'),
+            encoding='utf8'
+        )
+        getattr(self, method.split('_')[1])(uid, **self.data)
 
     def handle_jedi_command(self, method, uid):
         """Handle jedi related commands
@@ -261,11 +277,43 @@ class JSONHandler(asynchat.async_chat):
                 if complete_all is True:
                     completions.append('%s=${%d:%s}' % (name, i + 1, value))
 
-        logging.debug(', '.join(completions))
         self.return_back({
             'success': True,
             'template': ', '.join(completions),
             'uid': uid
+        })
+
+    def rename(self, uid, directories, new_word):
+        """Rename the object under the cursor by the given word
+        """
+
+        renames = {}
+        try:
+            usages = self.script.usages()
+            proposals = jedi_refactor.rename(self.script, new_word)
+            for u in usages:
+                path = u.module_path.rsplit('/{0}.py'.format(u.module_name))[0]
+                if path in directories:
+                    if u.module_path not in renames:
+                        renames[u.module_path] = []
+
+                    thefile = proposals.new_files().get(u.module_path)
+                    if thefile is None:
+                        continue
+
+                    lineno = u.line - 1
+                    line = thefile.splitlines()[lineno]
+                    renames[u.module_path].append({
+                        'lineno': lineno, 'line': line
+                    })
+            success = True
+        except Exception as error:
+            logging.debug(error)
+            log_traceback()
+            success = False
+
+        self.return_back({
+            'success': success, 'renames': renames, 'uid': uid
         })
 
     def _parameters_for_complete(self):
