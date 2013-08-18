@@ -72,13 +72,17 @@ You can of course configure the python interpreter to use in a `per-project` bas
         }
     }
 
-You can add additional python extra paths that should be used for autocompletion purposes setting a list of paths separated by comma using the user setting ``extra_paths``:
+You can add additional python extra paths that should be used for autocompletion purposes setting a list of paths using the user setting ``extra_paths``:
 
     {
         // ...
 
         "settings": {
-            "extra_paths": "/opt/sublime_text_3,/usr/share/mypythonpackage"
+            "extra_paths":
+            [
+                "/opt/sublime_text_3",
+                "/usr/share/mypythonpackage"
+            ]
         }
     }
 

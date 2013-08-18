@@ -41,10 +41,6 @@ class Worker(object):
         self.reconnecting = False
         self.client = None
         self.json_server = None
-
-        view = sublime.active_window().active_view()
-        self.paths = get_settings(view, 'extra_paths', [])
-
         self.initialized = True
 
     @property
@@ -166,7 +162,9 @@ class Worker(object):
             'anaconda_server{}jsonserver.py'.format(os.sep)
         )
 
-        self.paths.extend(sublime.active_window().folders())
+        view = sublime.active_window().active_view()
+        paths = get_settings(view, 'extra_paths', [])
+        paths.extend(sublime.active_window().folders())
 
         try:
             view = sublime.active_window().active_view()
@@ -175,8 +173,8 @@ class Worker(object):
             python = 'python'
 
         args = [python, '-B', script_file,  '-p', project_name(), str(port)]
-        if self.paths:
-            args.extend(['-e', ','.join(self.paths)])
+        if paths:
+            args.extend(['-e', ','.join(paths)])
 
         args.extend([str(os.getpid())])
         self.json_server = subprocess.Popen(args, **kwargs)
