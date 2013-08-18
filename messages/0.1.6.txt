@@ -1,4 +1,4 @@
-Changes in 0.1.4
+Changes in 0.1.6
 ================
 
  - Anaconda can now autocomplete with the code contained in the folders that we are working on

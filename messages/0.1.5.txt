@@ -1,4 +1,4 @@
-Changes in 0.1.4
+Changes in 0.1.5
 ================
 
  - Added function and class parameters auto completion

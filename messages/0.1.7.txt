@@ -1,0 +1,10 @@
+Changes in 0.1.7
+================
+
+ - Jedi library updated to the last version
+ - parameter autocompletion triggering has been improved
+
+Resolves
+========
+
+  - #7
