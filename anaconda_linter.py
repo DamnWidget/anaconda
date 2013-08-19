@@ -22,7 +22,6 @@ from Anaconda.decorators import (
     is_python
 )
 
-
 ANACONDA = {
     'QUEUE': {},
     'ERRORS': {},
@@ -60,6 +59,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
         Called after changes have been made to a view.
         Runs in a separate thread, and does not block the application.
         """
+
         # update the last selected line number
         self.last_selected_line = -1
         ANACONDA['LAST_PULSE'] = time.time()
@@ -120,20 +120,22 @@ class TypeMonitor(threading.Thread):
     """Monitoring the typying
     """
 
+    die = False
+
     def run(self):
 
-        while True:
+        while not self.die:
             if not ANACONDA['ALREADY_LINTED']:
                 view = sublime.active_window().active_view()
-                if not is_python(view):
-                    continue
-
-                delay = get_settings(view, 'anaconda_linter_delay', 0.5)
-                if time.time() - ANACONDA['LAST_PULSE'] >= delay:
-                    ANACONDA['ALREADY_LINTED'] = True
-                    run_linter(view)
+                if is_python(view):
+                    delay = get_settings(view, 'anaconda_linter_delay', 0.5)
+                    if time.time() - ANACONDA['LAST_PULSE'] >= delay:
+                        ANACONDA['ALREADY_LINTED'] = True
+                        run_linter(view)
 
             time.sleep(0.1)
+
+monitor = TypeMonitor()
 
 
 class Linter:
@@ -414,7 +416,18 @@ def parse_results(view, data):
     update_statusbar(view)
 
 
-monitor = TypeMonitor()
+def plugin_loaded():
+    """Called directly from sublime on pugin load
+    """
 
-if not monitor.is_alive():
-    monitor.start()
+    global monitor
+    if not monitor.is_alive():
+        monitor.start()
+
+
+def plugin_unloaded():
+    """Called directly from sublime on plugin unload
+    """
+
+    global monitor
+    monitor.die = True

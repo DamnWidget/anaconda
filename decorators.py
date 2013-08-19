@@ -38,6 +38,9 @@ def is_python(view):
     """Determine if the given view location is python code
     """
 
+    if view is None:
+        return False
+
     location = view.sel()[0].begin()
     matcher = 'source.python - string - comment'
     if view.file_name() is not None and view.file_name().endswith('.py'):
