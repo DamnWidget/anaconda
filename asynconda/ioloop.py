@@ -131,8 +131,12 @@ class EventHandler(object):
                         time.sleep(0.1)
                     elif error.args[0] in (
                         errno.ECONNRESET, errno.ENOTCONN, errno.ESHUTDOWN,
-                        errno.ECONNABORTED, errno.EPIPE, errno.EBADFD
+                        errno.ECONNABORTED, errno.EPIPE
                     ):
+                        self.close()
+                        return 0
+                    elif os.name == 'posix' and error.args[0] == errno.EBADFD:
+                        # Windows doesn't seems to have EBADFD
                         self.close()
                         return 0
                     else:
