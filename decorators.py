@@ -26,7 +26,7 @@ except ImportError:
 
 try:
     import sublime
-    from Anaconda.utils import get_settings
+    from .utils import get_settings
 except ImportError:
     # we just imported the file from jsonserver so we don't need get_settings
     pass

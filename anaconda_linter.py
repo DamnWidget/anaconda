@@ -15,9 +15,9 @@ from functools import partial
 import sublime
 import sublime_plugin
 
-from Anaconda.worker import Worker
-from Anaconda.utils import get_settings
-from Anaconda.decorators import (
+from .worker import Worker
+from .utils import get_settings
+from .decorators import (
     only_python, not_scratch, on_linting_enabled, on_linting_behaviour,
     is_python
 )

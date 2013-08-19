@@ -14,9 +14,9 @@ import subprocess
 
 import sublime
 
-from Anaconda.asynconda import ioloop
-from Anaconda.anaconda_client import AsynClient
-from Anaconda.utils import get_settings, get_traceback, project_name
+from .asynconda import ioloop
+from .anaconda_client import AsynClient
+from .utils import get_settings, get_traceback, project_name
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
