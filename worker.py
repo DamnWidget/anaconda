@@ -164,7 +164,15 @@ class Worker(object):
 
         view = sublime.active_window().active_view()
         paths = get_settings(view, 'extra_paths', [])
-        paths.extend(sublime.active_window().folders())
+        try:
+            paths.extend(sublime.active_window().folders())
+        except AttributeError:
+            sublime.error_message(
+                'Your `extra_paths` configuration is a string but we are '
+                'expecting a list of strings.'
+            )
+            paths = paths.split(',')
+            paths.extend(sublime.active_window().folders())
 
         try:
             view = sublime.active_window().active_view()
