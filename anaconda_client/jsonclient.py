@@ -19,7 +19,7 @@ except ImportError:
     except ImportError:
         import json
 
-from Anaconda.asynconda import EventHandler
+from ..asynconda import EventHandler
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))

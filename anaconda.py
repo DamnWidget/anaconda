@@ -16,9 +16,9 @@ from functools import partial
 import sublime
 import sublime_plugin
 
-from Anaconda.worker import Worker
-from Anaconda.utils import get_settings, active_view, prepare_send_data
-from Anaconda.decorators import only_python, enable_for_python, profile
+from .worker import Worker
+from .utils import get_settings, active_view, prepare_send_data
+from .decorators import only_python, enable_for_python, profile
 
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda only works with Sublime Text 3')
