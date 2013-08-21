@@ -29,7 +29,8 @@ ANACONDA = {
     'VIOLATIONS': {},
     'UNDERLINES': {},
     'LAST_PULSE': time.time(),
-    'ALREADY_LINTED': False
+    'ALREADY_LINTED': False,
+    'DISABLED': []
 }
 
 marks = {
@@ -111,6 +112,48 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """
 
         erase_lint_marks(view)
+
+
+class AnacondaDisableLinting(sublime_plugin.WindowCommand):
+    """Disable the linting for the current buffer
+    """
+
+    def run(self):
+        ANACONDA['DISABLED'].append(self.window.active_view().id())
+        erase_lint_marks(self.window.active_view())
+
+    def is_enabled(self):
+        """Determines if the command is enabled
+        """
+
+        view = self.window.active_view()
+        if view.id() in ANACONDA['DISABLED']:
+            return False
+
+        location = view.sel()[0].begin()
+        matcher = 'source.python'
+        return view.match_selector(location, matcher)
+
+
+class AnacondaEnableLinting(sublime_plugin.WindowCommand):
+    """Disable the linting for the current buffer
+    """
+
+    def run(self):
+        ANACONDA['DISABLED'].remove(self.window.active_view().id())
+        run_linter(self.window.active_view())
+
+    def is_enabled(self):
+        """Determines if the command is enabled
+        """
+
+        view = self.window.active_view()
+        if view.id() not in ANACONDA['DISABLED']:
+            return False
+
+        location = view.sel()[0].begin()
+        matcher = 'source.python'
+        return view.match_selector(location, matcher)
 
 
 ###############################################################################
@@ -368,6 +411,9 @@ def get_lineno_msgs(view, lineno):
 def run_linter(view):
     """Run the linter for the given view
     """
+
+    if view.id() in ANACONDA['DISABLED']:
+        return
 
     settings = {
         'pep8': get_settings(view, 'pep8', True),

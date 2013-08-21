@@ -1,0 +1,10 @@
+[
+    {
+        "caption": "Anaconda: Disable linting on this file",
+        "command": "anaconda_disable_linting"
+    },
+    {
+        "caption": "Anaconda: Enable linting on this file",
+        "command": "anaconda_enable_linting"
+    }
+]
