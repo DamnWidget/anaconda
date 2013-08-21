@@ -1,0 +1,20 @@
+Changes in 0.1.8
+================
+
+ - Added refactoring rename command
+ - Added disable and enable linting on specific files
+
+Fixes
+=====
+
+ - Problem parsing extra_paths (no issue linked)
+ - Fixed problem that cause ST3 and Plugin Host to eat up resources when no file was open in the editor (#24)
+ - Gracefully fallback when extra_path is not a list
+ - Added agnostic import map (#25)
+ - Users home directory wildcards should now be expanded (#29)
+
+
+Resolves
+========
+
+  - #28

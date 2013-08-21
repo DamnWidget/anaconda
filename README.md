@@ -156,6 +156,17 @@ Anaconda linting is mainly based/inspired/ported from SublimeLinter because that
 
 Just set the user setting ``anaconda_linting`` as ``false``
 
+#### Disabling the linter in certain files
+
+Sometimes we have to open some file from this mate that all of us have that doesn't seems to know what PEP-8 means and when the teacher spoke about code conventions and readability of the code he was just sick in home and we are just annoyed by the linter marking everyone line of the code.
+
+On this situations we can just disable the linting for this specific file using the command `Anaconda: Disable linting on this file` from the command palette.
+
+When our mate learns how to write proper and clean code we can just turn it on again with `Anaconda: Enable linting on this file`.
+
+**Note**: This status is not permanent so you have to do it every time that you open the file.
+
+
 #### Linting behaviour
 
 * **Always mode (default)** - When ``anaconda_linting_behaviour`` is set as ``always`` the linting is performed in the background as you are editing the file you are working on and in load/save events. The linting process is performed in the background in another thread of execution and it doesn't block the Sublime Text GUI. The process is fired when the plugin detected that you stop typying for a period of time, by default is half a second and can be configured editign the value of the user setting ``anaconda_linter_delay``.
