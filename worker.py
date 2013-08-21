@@ -177,6 +177,7 @@ class Worker(object):
         try:
             view = sublime.active_window().active_view()
             python = get_settings(view, 'python_interpreter', 'python')
+            python = os.path.expanduser(python)
         except:
             python = 'python'
 
