@@ -62,8 +62,7 @@ class AnacondaEventListener(sublime_plugin.EventListener):
             return (cpl, completion_flags)
 
         location = view.rowcol(locations[0])
-        data = prepare_send_data(location)
-        data['method'] = 'autocomplete'
+        data = prepare_send_data(location, 'autocomplete')
 
         Worker().execute(self._complete, **data)
         return
@@ -116,8 +115,7 @@ class AnacondaCompleteFuncargs(sublime_plugin.TextCommand):
         self._insert_characters(edit)
 
         location = active_view().rowcol(self.view.sel()[0].begin())
-        data = prepare_send_data(location)
-        data['method'] = 'parameters'
+        data = prepare_send_data(location, 'parameters')
         data['settings'] = {
             'complete_parameters': get_settings(
                 self.view, 'complete_parameters', False
@@ -169,8 +167,7 @@ class AnacondaGoto(sublime_plugin.TextCommand):
     def run(self, edit):
         try:
             location = active_view().rowcol(self.view.sel()[0].begin())
-            data = prepare_send_data(location)
-            data['method'] = 'goto'
+            data = prepare_send_data(location, 'goto')
             Worker().execute(partial(JediUsages(self).process, False), **data)
         except:
             pass
@@ -188,8 +185,7 @@ class AnacondaFindUsages(sublime_plugin.TextCommand):
     def run(self, edit):
         try:
             location = active_view().rowcol(self.view.sel()[0].begin())
-            data = prepare_send_data(location)
-            data['method'] = 'usages'
+            data = prepare_send_data(location, 'usages')
             Worker().execute(
                 partial(JediUsages(self).process, True), **data
             )
@@ -215,8 +211,7 @@ class AnacondaDoc(sublime_plugin.TextCommand):
                 if self.view.substr(self.view.sel()[0].begin()) in ['(', ')']:
                     location = (location[0], location[1] - 1)
 
-                data = prepare_send_data(location)
-                data['method'] = 'doc'
+                data = prepare_send_data(location, 'doc')
                 Worker().execute(self.prepare_data, **data)
             except Exception as error:
                 print('\n'.join(error))
@@ -288,8 +283,7 @@ class AnacondaRename(sublime_plugin.TextCommand):
 
     def input_replacement(self, replacement):
         location = self.view.rowcol(self.view.sel()[0].begin())
-        data = prepare_send_data(location)
-        data['method'] = 'refactor_rename'
+        data = prepare_send_data(location, 'refactor_rename')
         data['directories'] = sublime.active_window().folders()
         data['new_word'] = replacement
         Worker().execute(self.store_data, **data)

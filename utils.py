@@ -28,7 +28,7 @@ def active_view():
     return sublime.active_window().active_view()
 
 
-def prepare_send_data(location):
+def prepare_send_data(location, method):
     """Prepare dict that has to be sended trough the socket
     """
 
@@ -37,7 +37,8 @@ def prepare_send_data(location):
         'source': view.substr(sublime.Region(0, view.size())),
         'line': location[0] + 1,
         'offset': location[1],
-        'filename': view.file_name() or ''
+        'filename': view.file_name() or '',
+        'method': method
     }
 
 
