@@ -37,3 +37,6 @@ nosetests.xml
 # Sublime Text
 *.sublime-project
 *.sublime-workspace
+
+# Don't track Main.sublime-menu anymore
+Main.sublime-menu

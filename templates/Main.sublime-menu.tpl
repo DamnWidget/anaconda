@@ -16,18 +16,18 @@
                         [
                             {
                                 "command": "open_file",
-                                "args": {"file": "${packages}/Anaconda/README.md"},
+                                "args": {"file": "${packages}/$package_folder/README.md"},
                                 "caption": "README"
                             },
                             {
                                 "command": "open_file",
-                                "args": {"file": "${packages}/Anaconda/LICENSE"},
+                                "args": {"file": "${packages}/$package_folder/LICENSE"},
                                 "caption": "LICENSE"
                             },
                             { "caption": "-" },
                             {
                                 "command": "open_file",
-                                "args": {"file": "${packages}/Anaconda/Anaconda.sublime-settings"},
+                                "args": {"file": "${packages}/$package_folder/Anaconda.sublime-settings"},
                                 "caption": "Settings - Default"
                             },
                             {
@@ -43,7 +43,7 @@
                             {
                                 "command": "open_file",
                                 "args": {
-                                    "file": "${packages}/Anaconda/Default (OSX).sublime-keymap",
+                                    "file": "${packages}/$package_folder/Default (OSX).sublime-keymap",
                                     "platform": "OSX"
                                 },
                                 "caption": "Key Bindings – Default"
@@ -51,7 +51,7 @@
                             {
                                 "command": "open_file",
                                 "args": {
-                                    "file": "${packages}/Anaconda/Default (Linux).sublime-keymap",
+                                    "file": "${packages}/$package_folder/Default (Linux).sublime-keymap",
                                     "platform": "Linux"
                                 },
                                 "caption": "Key Bindings – Default"
@@ -59,7 +59,7 @@
                             {
                                 "command": "open_file",
                                 "args": {
-                                    "file": "${packages}/Anaconda/Default (Windows).sublime-keymap",
+                                    "file": "${packages}/$package_folder/Default (Windows).sublime-keymap",
                                     "platform": "Windows"
                                 },
                                 "caption": "Key Bindings – Default"

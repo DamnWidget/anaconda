@@ -7,9 +7,11 @@
 Anaconda is a python autocompletion and linting plugin for Sublime Text 3
 """
 
+import os
 import sys
 import time
 import logging
+from string import Template
 
 from functools import partial
 
@@ -365,3 +367,22 @@ class JediUsages(object):
 
         self.options = defs
         self.text.view.window().show_quick_panel(options, self._jump)
+
+
+def plugin_loaded():
+    """Called directly from sublime on plugin load
+    """
+
+    package_folder = os.path.dirname(__file__)
+    if not os.path.exists(os.path.join(package_folder, 'Main.sublime-menu')):
+        template_file = os.path.join(
+            package_folder, 'templates', 'Main.sublime-menu.tpl'
+        )
+        with open(template_file, 'r') as tplfile:
+            template = Template(tplfile.read())
+
+        menu_file = os.path.join(package_folder, 'Main.sublime-menu')
+        with open(menu_file, 'w') as menu:
+            menu.write(template.safe_substitute({
+                'package_folder': os.path.basename(package_folder)
+            }))
