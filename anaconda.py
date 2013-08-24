@@ -216,7 +216,7 @@ class AnacondaDoc(sublime_plugin.TextCommand):
                 data = prepare_send_data(location, 'doc')
                 Worker().execute(self.prepare_data, **data)
             except Exception as error:
-                print('\n'.join(error))
+                print(error)
         else:
             self.print_doc(edit)
 
@@ -378,11 +378,11 @@ def plugin_loaded():
         template_file = os.path.join(
             package_folder, 'templates', 'Main.sublime-menu.tpl'
         )
-        with open(template_file, 'r') as tplfile:
+        with open(template_file, 'r', encoding='utf8') as tplfile:
             template = Template(tplfile.read())
 
         menu_file = os.path.join(package_folder, 'Main.sublime-menu')
-        with open(menu_file, 'w') as menu:
+        with open(menu_file, 'w', encoding='utf8') as menu:
             menu.write(template.safe_substitute({
                 'package_folder': os.path.basename(package_folder)
             }))
