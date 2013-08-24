@@ -16,7 +16,7 @@ import sublime
 import sublime_plugin
 
 from .worker import Worker
-from .utils import get_settings
+from .utils import get_settings, active_view
 from .decorators import (
     only_python, not_scratch, on_linting_enabled, on_linting_behaviour,
     is_python
@@ -50,6 +50,10 @@ class BackgroundLinter(sublime_plugin.EventListener):
     def __init__(self):
         super(BackgroundLinter, self).__init__()
         self.last_selected_line = -1
+        s = sublime.load_settings('Anaconda.sublime-settings')
+        s.add_on_change(
+            'anaconda_linting_behaviour',  toggle_linting_behaviour
+        )
 
     @only_python
     @not_scratch
@@ -462,9 +466,23 @@ def parse_results(view, data):
     update_statusbar(view)
 
 
+def toggle_linting_behaviour():
+    """Called when linting behaviour is changed
+    """
+
+    if get_settings(active_view(), 'anaconda_linting_behaviour') == 'always':
+        monitor.die = False
+        monitor.start()
+    else:
+        monitor.die = True
+
+
 def plugin_loaded():
     """Called directly from sublime on pugin load
     """
+
+    if get_settings(active_view(), 'anaconda_linting_behaviour') != 'always':
+        return
 
     global monitor
     if not monitor.is_alive():
