@@ -166,6 +166,9 @@ When our mate learns how to write proper and clean code we can just turn it on a
 
 **Note**: This status is not permanent so you have to do it every time that you open the file.
 
+#### Showing linting error list
+
+You can show a quick panel with all the errors in the file you are currently editing usign the command palette or the contextual menu.
 
 #### Linting behaviour
 
