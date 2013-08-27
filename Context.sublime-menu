@@ -19,6 +19,10 @@
             {
                 "command": "anaconda_rename",
                 "caption": "Rename object under cursor"
+            },
+            {
+                "command": "anaconda_get_lines",
+                "caption": "Show error list"
             }
         ]
     }

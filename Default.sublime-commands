@@ -6,5 +6,9 @@
     {
         "caption": "Anaconda: Enable linting on this file",
         "command": "anaconda_enable_linting"
+    },
+    {
+        "caption": "Anaconda: Show error list",
+        "command": "anaconda_get_lines"
     }
 ]
