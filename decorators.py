@@ -43,11 +43,7 @@ def is_python(view):
 
     location = view.sel()[0].begin()
     matcher = 'source.python - string - comment'
-    if view.file_name() is not None and view.file_name().endswith('.py'):
-        pyfile = True
-    else:
-        pyfile = False
-    return view.match_selector(location, matcher) or pyfile
+    return view.match_selector(location, matcher)
 
 
 def enable_for_python(func):
