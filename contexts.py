@@ -13,7 +13,7 @@ from contextlib import contextmanager
 
 @contextmanager
 def json_decode(data):
-    data = data.replace('\t', '\\t')
+    data = data.replace(b'\t', b'\\t')
     try:
         yield json.loads(data.decode('utf8'))
     except ValueError:
