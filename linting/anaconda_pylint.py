@@ -8,6 +8,7 @@ Anaconda PyLint wrapper
 """
 
 import sys
+import logging
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -40,7 +41,8 @@ class PyLinter(object):
         if numversion < (1, 0, 0):
             args = '--include-ids=y -r n'.split(' ')
         else:
-            args = "--msg-template={msg_id}:{line}:{msg} -r n".split(' ')
+            args = "--msg-template={msg_id}:{line}:{column}:{msg} -r n".split(
+                ' ')
 
         args.insert(0, self.filename)
         lint.Run(args)
@@ -61,11 +63,21 @@ class PyLinter(object):
                 if not module in self.filename:
                     continue
             else:
-                code, line, message = error.split(':', 2)
+                offset = None
+                logging.debug(numversion)
+                if numversion >= (1, 0, 0):
+                    logging.debug(error)
+                    code, line, offset, message = error.split(':', 3)
+                else:
+                    code, line, message = error.split(':', 2)
+
                 errors[self._map_code(code)[0]].append({
-                    'line': line,
+                    'line': int(line),
+                    'offset': offset,
                     'code': self._map_code(code)[1],
-                    'message': message
+                    'message': '[{0}] {1}'.format(
+                        self._map_code(code)[1], message
+                    )
                 })
 
         return errors
@@ -74,10 +86,5 @@ class PyLinter(object):
         """Map the given code to fit Anaconda codes
         """
 
-        mapping = {'C': 'V', 'R': 'W', 'E': 'E', 'F': 'E', 'W': 'W'}
+        mapping = {'C': 'V', 'E': 'E', 'F': 'E', 'I': 'V', 'R': 'W', 'W': 'W'}
         return (mapping[code[0]], code[1:])
-
-
-if __name__ == '__main__':
-    l = PyLinter(sys.argv[1])
-    print(l.parse_errors())

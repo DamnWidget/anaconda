@@ -350,6 +350,45 @@ class Linter:
 
         return {'lines': lines, 'results': errors_level}
 
+    def parse_errors_pylint(self, errors):
+        """Parse errores returned from the PyLint application
+        """
+
+        vid = self.view.id()
+
+        errors_level = {
+            'E': {'messages': ANACONDA.get('ERRORS')[vid], 'underlines': []},
+            'W': {'messages': ANACONDA.get('WARNINGS')[vid], 'underlines': []},
+            'V': {
+                'messages': ANACONDA.get('VIOLATIONS')[vid], 'underlines': []
+            }
+        }
+
+        lines = set()
+        if errors is None:
+            return {'lines': lines, 'results': errors_level}
+
+        for error_level, error_data in errors.items():
+            messages = errors_level[error_level]['messages']
+            # pylint does not return back offset for versions pre 1.0.0
+            underlines = errors_level[error_level]['underlines']
+
+            pylint_ignores = get_settings(self.view, 'pylint_ignore', [])
+            for error in error_data:
+
+                if error['code'] in pylint_ignores:
+                    continue
+
+                self.add_message(
+                    error['line'], lines, error['message'], messages
+                )
+                if error['offset'] is not None:
+                    self.underline_range(
+                        error['line'], int(error['offset']), underlines
+                    )
+
+        return {'lines': lines, 'results': errors_level}
+
 
 ###############################################################################
 # Global functions
@@ -481,8 +520,17 @@ def run_linter(view):
         'pyflakes_disabled': get_settings(view, 'pyflakes_disabled', False)
     }
     text = view.substr(sublime.Region(0, view.size()))
-    data = {'code': text, 'settings': settings, 'filename': view.file_name()}
-    data['method'] = 'run_linter'
+    if get_settings(view, 'use_pylint', False) is False:
+        data = {
+            'code': text, 'settings': settings, 'filename': view.file_name()
+        }
+        data['method'] = 'run_linter'
+    else:
+        if view.file_name() is None:
+            return
+        data = {'filename': view.file_name()}
+        data['method'] = 'run_linter_pylint'
+
     Worker().execute(partial(parse_results, view), **data)
 
 
@@ -503,7 +551,11 @@ def parse_results(view, data):
     WARNINGS[vid] = {}
     VIOLATIONS[vid] = {}
 
-    results = Linter(view).parse_errors(data['errors'])
+    if get_settings(view, 'use_pylint', False) is False:
+        results = Linter(view).parse_errors(data['errors'])
+    else:
+        results = Linter(view).parse_errors_pylint(data['errors'])
+
     errors = results['results']
     lines = results['lines']
 

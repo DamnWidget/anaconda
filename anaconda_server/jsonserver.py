@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 import jedi
 from linting import linter
 from contexts import json_decode
+from linting.anaconda_pylint import PyLinter
 from jedi import refactoring as jedi_refactor
 
 DEBUG_MODE = False
@@ -148,6 +149,20 @@ class JSONHandler(asynchat.async_chat):
             self.return_back({
                 'success': True,
                 'errors': linter.Linter().run_linter(settings, code, filename),
+                'uid': uid
+            })
+        except Exception as error:
+            logging.error(error)
+            log_traceback()
+
+    def run_linter_pylint(self, uid, filename):
+        """Return lintin errors on the given file
+        """
+
+        try:
+            self.return_back({
+                'success': True,
+                'errors': PyLinter(filename).parse_errors(),
                 'uid': uid
             })
         except Exception as error:

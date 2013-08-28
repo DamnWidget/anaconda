@@ -1,7 +1,7 @@
 /*
     Anaconda default settings
 */
-{    
+{
 
     /*
         Default python interpreter.
@@ -23,7 +23,7 @@
         If complete_all_parameters is true, it will add all the possible
         parameters, if it's false, it will add only required parameters
     */
-    "complete_parameters": true,
+    "complete_parameters": false,
     "complete_all_parameters": false,
 
     /*
@@ -53,6 +53,19 @@
     // If true, anaconda draws gutter amrks on line with errors
     "anaconda_gutter_marks": false,
 
+    /*
+        Use PyLint instead of PyFlakes and PEP-8
+
+        **** WARNING ****
+
+        - If you set this value as true, PyFlakes and pep8 will not bet used
+        - PyLint does *NOT* support lint buffers that are not already saved in
+          the file system
+
+        **** WARNING ****
+    */
+    "use_pylint": false,
+
     // Set this to false to turn pep8 checking off completely
     "pep8": true,
 
@@ -66,7 +79,7 @@
     ],
 
     /*
-        If you use SublimeLinter for pyflakes checks, you can ignore some of the "undefined name xxx"
+        You can ignore some of the "undefined name xxx"
         errors (comes in handy if you work with post-processors, globals/builtins available only at runtime, etc.).
         You can control what names will be ignored with the user setting "pyflakes_ignore".
 
@@ -80,6 +93,16 @@
     */
     "pyflakes_ignore":
     [
+    ],
+
+    /*
+        You can ignore specific PyLint error codes using this configuration.
+        We strongly suggest that you better configure your pylintrc file to
+        determine which type of error is important to you
+    */
+    "pylint_ignore":
+    [
+        // "0201"
     ],
 
     /*
