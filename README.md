@@ -193,6 +193,32 @@ If what you want to do is just disable some errors like `"line too long"` `E501`
 
 There is an equivalen for PyFlakes errors called ``pyflakes_ignore``, look at the default anaconda configuration file for more details.
 
+#### Using PyLint as PyFlakes and pep8 alternatives
+
+Anaconda has full support for PyLint as linter application but some considerations has to be taken before do it.
+
+Due 3rd party dependencies required for PyLint, Anaconda does not add it like do with pep8 and PyFlakes libraries, if you want to use PyLint as your linter you have to donwload and install it yourself.
+
+Anaconda does not use a subprocess to call the PyLint linter like Pylinter plugin does. We just import some files from pylint and run the linter from the jsonserver process capturing the system stdout file descriptor. That means anaconda *will* use your configured python interpreter (and environment) in order to lint your files with PyLint so it should be installed in your virtualenvironment if you are using virtualenv.
+
+PyLint *does not* support lint buffers that are not saved yet in the file system so it *can't* lint files before you save it.
+
+Anaconda uses E, W and V codes to maintain compatibility with PyFlakes and PEP8 linters so the PyLint mapping is as follows:
+
+    mapping = {
+      'C': 'V',
+      'E': 'E',
+      'F': 'E',
+      'I': 'V',
+      'R': 'W',
+      'W': 'W'
+    }
+
+PyLint errors can be ignored using the setting parameter `pylint_ignore`.
+
+When you use PyLint, PyFlakes and PEP8 are totally turned off.
+
+*Note*: PyLint can be really annoying use it at your own risk
 
 #### Gutter Marks
 
