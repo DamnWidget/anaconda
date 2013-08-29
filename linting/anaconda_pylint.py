@@ -9,11 +9,15 @@ Anaconda PyLint wrapper
 
 import sys
 import logging
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-    assert StringIO
+
+if sys.version_info >= (3, 0):
+    from io import StringIO
+else:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+        assert StringIO
 
 from pylint import lint
 from pylint.__pkginfo__ import numversion
