@@ -8,7 +8,6 @@ Anaconda PyLint wrapper
 """
 
 import sys
-import logging
 
 if sys.version_info >= (3, 0):
     from io import StringIO
@@ -68,9 +67,7 @@ class PyLinter(object):
                     continue
             else:
                 offset = None
-                logging.debug(numversion)
                 if numversion >= (1, 0, 0):
-                    logging.debug(error)
                     code, line, offset, message = error.split(':', 3)
                 else:
                     code, line, message = error.split(':', 2)

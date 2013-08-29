@@ -27,8 +27,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 import jedi
 from linting import linter
 from contexts import json_decode
-from linting.anaconda_pylint import PyLinter
 from jedi import refactoring as jedi_refactor
+
+try:
+    from linting.anaconda_pylint import PyLinter
+    PYLINT_AVAILABLE = True
+except ImportError:
+    PYLINT_AVAILABLE = False
+
 
 DEBUG_MODE = False
 logger = logging.getLogger('')
@@ -159,15 +165,24 @@ class JSONHandler(asynchat.async_chat):
         """Return lintin errors on the given file
         """
 
-        try:
-            self.return_back({
-                'success': True,
-                'errors': PyLinter(filename).parse_errors(),
-                'uid': uid
-            })
-        except Exception as error:
-            logging.error(error)
-            log_traceback()
+        if PYLINT_AVAILABLE:
+            try:
+                errors = PyLinter(filename).parse_errors()
+                success = True
+            except Exception as error:
+                logging.error(error)
+                log_traceback()
+                errors = error,
+                success = False
+        else:
+            success = False
+            errors = 'Your configured python interpreter can\'t import pylint'
+
+        self.return_back({
+            'success': success,
+            'errors': errors,
+            'uid': uid
+        })
 
     def autocomplete(self, uid, settings=None):
         """Return Jedi completions

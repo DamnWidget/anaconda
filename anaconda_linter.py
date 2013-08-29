@@ -539,6 +539,8 @@ def parse_results(view, data):
     """
 
     if data and data['success'] is False:
+        if get_settings(view, 'use_pylint', False) is True:
+            print(data['errors'])
         return
 
     ERRORS = ANACONDA.get('ERRORS')
