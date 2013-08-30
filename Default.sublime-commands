@@ -10,5 +10,9 @@
     {
         "caption": "Anaconda: Show error list",
         "command": "anaconda_get_lines"
+    },
+    {
+        "caption": "Anaconda: Autoformat PEP8 Errors",
+        "command": "anaconda_auto_format"
     }
 ]

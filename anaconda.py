@@ -11,6 +11,7 @@ import os
 import sys
 import time
 import logging
+import traceback
 from string import Template
 
 from functools import partial
@@ -19,8 +20,9 @@ import sublime
 import sublime_plugin
 
 from .worker import Worker
+from .anaconda_extra import autopep
 from .utils import get_settings, active_view, prepare_send_data
-from .decorators import only_python, enable_for_python, profile
+from .decorators import only_python, enable_for_python, profile, is_python
 
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda only works with Sublime Text 3')
@@ -273,8 +275,8 @@ class AnacondaRename(sublime_plugin.TextCommand):
                 sublime.active_window().show_input_panel(
                     "Replace with:", "", self.input_replacement, None, None
                 )
-            except Exception as error:
-                print('\n'.join(error))
+            except:
+                logging.error(traceback.format_exc())
         else:
             self.rename(edit)
 
@@ -315,6 +317,65 @@ class AnacondaRename(sublime_plugin.TextCommand):
                     lines = view.lines(sublime.Region(0, view.size()))
                     view.replace(edit, lines[line['lineno']], line['line'])
 
+        self.data = None
+
+
+class AnacondaAutoFormat(sublime_plugin.TextCommand):
+    """Execute autopep8 formating
+    """
+
+    data = None
+
+    def run(self, edit):
+        print(self.view.settings().get('syntax'))
+        if self.data is not None:
+            self.replace(edit)
+            return
+
+        aggresive_level = get_settings(self.view, 'agressive_level', 0)
+        if aggresive_level > 0:
+            if not sublime.ok_cancel_dialog(
+                'You have an aggressive level of {} this may cause '
+                'anaconda to change things that you don\'t really want to '
+                'change.\n\nAre you sure do you want to continue?'.format(
+                    aggresive_level
+                )
+            ):
+                return
+
+        view = sublime.active_window().active_view()
+        code = view.substr(sublime.Region(0, view.size()))
+        settings = {
+            'aggressive': aggresive_level,
+            'list-fixes': get_settings(view, 'list-fixes', False),
+            'ignore': get_settings(view, 'ignore', []),
+            'select': get_settings(view, 'select', [])
+        }
+        try:
+            autopep.AnacondaAutopep8(settings, code, self.get_data).start()
+        except:
+            logging.error(traceback.format_exc())
+
+    def is_enabled(self):
+        """Determine if this command is enabled or not
+        """
+
+        return is_python(self.view, True)
+
+    def get_data(self, data):
+        """Collect the returned data from autopep8
+        """
+
+        self.data = data
+        self.view.run_command('anaconda_auto_format')
+
+    def replace(self, edit):
+        """Replace the old code with what autopep8 gave to us
+        """
+
+        view = sublime.active_window().active_view()
+        region = sublime.Region(0, view.size())
+        view.replace(edit, region, self.data)
         self.data = None
 
 
