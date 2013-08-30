@@ -8,6 +8,7 @@ Anaconda PyLint wrapper
 """
 
 import sys
+import logging
 
 if sys.version_info >= (3, 0):
     from io import StringIO
@@ -67,10 +68,23 @@ class PyLinter(object):
                     continue
             else:
                 offset = None
-                if numversion >= (1, 0, 0):
-                    code, line, offset, message = error.split(':', 3)
-                else:
-                    code, line, message = error.split(':', 2)
+                try:
+                    if numversion >= (1, 0, 0):
+                            code, line, offset, message = error.split(':', 3)
+                    else:
+                        code, line, message = error.split(':', 2)
+                except ValueError as exception:
+                    logging.debug(
+                        'unhandled exception in PyLinter parse_errors '
+                        'this is a non fatal error: {0}'.format(exception)
+                    )
+                    logging.debug(
+                        'the error string that raised this exception was: '
+                        '{0}, please, report this in the GitHub site'.format(
+                            error
+                        )
+                    )
+                    continue
 
                 errors[self._map_code(code)[0]].append({
                     'line': int(line),
