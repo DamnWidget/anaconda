@@ -1,0 +1,24 @@
+Changes in 0.1.9
+================
+
+ - Added auto Main.sublime-menu file generation
+ - Added error list quickpanels
+ - Improved response to anaconda_linting_behaviour settings change
+ - Added full support for PyLint as PyFlakes - PEP8 alternative as suggested in #22
+ - Added autopep8 support, Resolves #37
+ - Added workaround to solve #39
+
+Fixes
+=====
+
+ - Fixed bug about wrong file encoding for Main.sublime-menu template on Mac OS X (#31)
+ - Removed weird checks in @only_python decorator calls. (#33)
+ - Added Python3 compatibility to replace method on buffer. (#35) (#34 duplicate)
+ - Added import io.StringIO for python3 in Pylint wrapper. (#36)
+
+Resolves
+========
+
+  - #22
+  - #30
+  - #37
