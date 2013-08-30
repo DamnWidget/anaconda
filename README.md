@@ -8,7 +8,7 @@ A bit of history
 
 Anaconda was born from my need of use a single plugin to autocomplete and lint python code. There are some other really good plugins for that like SublimeJEDI, SublimePythonIDE or SublimeLinter but them doesn't fully fit my needs so I decided to create my own using the best of them.
 
-[SublimeLinter](https://github.com/SublimeLinter/SublimeLinter) is an awesome plugin for Sublime Text and I strongly recommend its use but it support for Sublime Text 3 is not good enough yet and it's python linting is always based on the version of Python that is running by the Sublime Text 3 plugin server that is Python 3.3 so you get error marks for your totally correct python syntax when you work with Python 2 so it make it pretty useles for Python linting in ST3.
+[SublimeLinter](https://github.com/SublimeLinter/SublimeLinter) is an awesome plugin for Sublime Text and I strongly recommend its use but its support for Sublime Text 3 is not good enough and it's python linting is always based on the version of Python that is running by the Sublime Text 3 plugin server that is Python 3.3 so you get error marks for your totally correct python syntax when you work with Python 2 so it make it pretty useles for Python linting in ST3.
 
 [SublimePythonIDE](https://github.com/JulianEberius/SublimePythonIDE) is really great, is a spin off of [SublimeRope](https://github.com/JulianEberius/SublimeRope) for Sublime Text 2 I helped to write a big part of Sublime Rope and part of SublimePythonIDE but the underlying Rope library is not as good for autocompletions as it is for refactors so it doesn't really fit my needs there.
 
@@ -17,7 +17,7 @@ Anaconda was born from my need of use a single plugin to autocomplete and lint p
 Anaconda architecture
 ---------------------
 
-Anacondas is an `asynchornous client-server` architecture application. It starts a new server instance for any open Sublime Text window that contains Python code.
+Anacondas is an `asynchronous client-server` architecture application. It starts a new server instance for any open Sublime Text window that contains Python code.
 
 Because that architecture, **anaconda** can lint or complete with python interpreters different than the built-in Sublime Text 3 python interpreter (3.3). It can complete all the python code that the configured interpreter can see and lint files for that version of the interpreter.
 
