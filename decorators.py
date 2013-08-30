@@ -34,7 +34,7 @@ except ImportError:
 MAX_RETRIES = 5
 
 
-def is_python(view):
+def is_python(view, ignore_comments=False):
     """Determine if the given view location is python code
     """
 
@@ -42,7 +42,10 @@ def is_python(view):
         return False
 
     location = view.sel()[0].begin()
-    matcher = 'source.python - string - comment'
+    if ignore_comments is True:
+        matcher = 'source.python'
+    else:
+        matcher = 'source.python - string - comment'
     return view.match_selector(location, matcher)
 
 
