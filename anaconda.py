@@ -343,13 +343,12 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
             ):
                 return
 
-        view = sublime.active_window().active_view()
-        code = view.substr(sublime.Region(0, view.size()))
+        code = self.view.substr(sublime.Region(0, self.view.size()))
         settings = {
             'aggressive': aggresive_level,
-            'list-fixes': get_settings(view, 'list-fixes', False),
-            'ignore': get_settings(view, 'ignore', []),
-            'select': get_settings(view, 'select', [])
+            'list-fixes': get_settings(self.view, 'list-fixes', False),
+            'ignore': get_settings(self.view, 'ignore', []),
+            'select': get_settings(self.view, 'select', [])
         }
         try:
             autopep.AnacondaAutopep8(settings, code, self.get_data).start()
@@ -373,9 +372,8 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         """Replace the old code with what autopep8 gave to us
         """
 
-        view = sublime.active_window().active_view()
-        region = sublime.Region(0, view.size())
-        view.replace(edit, region, self.data)
+        region = sublime.Region(0, self.view.size())
+        self.view.replace(edit, region, self.data)
         self.data = None
 
 
