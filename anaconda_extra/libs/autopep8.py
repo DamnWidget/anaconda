@@ -56,6 +56,10 @@ import tokenize
 
 import pep8
 
+# this is need to prevent the plugin to load libraries
+# from useless (as usual) ST3 Python.zip library file
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), './'))
+
 
 try:
     unicode

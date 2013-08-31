@@ -327,12 +327,11 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
     data = None
 
     def run(self, edit):
-        print(self.view.settings().get('syntax'))
         if self.data is not None:
             self.replace(edit)
             return
 
-        aggresive_level = get_settings(self.view, 'agressive_level', 0)
+        aggresive_level = get_settings(self.view, 'aggressive', 0)
         if aggresive_level > 0:
             if not sublime.ok_cancel_dialog(
                 'You have an aggressive level of {} this may cause '
