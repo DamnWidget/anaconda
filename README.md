@@ -412,5 +412,5 @@ Do you have a Mac OS X box that you don't use anymore and its abandoned in a cor
 Just donate to maintain this project alive.
 
 [<img src="https://api.flattr.com/button/flattr-badge-large.png" />][0]
-
+[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/de124b4ffd37f6c0491ee7e4de3ec4cc "githalytics.com")](http://githalytics.com/DamnWidget/anaconda)
 [0]: http://flattr.com/thing/1765332/DamnWidgetanaconda-on-GitHub
