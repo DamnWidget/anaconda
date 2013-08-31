@@ -412,6 +412,8 @@ class JediUsages(object):
             sublime.ENCODED_POSITION
         )
 
+        self._toggle_indicator(lineno, columno)
+
     def _show_options(self, defs, usages):
         """Show a dropdown quickpanel with options to jump
         """
@@ -425,6 +427,28 @@ class JediUsages(object):
 
         self.options = defs
         self.text.view.window().show_quick_panel(options, self._jump)
+
+    def _toggle_indicator(self, lineno=0, columno=0):
+        """Toggle mark indicator for focus the cursor
+        """
+
+        pt = self.text.view.text_point(lineno - 1, columno)
+        region_name = 'anaconda.indicator.{}.{}'.format(
+            self.text.view.id(), lineno
+        )
+        show = lambda: self.text.view.add_regions(
+            region_name,
+            [sublime.Region(pt, pt)],
+            'comment',
+            'bookmark',
+            sublime.DRAW_EMPTY_AS_OVERWRITE
+        )
+        hide = lambda: self.text.view.erase_regions(region_name)
+
+        for i in range(3):
+            delta = 300 * i * 2
+            sublime.set_timeout(show, delta)
+            sublime.set_timeout(hide, delta + 300)
 
 
 def plugin_loaded():

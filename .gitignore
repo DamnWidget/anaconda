@@ -40,3 +40,4 @@ nosetests.xml
 
 # Don't track Main.sublime-menu anymore
 Main.sublime-menu
+*.pickle
