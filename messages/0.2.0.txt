@@ -1,0 +1,9 @@
+Changes in 0.2.0
+================
+
+ Critical update
+
+Fixes
+=====
+
+ - prevent anaconda from import lib2to3 from Sublime Text 3 useless zip library file to fix plugin crashes
