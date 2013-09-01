@@ -1,0 +1,9 @@
+Changes in 0.2.1
+================
+
+New feature
+
+Changes
+=======
+
+ - added blink indicator to GoTo and FindUsages commands to focus the cursor line
