@@ -63,7 +63,7 @@ class PyLinter(object):
 
         for error in data.splitlines():
             if '************* Module ' in error:
-                ign, module = error.split('************* Module ')
+                _, module = error.split('************* Module ')
                 if not module in self.filename:
                     continue
             else:
