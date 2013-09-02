@@ -12,7 +12,6 @@ import sys
 import time
 import logging
 import traceback
-import threading
 from string import Template
 
 from functools import partial
@@ -20,13 +19,16 @@ from functools import partial
 import sublime
 import sublime_plugin
 
-from .worker import Worker
-from .anaconda_extra import autopep
-from .utils import get_settings, active_view, prepare_send_data
-from .decorators import (
+from .anaconda_lib import autopep
+from .anaconda_lib.worker import Worker
+from .anaconda_lib.jediusages import JediUsages
+from .anaconda_lib.progress_bar import ProgressBar
+from .anaconda_lib.helpers import get_settings, active_view, prepare_send_data
+from .anaconda_lib.decorators import (
     only_python, enable_for_python, profile, is_python,
     on_auto_formatting_enabled
 )
+
 
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda only works with Sublime Text 3')
@@ -395,123 +397,6 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         region = sublime.Region(0, self.view.size())
         self.view.replace(edit, region, self.data)
         self.data = None
-
-
-class JediUsages(object):
-    """Work with Jedi definitions
-    """
-
-    def __init__(self, text):
-        self.text = text
-
-    def process(self, usages=False, data=None):
-        """Process the definitions
-        """
-
-        if not data['success']:
-            return
-
-        definitions = data['goto'] if not usages else data['usages']
-        if definitions is not None and len(definitions) == 1 and not usages:
-            self._jump(*definitions[0])
-        else:
-            self._show_options(definitions, usages)
-
-    def _jump(self, filename, lineno=None, columno=None):
-        """Jump to a window
-        """
-
-        # process jumps from options window
-        if type(filename) is int:
-            if filename == -1:
-                return
-
-            filename, lineno, columno = self.options[filename]
-
-        sublime.active_window().open_file(
-            '{}:{}:{}'.format(filename, lineno or 0, columno or 0),
-            sublime.ENCODED_POSITION
-        )
-
-        self._toggle_indicator(lineno, columno)
-
-    def _show_options(self, defs, usages):
-        """Show a dropdown quickpanel with options to jump
-        """
-
-        if usages:
-            options = [
-                [o[0], 'line: {} column: {}'.format(o[1], o[2])] for o in defs
-            ]
-        else:
-            options = defs[0]
-
-        self.options = defs
-        self.text.view.window().show_quick_panel(options, self._jump)
-
-    def _toggle_indicator(self, lineno=0, columno=0):
-        """Toggle mark indicator for focus the cursor
-        """
-
-        pt = self.text.view.text_point(lineno - 1, columno)
-        region_name = 'anaconda.indicator.{}.{}'.format(
-            self.text.view.id(), lineno
-        )
-        show = lambda: self.text.view.add_regions(
-            region_name,
-            [sublime.Region(pt, pt)],
-            'comment',
-            'bookmark',
-            sublime.DRAW_EMPTY_AS_OVERWRITE
-        )
-        hide = lambda: self.text.view.erase_regions(region_name)
-
-        for i in range(3):
-            delta = 300 * i * 2
-            sublime.set_timeout(show, delta)
-            sublime.set_timeout(hide, delta + 300)
-
-
-class ProgressBar(threading.Thread):
-    """A progress bar animation that runs in other thread
-    """
-
-    def __init__(self, messages):
-        threading.Thread.__init__(self)
-        self.messages = messages
-        self.die = False
-
-    def run(self):
-        """Just run the thread
-        """
-
-        i = 0
-        size = 8
-        addition = 1
-        while not self.die:
-
-            pos = i % size
-            status = '{}+{}'.format(' ' * pos, ' ' * ((size - 1) - pos))
-
-            sublime.status_message('{} [{}]'.format(
-                self.messages['start'], status)
-            )
-
-            if not (size - 1) - pos:
-                addition = -1
-            if not pos:
-                addition = 1
-
-            i += addition
-            time.sleep(0.1)
-
-        sublime.status_message(self.messages['end'])
-
-    def terminate(self):
-        """Terminate the thread
-        """
-
-        self.die = True
 
 
 def plugin_loaded():

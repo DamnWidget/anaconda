@@ -22,7 +22,7 @@ try:
 except ImportError:
     import json
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../anaconda_lib'))
 
 import jedi
 from linting import linter

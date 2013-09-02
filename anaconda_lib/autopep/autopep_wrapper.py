@@ -12,7 +12,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../linting'))
 import threading
 
-from .libs import autopep8
+from .autopep8_lib import autopep8
 
 
 class AnacondaAutopep8(threading.Thread):

@@ -19,7 +19,7 @@ except ImportError:
     except ImportError:
         import json
 
-from ..asynconda import EventHandler
+from .ioloop import EventHandler
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
