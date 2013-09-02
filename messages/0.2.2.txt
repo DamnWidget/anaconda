@@ -1,0 +1,12 @@
+Changes in 0.2.2
+================
+
+ - Now the current buffer is set read only while AutoPEP8 is working
+ - A progress bar is shown in the status bar while AutoPEP8 is working
+ - Added option to auto formatting pep8 on file save
+
+Resolves
+========
+
+  - #40
+  - #41
