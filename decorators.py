@@ -114,6 +114,19 @@ def on_linting_behaviour(modes):
     return decorator
 
 
+def on_auto_formatting_enabled(func):
+    """Executed only when auto_formatting is True in the configuration
+    """
+
+    @functools.wraps(func)
+    def wrapper(self, view, *args, **kwargs):
+
+        if get_settings(view, 'auto_formatting', False) is True:
+            return func(self, view, *args, **kwargs)
+
+    return wrapper
+
+
 def not_scratch(func):
     """Don't execute the given function if the view is scratched
     """

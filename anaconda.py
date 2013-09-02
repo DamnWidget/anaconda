@@ -23,7 +23,10 @@ import sublime_plugin
 from .worker import Worker
 from .anaconda_extra import autopep
 from .utils import get_settings, active_view, prepare_send_data
-from .decorators import only_python, enable_for_python, profile, is_python
+from .decorators import (
+    only_python, enable_for_python, profile, is_python,
+    on_auto_formatting_enabled
+)
 
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda only works with Sublime Text 3')
@@ -71,6 +74,14 @@ class AnacondaEventListener(sublime_plugin.EventListener):
 
         Worker().execute(self._complete, **data)
         return
+
+    @only_python
+    @on_auto_formatting_enabled
+    def on_pre_save_async(self, view):
+        """Called just before the file is going to be saved
+        """
+
+        view.run_command('anaconda_auto_format')
 
     @only_python
     def on_modified_async(self, view):
@@ -480,7 +491,7 @@ class ProgressBar(threading.Thread):
         while not self.die:
 
             pos = i % size
-            status = '{}*{}'.format(' ' * pos, ' ' * ((size - 1) - pos))
+            status = '{}+{}'.format(' ' * pos, ' ' * ((size - 1) - pos))
 
             sublime.status_message('{} [{}]'.format(
                 self.messages['start'], status)

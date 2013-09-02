@@ -86,6 +86,16 @@
     */
 
     /*
+        Autoformat files on save
+
+        This option is disabled by default, AutoPEP8 is really slow and it get
+        the file buffer read only while its working in the background.
+
+        Use this at your risk
+    */
+    "auto_formatting": false,
+
+    /*
         Enable unsafe changes:
             https://github.com/hhatto/autopep8#more-advanced-usage
 
