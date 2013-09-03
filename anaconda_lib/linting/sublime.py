@@ -14,7 +14,6 @@ from ..decorators import is_python
 from ..helpers import get_settings, active_view
 
 ANACONDA = {
-    'QUEUE': {},
     'ERRORS': {},
     'WARNINGS': {},
     'VIOLATIONS': {},

@@ -12,7 +12,7 @@ This doesn't meant that anaconda is a fork of SublimeLinter in any
 way or that anaconda is going to be updated with latest SublimeLinter
 updates. Anaconda and SublimeLinter are two completely separated
 projects but they did a great job with SublimeLinter so we are reusing
-part of their plugin to lint our Python scripts.Python
+part of their plugin to lint our Python scripts.
 
 The main difference between SublimeLinter linting and anaconda one is
 that the former lints always for Python3.3 even if we are coding in
