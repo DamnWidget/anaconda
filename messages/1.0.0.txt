@@ -1,0 +1,17 @@
+Changes in 1.0.0
+================
+
+ - The plugin has now a single entry point
+ - anaconda_linter.py has been removed
+ - Libraries logic are now inside anaconda_lib package
+ - Commands are now inside commands package
+ - Event listeners are now inside listeners package
+ - anaconda.py has now a single one responsability, startup the plugin
+ - Some code has been cleaned
+ - Anaconda now follows a modular architecture
+ - Version has been upgraded to 1.0.0 first stable release
+
+Resolves
+========
+
+  - #42
