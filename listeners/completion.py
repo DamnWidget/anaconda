@@ -7,15 +7,13 @@ import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.helpers import prepare_send_data, get_settings, active_view
-from ..anaconda_lib.decorators import (
-    only_python, profile, on_auto_formatting_enabled
-)
+from ..anaconda_lib.decorators import only_python, profile
 
 JUST_COMPLETED = False
 
 
-class AnacondaEventListener(sublime_plugin.EventListener):
-    """Anaconda events listener class
+class AnacondaComletionEventListener(sublime_plugin.EventListener):
+    """Anaconda completion events listener class
     """
 
     completions = []
@@ -50,14 +48,6 @@ class AnacondaEventListener(sublime_plugin.EventListener):
 
         Worker().execute(self._complete, **data)
         return
-
-    @only_python
-    @on_auto_formatting_enabled
-    def on_pre_save_async(self, view):
-        """Called just before the file is going to be saved
-        """
-
-        view.run_command('anaconda_auto_format')
 
     @only_python
     def on_modified_async(self, view):
