@@ -21,7 +21,7 @@ from .commands import *
 from .listeners import *
 
 if sys.version_info < (3, 3):
-    raise RuntimeError('Anaconda only works with Sublime Text 3')
+    raise RuntimeError('Anaconda works with Sublime Text 3 only')
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))

@@ -15,7 +15,6 @@ import subprocess
 import sublime
 
 from .jsonclient import AsynClient
-from .ioloop import loop, terminate
 from .helpers import get_settings, get_traceback, project_name
 
 logger = logging.getLogger(__name__)

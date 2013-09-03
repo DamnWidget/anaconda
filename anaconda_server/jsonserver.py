@@ -28,6 +28,10 @@ import jedi
 from linting import linter
 from contexts import json_decode
 from jedi import refactoring as jedi_refactor
+from commands import (
+    Doc, Lint, Goto, Rename, PyLint, FindUsages, AutoComplete,
+    CompleteParameters
+)
 
 try:
     from linting.anaconda_pylint import PyLinter
@@ -58,6 +62,7 @@ class JSONHandler(asynchat.async_chat):
         if data is not None:
             data = '{0}\r\n'.format(json.dumps(data))
             data = bytes(data, 'utf8') if PY3 else data
+            print(data)
 
             self.push(data)
 
@@ -151,29 +156,14 @@ class JSONHandler(asynchat.async_chat):
         """Return lintin errors on the given code
         """
 
-        try:
-            self.return_back({
-                'success': True,
-                'errors': linter.Linter().run_linter(settings, code, filename),
-                'uid': uid
-            })
-        except Exception as error:
-            logging.error(error)
-            log_traceback()
+        Lint(self.return_back, uid, linter, settings, code, filename)
 
     def run_linter_pylint(self, uid, filename):
         """Return lintin errors on the given file
         """
 
         if PYLINT_AVAILABLE:
-            try:
-                errors = PyLinter(filename).parse_errors()
-                success = True
-            except Exception as error:
-                logging.error(error)
-                log_traceback()
-                errors = error,
-                success = False
+            PyLint(self.return_back, uid, PyLinter, filename)
         else:
             success = False
             errors = 'Your configured python interpreter can\'t import pylint'
@@ -184,214 +174,39 @@ class JSONHandler(asynchat.async_chat):
             'uid': uid
         })
 
-    def autocomplete(self, uid, settings=None):
-        """Return Jedi completions
-        """
-
-        try:
-            data = self._parameters_for_complete()
-
-            completions = self.script.completions()
-            if DEBUG_MODE is True:
-                logging.info(completions)
-            data.extend([
-                ('{0}\t{1}'.format(comp.name, comp.type), comp.name)
-                for comp in completions
-            ])
-            result = {'success': True, 'completions': data, 'uid': uid}
-        except Exception as error:
-            logging.error('The underlying Jedi library as raised an exception')
-            logging.error(error)
-            log_traceback()
-            result = {
-                'success': False,
-                'error': str(error),
-                'tb': get_log_traceback(),
-                'uid': uid
-            }
-
-        self.return_back(result)
-
-    def goto(self, uid):
-        """Goto a Python definition
-        """
-
-        try:
-            definitions = self.script.goto_assignments()
-            if all(d.type == 'import' for d in definitions):
-                definitions = self.script.goto_definitions()
-        except jedi.api.NotFoundError:
-            data = None
-            success = False
-        else:
-            data = [(i.module_path, i.line, i.column + 1)
-                    for i in definitions if not i.in_builtin_module()]
-            success = True
-
-        self.return_back({'success': success, 'goto': data, 'uid': uid})
-
-    def usages(self, uid):
-        """Find usages
-        """
-
-        try:
-            usages = self.script.usages()
-            success = True
-        except jedi.api.NotFoundError:
-            usages = None
-            success = False
-
-        self.return_back({
-            'success': success,
-            'usages': [
-                (i.module_path, i.line, i.column)
-                for i in usages if not i.in_builtin_module()
-            ] if usages is not None else [],
-            'uid': uid
-        })
-
-    def doc(self, uid):
-        """Find documentation
-        """
-
-        try:
-            definitions = self.script.goto_definitions()
-        except jedi.NotFoundError:
-            definitions = []
-        except Exception:
-            definitions = []
-            logging.error('Exception, this shouldn\'t happen')
-            log_traceback()
-
-        if not definitions:
-            success = False
-            docs = []
-        else:
-            success = True
-            docs = [
-                'Docstring for {0}\n{1}\n{2}'.format(
-                    d.full_name, '=' * 40, d.doc
-                ) if d.doc else 'No docstring for {0}'.format(d)
-                for d in definitions
-            ]
-
-        self.return_back({
-            'success': success,
-            'doc': ('\n' + '-' * 79 + '\n').join(docs),
-            'uid': uid
-        })
-
-    def parameters(self, uid, settings):
-        """Get callable or class parameters
-        """
-
-        completions = []
-        complete_all = settings.get('complete_all_parameters', False)
-
-        try:
-            signatures = self.script.call_signatures()[0]
-        except IndexError:
-            signatures = None
-
-        params = self._get_function_parameters(signatures)
-        for i, p in enumerate(params):
-            try:
-                name, value = p
-            except ValueError:
-                name = p[0]
-                value = None
-
-            if value is None:
-                completions.append('${%d:%s}' % (i + 1, name))
-            else:
-                if complete_all is True:
-                    completions.append('%s=${%d:%s}' % (name, i + 1, value))
-
-        self.return_back({
-            'success': True,
-            'template': ', '.join(completions),
-            'uid': uid
-        })
-
     def rename(self, uid, directories, new_word):
         """Rename the object under the cursor by the given word
         """
 
-        renames = {}
-        try:
-            usages = self.script.usages()
-            proposals = jedi_refactor.rename(self.script, new_word)
-            for u in usages:
-                path = u.module_path.rsplit('/{0}.py'.format(u.module_name))[0]
-                if path in directories:
-                    if u.module_path not in renames:
-                        renames[u.module_path] = []
+        Rename(
+            self.return_back, uid, self.script,
+            directories, new_word, jedi_refactor
+        )
 
-                    thefile = proposals.new_files().get(u.module_path)
-                    if thefile is None:
-                        continue
-
-                    lineno = u.line - 1
-                    line = thefile.splitlines()[lineno]
-                    renames[u.module_path].append({
-                        'lineno': lineno, 'line': line
-                    })
-            success = True
-        except Exception as error:
-            logging.debug(error)
-            log_traceback()
-            success = False
-
-        self.return_back({
-            'success': success, 'renames': renames, 'uid': uid
-        })
-
-    def _parameters_for_complete(self):
-        """Get function / class constructor paremeters completions list
+    def autocomplete(self, uid):
+        """Call autocomplete
         """
+        AutoComplete(self.return_back, uid, self.script)
 
-        completions = []
-        try:
-            in_call = self.script.call_signatures()[0]
-        except IndexError:
-            in_call = None
-
-        parameters = self._get_function_parameters(in_call)
-
-        for parameter in parameters:
-            try:
-                name, value = parameter
-            except ValueError:
-                name = parameter[0]
-                value = None
-
-            if value is None:
-                completions.append((name, '${1:%s}' % name))
-            else:
-                completions.append(
-                    (name + '\t' + value, '%s=${1:%s}' % (name, value))
-                )
-
-        return completions
-
-    def _get_function_parameters(self, call_def):
+    def parameters(self, uid, settings):
+        """Call complete parameters
         """
-        Return list function parameters, prepared for sublime completion.
-        Tuple contains parameter name and default value
+        CompleteParameters(self.return_back, uid, self.script, settings)
+
+    def usages(self, uid):
+        """Call Find Usages
         """
+        FindUsages(self.return_back, uid, self.script)
 
-        if not call_def:
-            return []
+    def goto(self, uid):
+        """Call goto
+        """
+        Goto(self.return_back, uid, self.script)
 
-        params = []
-        for param in call_def.params:
-            cleaned_param = param.get_code().strip()
-            if '*' in cleaned_param or cleaned_param == 'self':
-                continue
-
-            params.append([s.strip() for s in cleaned_param.split('=')])
-
-        return params
+    def doc(self, uid):
+        """Call doc
+        """
+        Doc(self.return_back, uid, self.script)
 
 
 class JSONServer(asyncore.dispatcher):
