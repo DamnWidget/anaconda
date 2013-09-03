@@ -1,0 +1,14 @@
+Changes in 1.0.1
+================
+
+ - JsonServer follows now a full modular approach
+ - Jedi library has been updated to version 0.7.0alpha1
+ - Logic split in event listeners has been improved
+
+Resolves
+========
+
+  - #43
+  - #44
+  - #45
+  - #46
