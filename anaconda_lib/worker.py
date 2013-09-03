@@ -204,24 +204,3 @@ class Worker(object):
                 self.start()
             else:
                 client.send_command(callback, **data)
-
-
-def plugin_loaded():
-    """Called directly from sublime on pugin load
-    """
-
-    global LOOP_RUNNING
-
-    print('ME CAGO EN TU PUTA MADRE')
-    if not LOOP_RUNNING:
-        loop()
-
-
-def plugin_unloaded():
-    """Called directly from sublime on plugin unload
-    """
-
-    global LOOP_RUNNING
-
-    if LOOP_RUNNING:
-        terminate()

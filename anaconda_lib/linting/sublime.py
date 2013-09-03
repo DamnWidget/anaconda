@@ -1,11 +1,6 @@
-# -*- coding: utf8 -*-
 
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
-
-"""
-Anaconda is a python autocompletion and linting plugin for Sublime Text 3
-"""
 
 import re
 import time
@@ -13,14 +8,10 @@ import threading
 from functools import partial
 
 import sublime
-import sublime_plugin
 
-from .anaconda_lib.worker import Worker
-from .anaconda_lib.helpers import get_settings, active_view
-from .anaconda_lib.decorators import (
-    only_python, not_scratch, on_linting_enabled, on_linting_behaviour,
-    is_python
-)
+from ..worker import Worker
+from ..decorators import is_python
+from ..helpers import get_settings, active_view
 
 ANACONDA = {
     'QUEUE': {},
@@ -38,181 +29,6 @@ marks = {
     'violation': 'dot',
     'illegal': 'circle'
 }
-
-
-###############################################################################
-# Anaconda Linter Plugin Subclasses
-###############################################################################
-class BackgroundLinter(sublime_plugin.EventListener):
-    """Background linter, can be turned off via plugin settings
-    """
-
-    def __init__(self):
-        super(BackgroundLinter, self).__init__()
-        self.last_selected_line = -1
-        s = sublime.load_settings('Anaconda.sublime-settings')
-        s.add_on_change(
-            'anaconda_linting_behaviour',  toggle_linting_behaviour
-        )
-
-    @only_python
-    @not_scratch
-    @on_linting_enabled
-    @on_linting_behaviour(['always'])
-    def on_modified_async(self, view):
-        """
-        Called after changes have been made to a view.
-        Runs in a separate thread, and does not block the application.
-        """
-
-        # update the last selected line number
-        self.last_selected_line = -1
-        ANACONDA['LAST_PULSE'] = time.time()
-        ANACONDA['ALREADY_LINTED'] = False
-        erase_lint_marks(view)
-
-    @only_python
-    @on_linting_enabled
-    @on_linting_behaviour(['always', 'load-save'])
-    def on_load(self, view):
-        """Called after load a file
-        """
-
-        run_linter(view)
-
-    @only_python
-    @not_scratch
-    @on_linting_enabled
-    def on_post_save_async(self, view):
-        """Called post file save event
-        """
-
-        run_linter(view)
-
-    @only_python
-    @on_linting_enabled
-    @on_linting_behaviour(['always', 'load-save'])
-    def on_activated_async(self, view):
-        """Called when a view gain the focus
-        """
-
-        run_linter(view)
-
-    @only_python
-    @not_scratch
-    @on_linting_enabled
-    def on_selection_modified_async(self, view):
-        """Called on selection modified
-        """
-
-        last_selected_line = last_selected_lineno(view)
-
-        if last_selected_line != self.last_selected_line:
-            self.last_selected_line = last_selected_line
-            update_statusbar(view)
-
-    def _erase_marks(self, view):
-        """Just a wrapper for erase_lint_marks
-        """
-
-        erase_lint_marks(view)
-
-
-class AnacondaDisableLinting(sublime_plugin.WindowCommand):
-    """Disable the linting for the current buffer
-    """
-
-    def run(self):
-        ANACONDA['DISABLED'].append(self.window.active_view().id())
-        erase_lint_marks(self.window.active_view())
-
-    def is_enabled(self):
-        """Determines if the command is enabled
-        """
-
-        view = self.window.active_view()
-        if view.id() in ANACONDA['DISABLED']:
-            return False
-
-        location = view.sel()[0].begin()
-        matcher = 'source.python'
-        return view.match_selector(location, matcher)
-
-
-class AnacondaEnableLinting(sublime_plugin.WindowCommand):
-    """Disable the linting for the current buffer
-    """
-
-    def run(self):
-        ANACONDA['DISABLED'].remove(self.window.active_view().id())
-        run_linter(self.window.active_view())
-
-    def is_enabled(self):
-        """Determines if the command is enabled
-        """
-
-        view = self.window.active_view()
-        if view.id() not in ANACONDA['DISABLED']:
-            return False
-
-        location = view.sel()[0].begin()
-        matcher = 'source.python'
-        return view.match_selector(location, matcher)
-
-
-class AnacondaGetLines(sublime_plugin.WindowCommand):
-    """Get a quickpanel with all the errors and lines ready to jump to them
-    """
-
-    def run(self):
-        errors = {}
-        self._harvest_errors(errors, 'ERRORS')
-        self._harvest_errors(errors, 'WARNINGS')
-        self._harvest_errors(errors, 'VIOLATIONS')
-
-        if len(errors) > 0:
-            self.options = []
-            for line, error_strings in errors.items():
-
-                for msg in error_strings:
-                    self.options.append([msg, 'line: {}'.format(line)])
-
-            self.window.show_quick_panel(self.options, self._jump)
-
-    def is_enabled(self):
-        """Determines if the command is enabled
-        """
-
-        view = self.window.active_view()
-        if view.id() in ANACONDA['DISABLED']:
-            return False
-
-        location = view.sel()[0].begin()
-        matcher = 'source.python'
-        return view.match_selector(location, matcher)
-
-    def _harvest_errors(self, harvester, error_type):
-        vid = self.window.active_view().id()
-        for line, error_strings in ANACONDA[error_type][vid].items():
-            if not line in harvester:
-                harvester[line] = []
-
-            for error in error_strings:
-                harvester[line].append(error)
-
-    def _jump(self, item):
-        """Jump to a line in the view buffer
-        """
-
-        if item == -1:
-            return
-
-        lineno = int(self.options[item][1].split(':')[1].strip())
-        pt = self.window.active_view().text_point(lineno, 0)
-        self.window.active_view().sel().clear()
-        self.window.active_view().sel().add(sublime.Region(pt))
-
-        self.window.active_view().show(pt)
 
 
 ###############################################################################
@@ -584,23 +400,3 @@ def toggle_linting_behaviour():
         monitor.start()
     else:
         monitor.die = True
-
-
-def plugin_loaded():
-    """Called directly from sublime on pugin load
-    """
-
-    if get_settings(active_view(), 'anaconda_linting_behaviour') != 'always':
-        return
-
-    global monitor
-    if not monitor.is_alive():
-        monitor.start()
-
-
-def plugin_unloaded():
-    """Called directly from sublime on plugin unload
-    """
-
-    global monitor
-    monitor.die = True

@@ -31,8 +31,6 @@ except ImportError:
     # we just imported the file from jsonserver so we don't need get_settings
     pass
 
-MAX_RETRIES = 5
-
 
 def is_python(view, ignore_comments=False):
     """Determine if the given view location is python code
