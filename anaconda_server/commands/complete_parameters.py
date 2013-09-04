@@ -3,7 +3,7 @@
 # This program is Free Software see LICENSE file for details
 
 
-from base import Command, get_function_parameters
+from .base import Command, get_function_parameters
 
 
 class CompleteParameters(Command):

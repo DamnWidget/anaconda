@@ -4,7 +4,7 @@
 
 import logging
 
-from base import Command
+from .base import Command
 
 
 class Doc(Command):

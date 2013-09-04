@@ -5,7 +5,7 @@
 import logging
 import traceback
 
-from base import Command, get_function_parameters
+from .base import Command, get_function_parameters
 
 DEBUG_MODE = False
 
