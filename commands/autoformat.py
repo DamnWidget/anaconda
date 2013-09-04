@@ -40,7 +40,7 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         settings = {
             'aggressive': aggresive_level,
             'list-fixes': get_settings(self.view, 'list-fixes', False),
-            'ignore': get_settings(self.view, 'ignore', []),
+            'ignore': get_settings(self.view, 'autoformat_ignore', []),
             'select': get_settings(self.view, 'select', [])
         }
         try:
