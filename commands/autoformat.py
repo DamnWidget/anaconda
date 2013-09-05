@@ -15,6 +15,7 @@ from ..anaconda_lib.progress_bar import ProgressBar
 
 
 class AnacondaAutoFormat(sublime_plugin.TextCommand):
+
     """Execute autopep8 formating
     """
 
@@ -36,12 +37,12 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
             ):
                 return
 
-        code = self.view.substr(sublime.Region(0, self.view.size()))
+        self.code = self.view.substr(sublime.Region(0, self.view.size()))
         settings = {
             'aggressive': aggresive_level,
             'list-fixes': get_settings(self.view, 'list-fixes', False),
-            'ignore': get_settings(self.view, 'autoformat_ignore', []),
-            'select': get_settings(self.view, 'select', [])
+            'autoformat_ignore': get_settings(self.view, 'autoformat_ignore', []),
+            'autoformat_select': get_settings(self.view, 'autoformat_select', [])
         }
         try:
             messages = {
@@ -51,7 +52,9 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
             self.pbar = ProgressBar(messages)
             self.pbar.start()
             self.view.set_read_only(True)
-            autopep.AnacondaAutopep8(settings, code, self.get_data).start()
+
+            autopep.AnacondaAutopep8(settings, self.code, self.get_data).start()
+
         except:
             logging.error(traceback.format_exc())
 
@@ -74,6 +77,9 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         """Replace the old code with what autopep8 gave to us
         """
 
-        region = sublime.Region(0, self.view.size())
-        self.view.replace(edit, region, self.data)
+        if self.code != self.data:
+            region = sublime.Region(0, self.view.size())
+            self.view.replace(edit, region, self.data)
+
+        self.code = None
         self.data = None
