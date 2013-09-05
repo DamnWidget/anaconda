@@ -9,6 +9,7 @@ from ..anaconda_lib.linting.sublime import ANACONDA
 
 
 class AnacondaGetLines(sublime_plugin.WindowCommand):
+
     """Get a quickpanel with all the errors and lines ready to jump to them
     """
 
@@ -41,7 +42,7 @@ class AnacondaGetLines(sublime_plugin.WindowCommand):
 
     def _harvest_errors(self, harvester, error_type):
         vid = self.window.active_view().id()
-        for line, error_strings in ANACONDA[error_type][vid].items():
+        for line, error_strings in ANACONDA[error_type].get(vid, {}).items():
             if not line in harvester:
                 harvester[line] = []
 
