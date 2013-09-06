@@ -169,6 +169,9 @@
     [
     ],
 
+    // Maximum line length for pep8
+    "pep8_max_line_length": 79,
+
     /*
         You can ignore some of the "undefined name xxx"
         errors (comes in handy if you work with post-processors, globals/builtins available only at runtime, etc.).

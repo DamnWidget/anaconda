@@ -331,6 +331,7 @@ def run_linter(view):
     settings = {
         'pep8': get_settings(view, 'pep8', True),
         'pep8_ignore': get_settings(view, 'pep8_ignore', []),
+        'pep8_max_line_length': get_settings(view, 'pep8_max_line_length', None),
         'pyflakes_ignore': get_settings(view, 'pyflakes_ignore', []),
         'pyflakes_disabled': get_settings(view, 'pyflakes_disabled', False)
     }
