@@ -41,8 +41,12 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         settings = {
             'aggressive': aggresive_level,
             'list-fixes': get_settings(self.view, 'list-fixes', False),
-            'autoformat_ignore': get_settings(self.view, 'autoformat_ignore', []),
-            'autoformat_select': get_settings(self.view, 'autoformat_select', [])
+            'autoformat_ignore': get_settings(
+                self.view, 'autoformat_ignore', []
+            ),
+            'autoformat_select': get_settings(
+                self.view, 'autoformat_select', []
+            )
         }
         try:
             messages = {
@@ -53,7 +57,8 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
             self.pbar.start()
             self.view.set_read_only(True)
 
-            autopep.AnacondaAutopep8(settings, self.code, self.get_data).start()
+            autopep.AnacondaAutopep8(
+                settings, self.code, self.get_data).start()
 
         except:
             logging.error(traceback.format_exc())
