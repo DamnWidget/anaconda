@@ -170,8 +170,7 @@ class Linter(object):
 
             return w.messages
 
-    def pep8_check(self, code, filename, ignore=None,
-                   max_line_length=pep8.MAX_LINE_LENGTH):
+    def pep8_check(self, code, filename, ignore, max_line_length):
         """Check the code with pep8 to find PEP 8 errors
         """
 
@@ -242,11 +241,10 @@ class Linter(object):
         errors = []
 
         if settings.get("pep8", True):
-            def_line = pep8.MAX_LINE_LENGTH
             check_params = {
                 'ignore': settings.get('pep8_ignore', []),
                 'max_line_length': settings.get('pep8_max_line_length',
-                                                def_line) or def_line
+                                                 pep8.MAX_LINE_LENGTH)
             }
             errors.extend(self.pep8_check(
                 code, filename, **check_params)
