@@ -9,6 +9,7 @@ from functools import partial
 
 import sublime
 
+from . import pep8
 from ..worker import Worker
 from ..decorators import is_python
 from ..helpers import get_settings, active_view
@@ -331,6 +332,8 @@ def run_linter(view):
     settings = {
         'pep8': get_settings(view, 'pep8', True),
         'pep8_ignore': get_settings(view, 'pep8_ignore', []),
+        'pep8_max_line_length': get_settings(view, 'pep8_max_line_length',
+                                             pep8.MAX_LINE_LENGTH),
         'pyflakes_ignore': get_settings(view, 'pyflakes_ignore', []),
         'pyflakes_disabled': get_settings(view, 'pyflakes_disabled', False)
     }
