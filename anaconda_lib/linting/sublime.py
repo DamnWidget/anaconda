@@ -2,6 +2,7 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
+import os
 import re
 import time
 import threading
@@ -242,7 +243,9 @@ def add_lint_marks(view, lines, **errors):
         outline_style = {'none': sublime.HIDDEN}
         style = get_settings(view, 'anaconda_linter_mark_style', 'outline')
         gutter_theme = get_settings(view, 'anaconda_gutter_theme', 'basic')
-        ico_path = 'Packages/Anaconda/gutter_mark_themes/{theme}-{type}.png'
+        package_name = os.path.dirname(__file__).rsplit(os.path.sep, 3)[1]
+        ico_path = ('Packages/' + package_name +
+                    '/gutter_mark_themes/{theme}-{type}.png')
 
         for lint_type, lints in get_outlines(view).items():
             if len(lints) > 0:
@@ -250,10 +253,8 @@ def add_lint_marks(view, lines, **errors):
                     if gutter_theme == 'basic':
                         gutter_marks = marks[lint_type]
                     else:
-                        gutter_marks = ico_path.format(**{
-                            'theme': gutter_theme,
-                            'type': lint_type,
-                        })
+                        gutter_marks = ico_path.format(theme=gutter_theme,
+                                                       type=lint_type)
                 else:
                     gutter_marks = ''
 
