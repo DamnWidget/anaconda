@@ -30,7 +30,7 @@ class ProgressBar(threading.Thread):
         while not self.die:
 
             pos = i % size
-            status = '{}+{}'.format(' ' * pos, ' ' * ((size - 1) - pos))
+            status = '{}={}'.format(' ' * pos, ' ' * ((size - 1) - pos))
 
             sublime.status_message('{} [{}]'.format(
                 self.messages['start'], status)

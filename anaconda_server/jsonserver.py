@@ -268,7 +268,16 @@ class Checker(threading.Thread):
         self.die = False
 
     def run(self):
+
         while not self.die:
+            if time.time() - self.server.last_call > 1800:
+                # is now more than 30 minutes of innactivity
+                self.server.logger.info(
+                    'detected inactivity for more than 30 minutes... '
+                    'shuting down...'
+                )
+                break
+
             self._check()
             time.sleep(self.delta)
 
@@ -277,13 +286,6 @@ class Checker(threading.Thread):
     def _check(self):
         """Check for the ST3 pid
         """
-
-        if time.time() - self.server.last_call > 1800:
-            # is now more than 30 minutes of innactivity
-            self.server.logger.info(
-                'detected inactivity for more than 30 minutes, shuting down...'
-            )
-            self.die = True
 
         if os.name == 'posix':
             try:
