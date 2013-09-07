@@ -284,7 +284,15 @@ When you use PyLint, PyFlakes and PEP8 are totally turned off.
 
 #### Gutter Marks
 
-If you want to see gutter marks in the linted lines you just have to set as ``true`` the ``anaconda_gutter_marks`` user setting. Anaconda does't support fancy PNG gutter marks, I never use them so I don't care about, if someone miss them just open an improvement ticket.
+
+If you want to see gutter marks in the linted lines you just have to set as ``true`` the ``anaconda_gutter_marks`` user setting. This will add simple marks to gutter. If you want to add fancy icons you can set ``anaconda_gutter_theme`` user settings. Available options are:
+
+- basic (default)
+- alpha
+- bright
+- dark
+- hard
+- simple
 
 
 #### Linting theme customization
