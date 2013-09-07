@@ -244,8 +244,10 @@ def add_lint_marks(view, lines, **errors):
         style = get_settings(view, 'anaconda_linter_mark_style', 'outline')
         gutter_theme = get_settings(view, 'anaconda_gutter_theme', 'basic')
         package_name = os.path.dirname(__file__).rsplit(os.path.sep, 3)[1]
-        ico_path = ('Packages/' + package_name +
-                    '/gutter_mark_themes/{theme}-{type}.png')
+        ico_path = (
+            'Packages/' + package_name + '/anaconda_lib/linting/'
+            '/gutter_mark_themes/{theme}-{type}.png'
+        )
 
         for lint_type, lints in get_outlines(view).items():
             if len(lints) > 0:
