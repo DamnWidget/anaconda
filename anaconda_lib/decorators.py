@@ -39,7 +39,11 @@ def is_python(view, ignore_comments=False):
     if view is None:
         return False
 
-    location = view.sel()[0].begin()
+    try:
+        location = view.sel()[0].begin()
+    except IndexError:
+        return False
+
     if ignore_comments is True:
         matcher = 'source.python'
     else:
