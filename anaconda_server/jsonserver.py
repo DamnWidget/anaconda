@@ -256,67 +256,6 @@ class JSONServer(asyncore.dispatcher):
         self.close()
 
 
-class Checker(threading.Thread):
-    """Check that the ST3 PID already exists every delta seconds
-    """
-
-    def __init__(self, server, delta=5):
-        threading.Thread.__init__(self)
-        self.server = server
-        self.delta = delta
-        self.daemon = True
-        self.die = False
-
-    def run(self):
-
-        while not self.die:
-            if time.time() - self.server.last_call > 1800:
-                # is now more than 30 minutes of innactivity
-                self.server.logger.info(
-                    'detected inactivity for more than 30 minutes... '
-                    'shuting down...'
-                )
-                break
-
-            self._check()
-            time.sleep(self.delta)
-
-        self.server.shutdown()
-
-    def _check(self):
-        """Check for the ST3 pid
-        """
-
-        if os.name == 'posix':
-            try:
-                os.kill(int(PID), 0)
-            except OSError:
-                self.server.logger.info(
-                    'process {0} does not exists stopping server...'.format(
-                        PID
-                    )
-                )
-                self.die = True
-        elif os.name == 'nt':
-            # win32com is not present in every Python installation on Windows
-            # we need something that always work so we are forced here to use
-            # the Windows tasklist command and check its output
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            output = subprocess.check_output(
-                ['tasklist', '/FI', 'PID eq {0}'.format(PID)],
-                startupinfo=startupinfo
-            )
-            pid = PID if not PY3 else bytes(PID, 'utf8')
-            if not pid in output:
-                self.server.logger.info(
-                    'process {0} does not exists stopping server...'.format(
-                        PID
-                    )
-                )
-                self.die = True
-
-
 def get_logger(path):
     """Build file logger
     """
@@ -367,11 +306,10 @@ if __name__ == "__main__":
     )
 
     options, args = opt_parser.parse_args()
-    if len(args) != 2:
-        opt_parser.error('you have to pass a port number and PID')
+    if len(args) != 1:
+        opt_parser.error('you have to pass a port number')
 
     port = int(args[0])
-    PID = args[1]
     if options.project is not None:
         jedi.settings.cache_directory = os.path.join(
             jedi.settings.cache_directory, options.project
@@ -388,11 +326,10 @@ if __name__ == "__main__":
     logger = get_logger(jedi.settings.cache_directory)
 
     try:
-        server = JSONServer(('localhost', port))
+        server = JSONServer(('0.0.0.0', port))
         logger.info(
-            'Anaconda Server started in port {0} for '
-            'PID {1} with cache dir {2}{3}'.format(
-                port, PID, jedi.settings.cache_directory,
+            'Anaconda Server started in port {0} with cache dir {1}{2}'.format(
+                port, jedi.settings.cache_directory,
                 ' and extra paths {0}'.format(
                     options.extra_paths
                 ) if options.extra_paths is not None else ''
@@ -404,10 +341,6 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     server.logger = logger
-
-    # start PID checker thread
-    checker = Checker(server, delta=1)
-    checker.start()
 
     # start the server
     server.serve_forever()
