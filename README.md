@@ -1,7 +1,7 @@
 Anaconda
 ========
 
-Anaconda is a Python autocompletion and linting plugin for Sublime Text 3. It is inspired in SublimeJEDI and based on SublimeLinter.
+Anaconda is a full Python suite that includes autocompletion, IDE features, linting with PyLint or PyFlakes + pep8 and AutoPEP8 support for Sublime Text 3. It is inspired in SublimeJEDI and based on SublimeLinter.
 
 A bit of history
 ----------------
