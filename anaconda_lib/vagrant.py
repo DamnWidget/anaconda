@@ -113,15 +113,15 @@ class VagrantIPAddress(object):
     """Get back the remote guest IP address in synchronous way
     """
 
-    def __init__(self, root, machine=None):
+    def __init__(self, root, machine=None, iface='eth1'):
 
         with vagrant_root(root):
             cmd = (
                 'python -c "import socket, fcntl, struct;'
                 's = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);'
                 'print(socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, '
-                'struct.pack(b\'256s\', b\'eth1\'))[20:24]))"\n'
-            )
+                'struct.pack(b\'256s\', b\'{}\'))[20:24]))"\n'
+            ).format(iface)
             proc = create_subprocess(
                 ['vagrant', 'ssh', machine, '-c', cmd],
                 stdout=PIPE, stderr=PIPE, cwd=os.getcwd()

@@ -239,10 +239,10 @@ class RemoteWorker(BaseWorker):
         if self.config['network'].get('address') is not None:
             return self.config['network']['address']
 
-        ip_address = VagrantIPAddress(
-            self.config['directory'], self.config['machine']
+        return VagrantIPAddress(
+            self.config['directory'], self.config['machine'],
+            self.config['network'].get('interface', 'eth1')
         ).ip_address
-        return ip_address
 
     def start(self):
         """Start the jsonserver in the remote guest machine
