@@ -3,7 +3,6 @@
 # This program is Free Software see LICENSE file for details
 
 import os
-import shutil
 import threading
 import subprocess
 
