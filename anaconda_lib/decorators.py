@@ -47,6 +47,19 @@ def is_python(view, ignore_comments=False):
     return view.match_selector(location, matcher)
 
 
+def on_vagrant_enabled(func):
+    """Execute the given function only if vagrant is enabled
+    """
+
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+
+        if self.view.settings().get('vagrant_environment') is not None:
+            return func(self, *args, **kwargs)
+
+    return wrapper
+
+
 def enable_for_python(func):
     """Returns True or False depending if we are in python sources
     """

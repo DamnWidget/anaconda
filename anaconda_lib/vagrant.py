@@ -71,8 +71,9 @@ class VagrantStatus(VagrantBase):
     """Check vagrant box status
     """
 
-    def __init__(self, callback, vagrant_root, machine=None):
+    def __init__(self, callback, vagrant_root, machine=None, full=False):
         super(VagrantStatus, self).__init__(callback, vagrant_root, machine)
+        self.full = full
         self.start()
 
     def run(self):
@@ -90,7 +91,8 @@ class VagrantStatus(VagrantBase):
         if proc.poll() != 0:
             self.callback((False, error))
         else:
-            self.callback((True, b'running' in output))
+            running = b'running' in output
+            self.callback((True, running if not self.full else output))
 
 
 class VagrantSSH(VagrantBase):
