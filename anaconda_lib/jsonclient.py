@@ -30,8 +30,8 @@ class AsynClient(EventHandler):
     """Asynchronous JSON connection to anaconda server
     """
 
-    def __init__(self, port):
-        EventHandler.__init__(self, ('localhost', port))
+    def __init__(self, port, host='localhost'):
+        EventHandler.__init__(self, (host, port))
         self.callbacks = {}
         self.rbuffer = []
 

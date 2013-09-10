@@ -55,7 +55,10 @@ class JediUsages(object):
                 [o[0], 'line: {} column: {}'.format(o[1], o[2])] for o in defs
             ]
         else:
-            options = defs[0]
+            if len(defs):
+                options = defs[0]
+            else:
+                return
 
         self.options = defs
         self.text.view.window().show_quick_panel(options, self._jump)

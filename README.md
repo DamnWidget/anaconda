@@ -1,18 +1,12 @@
 Anaconda
 ========
 
-Anaconda is a full Python suite that includes autocompletion, IDE features, linting with PyLint or PyFlakes + pep8 and AutoPEP8 support for Sublime Text 3. It is inspired in SublimeJEDI and based on SublimeLinter.
+Anaconda is a python development suite that includes autocompletion, IDE features, linting with PyLint or PyFlakes + pep8, AutoPEP8 , Vagrant and more for Sublime Text 3.
 
 A bit of history
 ----------------
 
-Anaconda was born from my need of use a single plugin to autocomplete and lint python code. There are some other really good plugins for that like SublimeJEDI, SublimePythonIDE or SublimeLinter but them doesn't fully fit my needs so I decided to create my own using the best of them.
-
-[SublimeLinter](https://github.com/SublimeLinter/SublimeLinter) is an awesome plugin for Sublime Text and I strongly recommend its use but its support for Sublime Text 3 is not good enough and it's python linting is always based on the version of Python that is running by the Sublime Text 3 plugin server that is Python 3.3 so you get error marks for your totally correct python syntax when you work with Python 2 so it make it pretty useles for Python linting in ST3.
-
-[SublimePythonIDE](https://github.com/JulianEberius/SublimePythonIDE) is really great, is a spin off of [SublimeRope](https://github.com/JulianEberius/SublimeRope) for Sublime Text 2 I helped to write a big part of Sublime Rope and part of SublimePythonIDE but the underlying Rope library is not as good for autocompletions as it is for refactors so it doesn't really fit my needs there.
-
-[SublimeJEDI](https://github.com/srusskih/SublimeJEDI) is pretty nice and it uses the [Jedi](https://github.com/davidhalter/jedi) library to perform autocompletions, Jedi is much better than Rope for autocompletion purposes but I don't like their inter process communication architecture.
+Anaconda was born from my need of use a single plugin to autocomplete and lint python code. There are some other really good plugins for that but them doesn't fully fit my needs so I decided to create my own using the best of them.
 
 Anaconda architecture
 ---------------------
@@ -148,61 +142,7 @@ With this command you can rename the object under the cursor in a project basis 
 
 Anaconda supports the [AutoPEP8](https://github.com/hhatto/autopep8) tool and its integrated as part of the plugin itself. You can reformat your files to follow PEP8 automatically using the command palette `Anaconda: Autoformat PEP8 Errors` or the same option in the contextual menu. Of course this operation is performed asynchronous but it set your current buffer as read only while the operation is performed, a progress bar is shown at the status bar while working.
 
-Anaconda can fix the following PEP8 errors:
-
-    E101 - Reindent all lines.
-    E111 - Reindent all lines.
-    E121 - Fix indentation to be a multiple of four.
-    E122 - Add absent indentation for hanging indentation.
-    E123 - Align closing bracket to match opening bracket.
-    E124 - Align closing bracket to match visual indentation.
-    E125 - Indent to distinguish line from next logical line.
-    E126 - Fix over-indented hanging indentation.
-    E127 - Fix visual indentation.
-    E128 - Fix visual indentation.
-    E129 - Indent to distinguish line from next logical line.
-    E201 - Remove extraneous whitespace.
-    E202 - Remove extraneous whitespace.
-    E203 - Remove extraneous whitespace.
-    E211 - Remove extraneous whitespace.
-    E221 - Fix extraneous whitespace around keywords.
-    E222 - Fix extraneous whitespace around keywords.
-    E223 - Fix extraneous whitespace around keywords.
-    E224 - Remove extraneous whitespace around operator.
-    E225 - Fix missing whitespace around operator.
-    E226 - Fix missing whitespace around operator.
-    E227 - Fix missing whitespace around operator.
-    E228 - Fix missing whitespace around operator.
-    E231 - Add missing whitespace.
-    E241 - Fix extraneous whitespace around keywords.
-    E242 - Remove extraneous whitespace around operator.
-    E251 - Remove whitespace around parameter '=' sign.
-    E261 - Fix spacing after comment hash.
-    E262 - Fix spacing after comment hash.
-    E271 - Fix extraneous whitespace around keywords.
-    E272 - Fix extraneous whitespace around keywords.
-    E273 - Fix extraneous whitespace around keywords.
-    E274 - Fix extraneous whitespace around keywords.
-    E301 - Add missing blank line.
-    E302 - Add missing 2 blank lines.
-    E303 - Remove extra blank lines.
-    E304 - Remove blank line following function decorator.
-    E401 - Put imports on separate lines.
-    E501 - Try to make lines fit within --max-line-length characters.
-    E502 - Remove extraneous escape of newline.
-    E701 - Put colon-separated compound statement on separate lines.
-    E702 - Put semicolon-separated compound statement on separate lines.
-    E703 - Put semicolon-separated compound statement on separate lines.
-    E711 - Fix comparison with None.
-    E712 - Fix comparison with boolean.
-    W191 - Reindent all lines.
-    W291 - Remove trailing whitespace.
-    W293 - Remove trailing whitespace on blank line.
-    W391 - Remove trailing blank lines.
-    E26  - Format block comments.
-    W6   - Fix various deprecated code (via lib2to3).
-    W602 - Fix deprecated form of raising exception.
-
+Anaconda can fix the following [PEP8 errors](https://github.com/DamnWidget/anaconda/wiki/PEP8-autoformat-error-list)
 
 Please, take a look at the configuration file to get a list of available options.
 
@@ -295,83 +235,7 @@ If you want to see gutter marks in the linted lines you just have to set as ``tr
 - simple
 
 
-#### Linting theme customization
-
-To customize the linting marks like you did in SublimeLinter add the following to your Sublime Text theme (you can ofcourse change the colors to your needs):
-
-    <!-- Anaconda -->
-    <dict>
-      <key>name</key>
-      <string>anaconda Error Outline</string>
-      <key>scope</key>
-      <string>anaconda.outline.illegal</string>
-      <key>settings</key>
-      <dict>
-          <key>background</key>
-          <string>#FF4A52</string>
-          <key>foreground</key>
-          <string>#FFFFFF</string>
-      </dict>
-    </dict>
-    <dict>
-      <key>name</key>
-      <string>anaconda Error Underline</string>
-      <key>scope</key>
-      <string>anaconda.underline.illegal</string>
-      <key>settings</key>
-      <dict>
-          <key>background</key>
-          <string>#FF0000</string>
-      </dict>
-    </dict>
-    <dict>
-      <key>name</key>
-      <string>anaconda Warning Outline</string>
-      <key>scope</key>
-      <string>anaconda.outline.warning</string>
-      <key>settings</key>
-      <dict>
-          <key>background</key>
-          <string>#DF9400</string>
-          <key>foreground</key>
-          <string>#FFFFFF</string>
-      </dict>
-    </dict>
-    <dict>
-      <key>name</key>
-      <string>anaconda Warning Underline</string>
-      <key>scope</key>
-      <string>anaconda.underline.warning</string>
-      <key>settings</key>
-      <dict>
-          <key>background</key>
-          <string>#FF0000</string>
-      </dict>
-    </dict>
-    <dict>
-      <key>name</key>
-      <string>anaconda Violation Outline</string>
-      <key>scope</key>
-      <string>anaconda.outline.violation</string>
-      <key>settings</key>
-      <dict>
-          <key>background</key>
-          <string>#ffffff33</string>
-          <key>foreground</key>
-          <string>#FFFFFF</string>
-      </dict>
-    </dict>
-    <dict>
-      <key>name</key>
-      <string>anaconda Violation Underline</string>
-      <key>scope</key>
-      <string>anaconda.underline.violation</string>
-      <key>settings</key>
-      <dict>
-          <key>background</key>
-          <string>#FF0000</string>
-      </dict>
-    </dict>
+#### [Linting theme customization](https://github.com/DamnWidget/anaconda/wiki/Linting-theme-customization)
 
 #### License
 

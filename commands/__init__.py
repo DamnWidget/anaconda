@@ -11,15 +11,24 @@ from .find_usages import AnacondaFindUsages
 from .enable_linting import AnacondaEnableLinting
 from .disable_linting import AnacondaDisableLinting
 from .complete_func_args import AnacondaCompleteFuncargs
+from .vagrant import (
+    AnacondaVagrantEnable, AnacondaVagrantInit, AnacondaVagrantStatus,
+    AnacondaVagrantUp, AnacondaVagrantSsh
+)
 
 __all__ = [
     'AnacondaDoc',
     'AnacondaGoto',
     'AnacondaRename',
     'AnacondaGetLines',
+    'AnacondaVagrantUp',
+    'AnacondaVagrantSsh',
     'AnacondaAutoFormat',
     'AnacondaFindUsages',
+    'AnacondaVagrantInit',
     'AnacondaEnableLinting',
+    'AnacondaVagrantEnable',
+    'AnacondaVagrantStatus',
     'AnacondaDisableLinting',
     'AnacondaCompleteFuncargs'
 ]

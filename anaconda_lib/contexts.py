@@ -7,6 +7,7 @@
 Anaconda contexts
 """
 
+import os
 import json
 from contextlib import contextmanager
 
@@ -21,3 +22,11 @@ def json_decode(data):
             yield eval(data)
         except Exception:
             yield str(data.decode('utf8'))
+
+
+@contextmanager
+def vagrant_root(directory):
+    current_dir = os.getcwd()
+    os.chdir(os.path.expanduser(directory))
+    yield
+    os.chdir(current_dir)
