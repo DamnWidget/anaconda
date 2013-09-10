@@ -14,5 +14,25 @@
     {
         "caption": "Anaconda: Autoformat PEP8 Errors",
         "command": "anaconda_auto_format"
+    },
+    {
+        "caption": "Anaconda: Vagrant Init",
+        "command": "anaconda_vagrant_init"
+    },
+    {
+        "caption": "Anaconda: Vagrant Status",
+        "command": "anaconda_vagrant_status"
+    },
+    {
+        "caption": "Anaconda: Vagrant Up",
+        "command": "anaconda_vagrant_up"
+    },
+    {
+        "caption": "Anaconda: Vagrant SSH",
+        "command": "anaconda_vagrant_ssh",
+    },
+    {
+        "caption": "Anaconda: Vagrant Enable",
+        "command": "anaconda_vagrant_enable"
     }
 ]

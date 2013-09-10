@@ -38,13 +38,38 @@ class AnacondaVagrantBase(object):
         vagrant_panel.set_read_only(False)
         region = sublime.Region(0, vagrant_panel.size())
         vagrant_panel.erase(edit, region)
-        vagrant_panel.insert(edit, 0, self.data)
+        vagrant_panel.insert(edit, 0, self.data.decode('utf8'))
         self.data = None
         vagrant_panel.set_read_only(True)
         vagrant_panel.show(0)
         self.view.window().run_command(
-            'show_panel', {'panel': 'output.anaconda_documentation'}
+            'show_panel', {'panel': 'output.anaconda_vagrant'}
         )
+
+    def prepare_data(self, data):
+        """Prepare the returned data and call the given command
+        """
+
+        success, out, error = data
+        self.data = error if not success else out
+        sublime.active_window().run_command(self._class_name_to_command())
+
+    def _class_name_to_command(self):
+        """Convert class name to command
+        """
+
+        command = []
+        for i in range(len(self.__class__.__name__)):
+            c = self.__class__.__name__[i]
+            if i == 0:
+                command.append(c.lower())
+            elif i > 0 and c.isupper():
+                command.append('_')
+                command.append(c.lower())
+            else:
+                command.append(c)
+
+        return ''.join(command)
 
 
 class AnacondaVagrantStatus(sublime_plugin.TextCommand, AnacondaVagrantBase):
@@ -55,7 +80,7 @@ class AnacondaVagrantStatus(sublime_plugin.TextCommand, AnacondaVagrantBase):
 
     @on_vagrant_enabled
     def run(self, edit):
-        cfg = self.window.active_view().settings().get('vagrant_environment')
+        cfg = self.view.settings().get('vagrant_environment')
         if self.data is None:
             try:
                 vagrant.VagrantStatus(
@@ -82,7 +107,7 @@ class AnacondaVagrantInit(sublime_plugin.TextCommand, AnacondaVagrantBase):
     """
 
     def run(self, edit):
-        cfg = self.window.active_view().settings().get('vagrant_environment')
+        cfg = self.view.settings().get('vagrant_environment')
         if self.data is None:
             self.view.window().show_input_panel(
                 'Directory to init on:', '',
@@ -95,10 +120,41 @@ class AnacondaVagrantInit(sublime_plugin.TextCommand, AnacondaVagrantBase):
         machine = cfg.get('machine', 'default')
         vagrant.VagrantInit(self.prepare_data, directory, machine)
 
-    def prepare_data(self, data):
-        """Prepare the returned data
-        """
 
-        success, out, error = data
-        self.data = error if not success else out
-        sublime.active_window().run_command('anaconda_vagrant_init')
+class AnacondaVagrantUp(sublime_plugin.TextCommand, AnacondaVagrantBase):
+    """Execute vagrant up command
+    """
+
+    @on_vagrant_enabled
+    def run(self, edit):
+        cfg = self.view.settings().get('vagrant_environment')
+        if self.data is None:
+            try:
+                machine = cfg.get('machine', 'default')
+                vagrant.VagrantUp(self.prepare_data, cfg['directory'], machine)
+            except Exception as error:
+                print(error)
+        else:
+            self.print_status(edit)
+
+
+class AnacondaVagrantSsh(sublime_plugin.TextCommand, AnacondaVagrantBase):
+    """Execute remmote ssh command
+    """
+
+    @on_vagrant_enabled
+    def run(self, edit):
+        cfg = self.view.settings().get('vagrant_environment')
+        if self.data is None:
+            self.view.window().show_input_panel(
+                'Command to execute:', '',
+                partial(self.input_command, cfg), None, None
+            )
+        else:
+            self.print_status(edit)
+
+    def input_command(self, cfg, command):
+        machine = cfg.get('machine', 'default')
+        vagrant.VagrantSSH(
+            self.prepare_data, cfg['directory'], command, machine
+        )
