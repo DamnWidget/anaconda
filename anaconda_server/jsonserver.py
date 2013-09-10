@@ -62,7 +62,6 @@ class JSONHandler(asynchat.async_chat):
         if data is not None:
             data = '{0}\r\n'.format(json.dumps(data))
             data = bytes(data, 'utf8') if PY3 else data
-            print(data)
 
             self.push(data)
 

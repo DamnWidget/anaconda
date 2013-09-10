@@ -106,5 +106,29 @@ class VagrantSSH(VagrantBase):
         """Execute a command through SSH in a vagrant box machine
         """
 
-        print(self.cmd)
         self.wait_answer(['vagrant', 'ssh', self.machine, '-c', self.cmd])
+
+
+class VagrantIPAddress(object):
+    """Get back the remote guest IP address in synchronous way
+    """
+
+    def __init__(self, root, machine=None):
+
+        with vagrant_root(root):
+            cmd = (
+                'python -c "import socket, fcntl, struct;'
+                's = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);'
+                'print(socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, '
+                'struct.pack(b\'256s\', b\'eth1\'))[20:24]))"\n'
+            )
+            proc = create_subprocess(
+                ['vagrant', 'ssh', machine, '-c', cmd],
+                stdout=PIPE, stderr=PIPE, cwd=os.getcwd()
+            )
+
+        output, error = proc.communicate()
+        if proc.poll() != 0:
+            self.ip_address = None
+        else:
+            self.ip_address = output

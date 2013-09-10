@@ -14,7 +14,7 @@ import threading
 import sublime
 
 from .jsonclient import AsynClient
-from .vagrant import VagrantStatus
+from .vagrant import VagrantStatus, VagrantIPAddress
 from .helpers import (
     get_settings, get_traceback, project_name, create_subprocess, active_view
 )
@@ -33,7 +33,6 @@ class BaseWorker(object):
     """
 
     def __init__(self):
-        self.hostname = 'localhost'
         self.available_port = None
         self.reconnecting = False
         self.last_error = None
@@ -46,6 +45,13 @@ class BaseWorker(object):
         """
 
         raise RuntimeError('This method must be reimplemented')
+
+    @property
+    def hostaddr(self):
+        """Always returns localhost
+        """
+
+        return 'localhost'
 
     def start_json_server(self):
         """Starts the JSON server
@@ -67,7 +73,7 @@ class BaseWorker(object):
 
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((self.hostname, self.available_port))
+            s.connect((self.hostaddr, self.available_port))
             s.close()
         except socket.error as error:
             if error.errno == errno.ECONNREFUSED:
@@ -213,8 +219,8 @@ class RemoteWorker(BaseWorker):
         super(RemoteWorker, self).__init__()
         self.config = active_view().settings().get('vagrant_environment')
         self.check_config()
-        self.hostname = self.config['network'].get('address')
         self.available_port = self.port
+        self.checked = False
         self.check_status()
         self.support = True
 
@@ -224,6 +230,19 @@ class RemoteWorker(BaseWorker):
         """
 
         return self.config['network'].get('port', 19360)
+
+    @property
+    def hostaddr(self):
+        """Get the right hostname for the guest machine
+        """
+
+        if self.config['network'].get('address') is not None:
+            return self.config['network']['address']
+
+        ip_address = VagrantIPAddress(
+            self.config['directory'], self.config['machine']
+        ).ip_address
+        return ip_address
 
     def start(self):
         """Start the jsonserver in the remote guest machine
@@ -250,7 +269,7 @@ class RemoteWorker(BaseWorker):
                     return
                 time.sleep(0.01)
 
-            self.client = AsynClient(self.available_port)
+            self.client = AsynClient(self.available_port, host=self.hostaddr)
 
     def check_config(self):
         """Check the vagrant project configuration
@@ -261,8 +280,6 @@ class RemoteWorker(BaseWorker):
             success = False
 
         if self.config['network'].get('mode') is None:
-            success = False
-        if self.config['network'].get('port') is None:
             success = False
 
         if success is False:
@@ -281,20 +298,22 @@ class RemoteWorker(BaseWorker):
         """Check vagrant status
         """
 
-        checked = False
-
         def status(result):
-            success, out, error = result
+            success, running = result
             if not success:
-                logging.error('Anaconda: {}'.format(error.decode('utf8')))
+                logging.error('Anaconda: {}'.format(running.decode('utf8')))
                 self.support = False
-                checked = True
+                self.checked = True
             else:
-                checked = True
-                assert checked
+                if not running:
+                    self.support = False
+                    logging.error('Anaconda: Vagrant machine is not running')
+                    self.checked = True
+                else:
+                    self.checked = True
 
         VagrantStatus(status, self.config['directory'], self.config['machine'])
-        while not checked:
+        while not self.checked:
             time.sleep(0.01)
 
 
@@ -331,7 +350,6 @@ class Worker(object):
 
         worker = WORKERS[window_id]
         if worker.client is not None:
-            print(worker.client)
             if not worker.client.connected:
                 worker.reconnecting = True
                 worker.start()
