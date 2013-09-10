@@ -236,6 +236,9 @@ class RemoteWorker(BaseWorker):
         """Get the right hostname for the guest machine
         """
 
+        if self.config['network']['mode'] == 'forwarded':
+            return 'localhost'
+
         if self.config['network'].get('address') is not None:
             return self.config['network']['address']
 
