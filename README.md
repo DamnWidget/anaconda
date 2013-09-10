@@ -237,6 +237,11 @@ If you want to see gutter marks in the linted lines you just have to set as ``tr
 
 #### [Linting theme customization](https://github.com/DamnWidget/anaconda/wiki/Linting-theme-customization)
 
+#### Vagrant integration
+
+* [Vagrant commands integration](https://github.com/DamnWidget/anaconda/wiki/Using-Vagrant-commands)
+* [Using Vagrant Environments](https://github.com/DamnWidget/anaconda/wiki/Vagrant-Environments)
+
 #### License
 
 This program is distributed under the terms of the GNU GPL v3. See the [LICENSE](https://raw.github.com/DamnWidget/anaconda/master/LICENSE) file for details.
