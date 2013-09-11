@@ -51,7 +51,8 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """Called after load a file
         """
 
-        run_linter(view)
+        if 'Python' in view.settings().get('syntax'):
+            run_linter(view)
 
     @only_python
     @not_scratch
@@ -69,7 +70,8 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """Called when a view gain the focus
         """
 
-        run_linter(view)
+        if 'Python' in view.settings().get('syntax'):
+            run_linter(view)
 
     @only_python
     @not_scratch
@@ -77,6 +79,9 @@ class BackgroundLinter(sublime_plugin.EventListener):
     def on_selection_modified_async(self, view):
         """Called on selection modified
         """
+
+        if not 'Python' in view.settings().get('syntax'):
+            return
 
         last_selected_line = last_selected_lineno(view)
 
