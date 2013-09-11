@@ -61,7 +61,8 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """Called post file save event
         """
 
-        run_linter(view)
+        if 'Python' in view.settings().get('syntax'):
+            run_linter(view)
 
     @only_python
     @on_linting_enabled
