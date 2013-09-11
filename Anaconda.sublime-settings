@@ -145,6 +145,7 @@
     "anaconda_gutter_marks": false,
 
     /*
+
         If anaconda_gutter_marks is true, this determines what theme is used.
         Theme 'basic' only adds dots and circles to gutter.
 
@@ -153,6 +154,13 @@
         gutter_icon_themes folder in Anaconda package.
     */
     "anaconda_gutter_theme": "basic",
+
+    /*
+        If 'outline' (default) anaconda will outline error lines
+        If 'fill' anconda will fill the lines
+        If 'none' anaconda will not draw anything on error lines
+    */
+    "anaconda_linter_mark_style": "outline",
 
     /*
         Use PyLint instead of PyFlakes and PEP-8

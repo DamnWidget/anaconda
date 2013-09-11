@@ -240,7 +240,11 @@ def add_lint_marks(view, lines, **errors):
             )
 
     if len(lines) > 0:
-        outline_style = {'none': sublime.HIDDEN}
+        outline_style = {
+            'outline': sublime.DRAW_OUTLINED,
+            'none': sublime.HIDDEN,
+            'fill': None
+        }
         style = get_settings(view, 'anaconda_linter_mark_style', 'outline')
         gutter_theme = get_settings(view, 'anaconda_gutter_theme', 'basic')
         package_name = os.path.dirname(__file__).rsplit(os.path.sep, 3)[1]
@@ -264,9 +268,11 @@ def add_lint_marks(view, lines, **errors):
                     'anaconda-lint-outlines-{}'.format(lint_type),
                     lints,
                     'anaconda.outline.{}'.format(lint_type),
-                    gutter_marks,
-                    outline_style.get(style, sublime.DRAW_OUTLINED)
+                    gutter_marks
                 ]
+                draw_style = outline_style.get(style, sublime.DRAW_OUTLINED)
+                if draw_style is not None:
+                    args.append(draw_style)
 
                 view.add_regions(*args)
 
