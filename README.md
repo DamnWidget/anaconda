@@ -234,6 +234,14 @@ If you want to see gutter marks in the linted lines you just have to set as ``tr
 - hard
 - simple
 
+#### Error lines mark
+
+You can control the way that anaconda mark the error lines in your files adjusting the setting `anaconda_linter_mark_style`
+
+* If it's set to `outline` (default) anaconda will outline error lines
+* If it's set to `fill` anconda will fill the lines
+* If it's set to `none` anaconda will not draw anything on error lines
+
 
 #### [Linting theme customization](https://github.com/DamnWidget/anaconda/wiki/Linting-theme-customization)
 
