@@ -44,17 +44,15 @@ class BackgroundLinter(sublime_plugin.EventListener):
         ANACONDA['ALREADY_LINTED'] = False
         erase_lint_marks(view)
 
-    @only_python
     @on_linting_enabled
     @on_linting_behaviour(['always', 'load-save'])
-    def on_load(self, view):
+    def on_load_async(self, view):
         """Called after load a file
         """
 
         if 'Python' in view.settings().get('syntax'):
             run_linter(view)
 
-    @only_python
     @not_scratch
     @on_linting_enabled
     def on_post_save_async(self, view):
@@ -66,7 +64,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
 
     @only_python
     @on_linting_enabled
-    @on_linting_behaviour(['always', 'load-save'])
+    @on_linting_behaviour(['always'])
     def on_activated_async(self, view):
         """Called when a view gain the focus
         """
