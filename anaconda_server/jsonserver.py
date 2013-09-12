@@ -63,6 +63,8 @@ class JSONHandler(asynchat.async_chat):
             data = '{0}\r\n'.format(json.dumps(data))
             data = bytes(data, 'utf8') if PY3 else data
 
+            if DEBUG_MODE is True:
+                print('About push back to ST3: {0}'.format(data))
             self.push(data)
 
     def collect_incoming_data(self, data):
@@ -405,8 +407,13 @@ if __name__ == "__main__":
     server.logger = logger
 
     # start PID checker thread
-    checker = Checker(server, delta=1)
-    checker.start()
+    if PID != 'DEBUG':
+        checker = Checker(server, delta=1)
+        checker.start()
+    else:
+        logger.info('Anaconda Server started in DEBUG mode...')
+        print('DEBUG MODE')
+        DEBUG_MODE = True
 
     # start the server
     server.serve_forever()

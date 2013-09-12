@@ -2,6 +2,28 @@
     Anaconda default settings
 */
 {
+    /*
+        Debug Mode:
+
+        If you need to debug the jsonserver.py service for any reason, you
+        can configure the following options to make the plugin to connect
+        always to the same port in your local machine.
+
+        Procedure:
+
+            1. Set the debug_mode as true
+            2. Set the debug_port to your desired port
+            3. Close Sublime Text 3
+            4. cd to your Packages/Anaconda directory
+            5. start the jsonserver manually:
+                python -B anaonda_server/jsonserver.py -p test 9999 DEBUG
+            6. Start your Sublime Text 3 and
+
+        Then your anaconda plugin will use the configured server and you will
+        get debug messages in the terminal where you ran it
+    */
+    "jsonserver_debug": false,
+    "jsonserver_debug_port": 9999,
 
     /*
         Default python interpreter.

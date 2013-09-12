@@ -90,6 +90,9 @@ class BaseWorker(object):
         """Checks if the server process is healthy
         """
 
+        if get_settings(active_view(), 'jsonserver_debug', False) is True:
+            return True
+
         if self.process.poll() is None:
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -125,6 +128,9 @@ class LocalWorker(BaseWorker):
     def port(self):
         """Get the first available port
         """
+
+        if get_settings(active_view(), 'jsonserver_debug', False) is True:
+            return get_settings(active_view(), 'jsonserver_debug_port', 9999)
 
         s = socket.socket()
         s.bind(('', 0))
