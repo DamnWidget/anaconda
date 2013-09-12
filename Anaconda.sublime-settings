@@ -16,7 +16,7 @@
             3. Close Sublime Text 3
             4. cd to your Packages/Anaconda directory
             5. start the jsonserver manually:
-                python -B anaonda_server/jsonserver.py -p test 9999 DEBUG
+                python -B anaconda_server/jsonserver.py -p test 9999 DEBUG
             6. Start your Sublime Text 3 and
 
         Then your anaconda plugin will use the configured server and you will
@@ -163,7 +163,7 @@
     */
     "anaconda_linter_delay": 0.5,
 
-    // If true, anaconda draws gutter amrks on line with errors
+    // If true, anaconda draws gutter marks on line with errors
     "anaconda_gutter_marks": false,
 
     /*
