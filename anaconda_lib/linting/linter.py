@@ -152,9 +152,10 @@ class Linter(object):
             lineno = 0
 
         try:
-            tree = compile(str(code), filename, 'exec', _ast.PyCF_ONLY_AST)
-        except (SyntaxError, IndentationError) as value:
-            return self._handle_syntactic_error(code, filename, value)
+            code = code.encode('utf8') + b'\n'
+            tree = compile(code, filename, 'exec', _ast.PyCF_ONLY_AST)
+        except (SyntaxError, IndentationError):
+            return self._handle_syntactic_error(code, filename)
         except ValueError as error:
             return [PythonError(filename, FakeLoc(), error.args[0])]
         else:
@@ -243,8 +244,9 @@ class Linter(object):
         if settings.get("pep8", True):
             check_params = {
                 'ignore': settings.get('pep8_ignore', []),
-                'max_line_length': settings.get('pep8_max_line_length',
-                                                 pep8.MAX_LINE_LENGTH)
+                'max_line_length': settings.get(
+                    'pep8_max_line_length', pep8.MAX_LINE_LENGTH
+                )
             }
             errors.extend(self.pep8_check(
                 code, filename, **check_params)
@@ -343,10 +345,11 @@ class Linter(object):
 
         return errors_list
 
-    def _handle_syntactic_error(self, code, filename, value):
+    def _handle_syntactic_error(self, code, filename):
         """Handle PythonError and OffsetError
         """
 
+        value = sys.exc_info()[1]
         msg = value.args[0]
 
         (lineno, offset, text) = value.lineno, value.offset, value.text

@@ -8,6 +8,7 @@ Anaconda helpers
 """
 
 import os
+import logging
 import traceback
 import subprocess
 
@@ -27,7 +28,14 @@ def create_subprocess(args, **kwargs):
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         kwargs['startupinfo'] = startupinfo
 
-    return subprocess.Popen(args, **kwargs)
+    try:
+        return subprocess.Popen(args, **kwargs)
+    except:
+        logging.error(
+            'Your operating system denied the spawn of the anaconda jsonserver'
+            ' process. Make sure your configured interpreter is a valid python'
+            ' binary executable and is in the PATH'
+        )
 
 
 def get_settings(view, name, default=None):
