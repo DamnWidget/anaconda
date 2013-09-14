@@ -169,11 +169,11 @@ class JSONHandler(asynchat.async_chat):
             success = False
             errors = 'Your configured python interpreter can\'t import pylint'
 
-        self.return_back({
-            'success': success,
-            'errors': errors,
-            'uid': uid
-        })
+            self.return_back({
+                'success': success,
+                'errors': errors,
+                'uid': uid
+            })
 
     def rename(self, uid, directories, new_word):
         """Rename the object under the cursor by the given word
