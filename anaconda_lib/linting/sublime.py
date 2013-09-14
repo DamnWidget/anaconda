@@ -118,9 +118,17 @@ class Linter:
         # make the lineno one-based again for underline_range
         lineno += 1
         for start, end in results:
-            self.underline_range(
-                lineno, start + offset, kwargs['underlines'], end - start
-            )
+            if self.is_that_code(start):
+                self.underline_range(
+                    lineno, start + offset, kwargs['underlines'], end - start
+                )
+
+    def is_that_code(self, point):
+        """Determines if the given region is valid Python code
+        """
+
+        matcher = 'source.python - string - comment'
+        return active_view().match_selector(point, matcher)
 
     def parse_errors(self, errors):
         """Parse errors returned from the PyFlakes and pep8 libraries
