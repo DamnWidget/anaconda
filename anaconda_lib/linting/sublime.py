@@ -87,7 +87,9 @@ class Linter:
         position += line.begin()
 
         for i in range(length):
-            underlines.append(sublime.Region(position + i))
+            region = sublime.Region(position + i)
+            if self.is_that_code(region.begin()):
+                underlines.append(sublime.Region(position + i))
 
     def underline_regex(self, **kwargs):
         # assume lineno is one-based, ST3 wants zero-based line numbers
@@ -118,10 +120,9 @@ class Linter:
         # make the lineno one-based again for underline_range
         lineno += 1
         for start, end in results:
-            if self.is_that_code(start):
-                self.underline_range(
-                    lineno, start + offset, kwargs['underlines'], end - start
-                )
+            self.underline_range(
+                lineno, start + offset, kwargs['underlines'], end - start
+            )
 
     def is_that_code(self, point):
         """Determines if the given region is valid Python code
