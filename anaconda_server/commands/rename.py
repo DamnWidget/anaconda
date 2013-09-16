@@ -2,6 +2,7 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
+import os
 import logging
 import traceback
 
@@ -29,7 +30,7 @@ class Rename(Command):
             proposals = self.jedi_refactor.rename(self.script, self.new_word)
             for u in usages:
                 path = u.module_path.rsplit('/{0}.py'.format(u.module_name))[0]
-                if path in self.directories:
+                if self.is_same_path(path):
                     if u.module_path not in renames:
                         renames[u.module_path] = []
 
@@ -51,3 +52,13 @@ class Rename(Command):
         self.callback({
             'success': success, 'renames': renames, 'uid': self.uid
         })
+
+    def is_same_path(self, path):
+        """Determines if the given path is a subdirectory of our paths
+        """
+
+        for directory in self.directories:
+            if os.path.commonprefix([directory, path]) == directory:
+                return True
+
+        return False
