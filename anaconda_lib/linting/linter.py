@@ -153,7 +153,7 @@ class Linter(object):
 
         try:
             code = code.encode('utf8') + b'\n'
-            tree = compile(code, filename, 'exec', _ast.PyCF_ONLY_AST)
+            tree = compile(code, filename or '', 'exec', _ast.PyCF_ONLY_AST)
         except (SyntaxError, IndentationError):
             return self._handle_syntactic_error(code, filename)
         except ValueError as error:
