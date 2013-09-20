@@ -149,9 +149,7 @@ class Linter:
         if errors is None:
             return {'lines': lines, 'results': errors_level}
 
-        ignore_star = self.view.settings().get(
-            'pyflakes_ignore_import_*', True
-        )
+        ignore_star = get_settings(self.view, 'pyflakes_ignore_import_*', True)
 
         for error in errors:
             error_level = error.get('level', 'W')
@@ -202,7 +200,8 @@ class Linter:
             pylint_ignores = get_settings(self.view, 'pylint_ignore', [])
             for error in error_data:
 
-                if error['code'] in pylint_ignores:
+                pylint_rcfile = get_settings(self.view, 'pylint_rcfile')
+                if error['code'] in pylint_ignores and not pylint_rcfile:
                     continue
 
                 self.add_message(
