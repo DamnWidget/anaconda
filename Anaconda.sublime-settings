@@ -201,6 +201,18 @@
     "pep8": true,
 
     /*
+        If setted, the given file will be used as configuration for pep8
+
+        **** WARNING ****
+
+        - If this option is set to something different than false,
+          pep8_ignore and pep8_max_line_length will be silently ignored
+
+        **** WARNING ****
+    */
+    "pep8_rcfile": false,
+
+    /*
         A list of pep8 error numbers to ignore. By default "line too long" errors are ignored.
         The list of error codes is in this file: https://github.com/jcrocholl/pep8/blob/master/pep8.py.
         Search for "Ennn:", where nnn is a 3-digit number.
@@ -228,6 +240,18 @@
     "pyflakes_ignore":
     [
     ],
+
+    /*
+        If setted, the given file will be used as configuration for PyLint
+
+        **** WARNING ****
+
+            - If this option is set to something different than false,
+              pylint_ignore will be silently ignored
+
+            **** WARNING ****
+    */
+    "pylint_rcfile": false,
 
     /*
         You can ignore specific PyLint error codes using this configuration.

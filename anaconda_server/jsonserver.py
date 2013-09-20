@@ -183,7 +183,8 @@ class JSONHandler(asynchat.async_chat):
             Lint(callback, uid, linter, settings, code, filename)
 
         if PYLINT_AVAILABLE:
-            PyLint(lint_pep8, uid, PyLinter, filename)
+            rcfile = settings.get('pylint_rcfile', False)
+            PyLint(lint_pep8, uid, PyLinter, rcfile, filename)
         else:
             success = False
             errors = 'Your configured python interpreter can\'t import pylint'

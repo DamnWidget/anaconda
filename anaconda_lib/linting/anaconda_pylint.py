@@ -7,6 +7,7 @@
 Anaconda PyLint wrapper
 """
 
+import os
 import sys
 import logging
 
@@ -27,9 +28,10 @@ class PyLinter(object):
     """PyLinter class for Anaconda
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, rcfile):
         self.filename = filename
         self.exit = sys.exit
+        self.rcfile = rcfile
         self.stdout = sys.stdout
         self.output = StringIO()
 
@@ -45,8 +47,11 @@ class PyLinter(object):
         if numversion < (1, 0, 0):
             args = '--include-ids=y -r n'.split(' ')
         else:
-            args = "--msg-template={msg_id}:{line}:{column}:{msg} -r n".split(
+            args = '--msg-template={msg_id}:{line}:{column}:{msg} -r n'.split(
                 ' ')
+
+        if self.rcfile:
+            args.append('--rcfile={0}'.format(os.path.expanduser(self.rcfile)))
 
         args.insert(0, self.filename)
         lint.Run(args)
@@ -70,7 +75,7 @@ class PyLinter(object):
                 offset = None
                 try:
                     if numversion >= (1, 0, 0):
-                            code, line, offset, message = error.split(':', 3)
+                        code, line, offset, message = error.split(':', 3)
                     else:
                         code, line, message = error.split(':', 2)
                 except ValueError as exception:

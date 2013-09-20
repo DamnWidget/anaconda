@@ -362,7 +362,9 @@ def run_linter(view):
             view, 'pep8_max_line_length', pep8.MAX_LINE_LENGTH),
         'pyflakes_ignore': get_settings(view, 'pyflakes_ignore', []),
         'pyflakes_disabled': get_settings(view, 'pyflakes_disabled', False),
-        'use_pylint': get_settings(view, 'use_pylint', False)
+        'use_pylint': get_settings(view, 'use_pylint', False),
+        'pep8_rcfile': get_settings(view, 'pep8_rcfile'),
+        'pylint_rcfile': get_settings(view, 'pylint_rcfile')
     }
     text = view.substr(sublime.Region(0, view.size()))
     data = {'code': text, 'settings': settings, 'filename': view.file_name()}

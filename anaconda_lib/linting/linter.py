@@ -171,7 +171,7 @@ class Linter(object):
 
             return w.messages
 
-    def pep8_check(self, code, filename, ignore, max_line_length):
+    def pep8_check(self, code, filename, rcfile, ignore, max_line_length):
         """Check the code with pep8 to find PEP 8 errors
         """
 
@@ -220,10 +220,16 @@ class Linter(object):
 
                     return code
 
-            _ignore = ignore + pep8.DEFAULT_IGNORE.split(',')
-            options = pep8.StyleGuide(
-                reporter=SublimeLinterReport, ignore=_ignore).options
-            options.max_line_length = max_line_length
+            params = {'reporter': SublimeLinterReport}
+            if not rcfile:
+                _ignore = ignore + pep8.DEFAULT_IGNORE.split(',')
+                params['ignore'] = _ignore
+            else:
+                params['config_file'] = os.path.expanduser(rcfile)
+
+            options = pep8.StyleGuide(**params).options
+            if not rcfile:
+                options.max_line_length = max_line_length
 
             good_lines = [l + '\n' for l in _lines]
             good_lines[-1] = good_lines[-1].rstrip('\n')
@@ -249,8 +255,8 @@ class Linter(object):
                 )
             }
             errors.extend(self.pep8_check(
-                code, filename, **check_params)
-            )
+                code, filename, settings.get('pep8_rcfile'), **check_params
+            ))
 
         pyflakes_ignore = settings.get('pyflakes_ignore', None)
         pyflakes_disabled = settings.get('pyflakes_disabled', False)

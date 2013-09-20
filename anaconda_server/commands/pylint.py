@@ -12,9 +12,10 @@ class PyLint(Command):
     """Run PyLint and return back results
     """
 
-    def __init__(self, callback, uid, linter, filename):
+    def __init__(self, callback, uid, linter, rcfile, filename):
         self.filename = filename
         self.linter = linter
+        self.rcfile = rcfile
         super(PyLint, self).__init__(callback, uid)
 
     def run(self):
@@ -24,7 +25,8 @@ class PyLint(Command):
         try:
             self.callback({
                 'success': True,
-                'errors': self.linter(self.filename).parse_errors(),
+                'errors': self.linter(
+                    self.filename, self.rcfile).parse_errors(),
                 'uid': self.uid
             })
         except Exception as error:
