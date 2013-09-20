@@ -358,22 +358,21 @@ def run_linter(view):
     settings = {
         'pep8': get_settings(view, 'pep8', True),
         'pep8_ignore': get_settings(view, 'pep8_ignore', []),
-        'pep8_max_line_length': get_settings(view, 'pep8_max_line_length',
-                                             pep8.MAX_LINE_LENGTH),
+        'pep8_max_line_length': get_settings(
+            view, 'pep8_max_line_length', pep8.MAX_LINE_LENGTH),
         'pyflakes_ignore': get_settings(view, 'pyflakes_ignore', []),
-        'pyflakes_disabled': get_settings(view, 'pyflakes_disabled', False)
+        'pyflakes_disabled': get_settings(view, 'pyflakes_disabled', False),
+        'use_pylint': get_settings(view, 'use_pylint', False)
     }
     text = view.substr(sublime.Region(0, view.size()))
+    data = {'code': text, 'settings': settings, 'filename': view.file_name()}
     if get_settings(view, 'use_pylint', False) is False:
-        data = {
-            'code': text, 'settings': settings, 'filename': view.file_name()
-        }
         data['method'] = 'run_linter'
     else:
         if view.file_name() is None:
-            return
-        data = {'filename': view.file_name()}
-        data['method'] = 'run_linter_pylint'
+            data['method'] = 'run_linter'
+        else:
+            data['method'] = 'run_linter_pylint'
 
     Worker().execute(partial(parse_results, view), **data)
 
@@ -401,6 +400,12 @@ def parse_results(view, data):
         results = Linter(view).parse_errors(data['errors'])
     else:
         results = Linter(view).parse_errors_pylint(data['errors'])
+        if data['pep8_errors']:
+            pep8_results = Linter(view).parse_errors(data['pep8_errors'])
+            results['lines'].update(pep8_results['lines'])
+            for level in pep8_results['results']:
+                for underline in pep8_results['results'][level]['underlines']:
+                    results['results'][level]['underlines'].append(underline)
 
     errors = results['results']
     lines = results['lines']

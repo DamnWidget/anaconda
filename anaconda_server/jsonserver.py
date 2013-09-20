@@ -14,6 +14,7 @@ import threading
 import traceback
 import subprocess
 from logging import handlers
+from functools import partial
 from optparse import OptionParser
 
 # we use ujson if it's available on the target intrepreter
@@ -159,12 +160,30 @@ class JSONHandler(asynchat.async_chat):
 
         Lint(self.return_back, uid, linter, settings, code, filename)
 
-    def run_linter_pylint(self, uid, filename):
+    def run_linter_pylint(self, uid, settings, code, filename):
         """Return lintin errors on the given file
         """
 
+        def merge_pylint_and_pep8(pylint_result, pep8_result):
+            """Merge the result from PyLint with the result given by pep8
+            """
+
+            self.return_back({
+                'success': True,
+                'errors': pylint_result['errors'],
+                'pep8_errors': pep8_result['errors'],
+                'uid': uid
+            })
+
+        def lint_pep8(result):
+            """Execute the pep8 linter
+            """
+
+            callback = partial(merge_pylint_and_pep8, result)
+            Lint(callback, uid, linter, settings, code, filename)
+
         if PYLINT_AVAILABLE:
-            PyLint(self.return_back, uid, PyLinter, filename)
+            PyLint(lint_pep8, uid, PyLinter, filename)
         else:
             success = False
             errors = 'Your configured python interpreter can\'t import pylint'

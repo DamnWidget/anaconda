@@ -255,7 +255,7 @@ class Linter(object):
         pyflakes_ignore = settings.get('pyflakes_ignore', None)
         pyflakes_disabled = settings.get('pyflakes_disabled', False)
 
-        if not pyflakes_disabled:
+        if not pyflakes_disabled and not settings.get('use_pylint'):
             errors.extend(self.pyflakes_check(code, filename, pyflakes_ignore))
 
         return self.parse_errors(errors)
