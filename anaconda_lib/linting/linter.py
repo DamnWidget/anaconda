@@ -278,13 +278,13 @@ class Linter(object):
 
         for error in errors:
             error_level = 'W' if not hasattr(error, 'level') else error.level
-            message = '{0}{1}'.format(
-                error.message[0].upper(), error.message[1:]
-            )
+            message = error.message.capitalize()
 
             offset = None
             if hasattr(error, 'offset'):
                 offset = error.offset
+            elif hasattr(error, 'col'):
+                offset = error.col
 
             error_data = {
                 'pep8': False,
@@ -312,6 +312,7 @@ class Linter(object):
                         error.message_args[0]
                     ))
                 )
+                error_data['len'] = len(error.message_args[0])
                 error_data['regex'] = regex
                 errors_list.append(error_data)
             elif isinstance(error, pyflakes.messages.ImportShadowedByLoopVar):

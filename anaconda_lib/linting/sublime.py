@@ -167,6 +167,11 @@ class Linter:
                 self.underline_range(
                     error['lineno'], error['offset'], underlines
                 )
+            elif error.get('len') is not None:
+                self.underline_range(
+                    error['lineno'], error['offset'],
+                    underlines, error['len']
+                )
             else:
                 self.underline_regex(
                     lines=lines, underlines=underlines, **error
