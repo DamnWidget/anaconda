@@ -206,8 +206,14 @@ class Linter:
             for error in error_data:
 
                 pylint_rcfile = get_settings(self.view, 'pylint_rcfile')
-                if error['code'] in pylint_ignores and not pylint_rcfile:
-                    continue
+                try:
+                    if error['code'] in pylint_ignores and not pylint_rcfile:
+                        continue
+                except TypeError:
+                    print(
+                        'Anaconda: pylint_ignore option must be a list of '
+                        'strings but we got a {} '.format(type(pylint_ignores))
+                    )
 
                 self.add_message(
                     error['line'], lines, error['message'], messages
