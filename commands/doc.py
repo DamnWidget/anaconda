@@ -41,15 +41,12 @@ class AnacondaDoc(sublime_plugin.TextCommand):
 
         if data['success']:
             self.documentation = data['doc']
-            if self.documentation is None:
-                self.view.set_status(
-                    'anaconda_doc', 'Anaconda: No documentation found'
-                )
-                sublime.set_timeout_async(
-                    lambda: self.view.erase_status('anaconda_doc'), 5000
-                )
+            if self.documentation is None or self.documentation == '':
+                self._show_status()
             else:
                 sublime.active_window().run_command('anaconda_doc')
+        else:
+            self._show_status()
 
     def print_doc(self, edit):
         """Print the documentation string into a Sublime Text panel
@@ -68,4 +65,15 @@ class AnacondaDoc(sublime_plugin.TextCommand):
         doc_panel.show(0)
         self.view.window().run_command(
             'show_panel', {'panel': 'output.anaconda_documentation'}
+        )
+
+    def _show_status(self):
+        """Show message in the view status bar
+        """
+
+        self.view.set_status(
+            'anaconda_doc', 'Anaconda: No documentation found'
+        )
+        sublime.set_timeout_async(
+            lambda: self.view.erase_status('anaconda_doc'), 5000
         )

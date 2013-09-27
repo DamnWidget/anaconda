@@ -19,10 +19,20 @@ class JediUsages(object):
         """Process the definitions
         """
 
+        view = self.text.view
         if not data['success']:
+            sublime.status_message('Unable to find {}'.format(
+                view.substr(view.word(view.sel()[0])))
+            )
             return
 
         definitions = data['goto'] if not usages else data['usages']
+        if len(definitions) == 0:
+            sublime.status_message('Unable to find {}'.format(
+                view.substr(view.word(view.sel()[0])))
+            )
+            return
+
         if definitions is not None and len(definitions) == 1 and not usages:
             self._jump(*definitions[0])
         else:
@@ -50,6 +60,7 @@ class JediUsages(object):
         """Show a dropdown quickpanel with options to jump
         """
 
+        view = self.text.view
         if usages or (not usages and type(defs) is not str):
             options = [
                 [o[0], 'line: {} column: {}'.format(o[1], o[2])] for o in defs
@@ -58,6 +69,9 @@ class JediUsages(object):
             if len(defs):
                 options = defs[0]
             else:
+                sublime.status_message('Unable to find {}'.format(
+                    view.substr(view.word(view.sel()[0])))
+                )
                 return
 
         self.options = defs

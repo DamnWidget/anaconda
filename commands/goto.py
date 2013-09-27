@@ -8,8 +8,8 @@ import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.jediusages import JediUsages
+from ..anaconda_lib.helpers import prepare_send_data
 from ..anaconda_lib.decorators import enable_for_python
-from ..anaconda_lib.helpers import prepare_send_data, active_view
 
 
 class AnacondaGoto(sublime_plugin.TextCommand):
@@ -18,7 +18,7 @@ class AnacondaGoto(sublime_plugin.TextCommand):
 
     def run(self, edit):
         try:
-            location = active_view().rowcol(self.view.sel()[0].begin())
+            location = self.view.rowcol(self.view.sel()[0].begin())
             data = prepare_send_data(location, 'goto')
             Worker().execute(partial(JediUsages(self).process, False), **data)
         except:
