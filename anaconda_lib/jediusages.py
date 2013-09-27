@@ -50,7 +50,7 @@ class JediUsages(object):
         """Show a dropdown quickpanel with options to jump
         """
 
-        if usages:
+        if usages or (not usages and type(defs) is not str):
             options = [
                 [o[0], 'line: {} column: {}'.format(o[1], o[2])] for o in defs
             ]
