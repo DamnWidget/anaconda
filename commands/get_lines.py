@@ -9,7 +9,6 @@ from ..anaconda_lib.linting.sublime import ANACONDA
 
 
 class AnacondaGetLines(sublime_plugin.WindowCommand):
-
     """Get a quickpanel with all the errors and lines ready to jump to them
     """
 

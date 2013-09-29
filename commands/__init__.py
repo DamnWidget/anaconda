@@ -9,6 +9,7 @@ from .get_lines import AnacondaGetLines
 from .autoformat import AnacondaAutoFormat
 from .find_usages import AnacondaFindUsages
 from .enable_linting import AnacondaEnableLinting
+from .next_lint_error import AnacondaNextLintError
 from .disable_linting import AnacondaDisableLinting
 from .complete_func_args import AnacondaCompleteFuncargs
 from .vagrant import (
@@ -27,6 +28,7 @@ __all__ = [
     'AnacondaFindUsages',
     'AnacondaVagrantInit',
     'AnacondaEnableLinting',
+    'AnacondaNextLintError',
     'AnacondaVagrantEnable',
     'AnacondaVagrantStatus',
     'AnacondaDisableLinting',

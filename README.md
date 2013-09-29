@@ -172,6 +172,12 @@ When our mate learns how to write proper and clean code we can just turn it on a
 
 You can show a quick panel with all the errors in the file you are currently editing usign the command palette or the contextual menu.
 
+#### Jump to the next error
+
+You can use the `Anaconda: Next lint error` command from the `Command Palette`, from the `Context Menu` or just add a shortcut to the `anaconda_next_lint_error` to navigate trough the lint errors on the file.
+
+Note: The order is not per line but for error severity in this order: ERRORS, WARNINGS, VIOLATIONS
+
 #### Linting behaviour
 
 * **Always mode (default)** - When ``anaconda_linting_behaviour`` is set as ``always`` the linting is performed in the background as you are editing the file you are working on and in load/save events. The linting process is performed in the background in another thread of execution and it doesn't block the Sublime Text GUI. The process is fired when the plugin detected that you stop typying for a period of time, by default is half a second and can be configured editign the value of the user setting ``anaconda_linter_delay``.

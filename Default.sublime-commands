@@ -12,6 +12,10 @@
         "command": "anaconda_get_lines"
     },
     {
+        "caption": "Anaconda: Next lint error",
+        "command": "anaconda_next_lint_error"
+    },
+    {
         "caption": "Anaconda: Autoformat PEP8 Errors",
         "command": "anaconda_auto_format"
     },

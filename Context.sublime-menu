@@ -25,6 +25,10 @@
                 "caption": "Show error list"
             },
             {
+                "command": "anaconda_next_lint_error",
+                "caption": "Next lint error"
+            },
+            {
                 "command": "anaconda_auto_format",
                 "caption": "Autoformat PEP8 Errors"
             }
