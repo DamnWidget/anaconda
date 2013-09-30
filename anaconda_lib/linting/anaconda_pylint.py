@@ -91,6 +91,15 @@ class PyLinter(object):
                     )
                     continue
 
+                if numversion < (1, 0, 0):
+                    try:
+                        line, offset = line.split(',')
+                    except ValueError:
+                        # seems like some versions (or packagers) of pylint
+                        # prior to 1.0.0 adds offset to the output but others
+                        # doesn't
+                        pass
+
                 errors[self._map_code(code)[0]].append({
                     'line': int(line),
                     'offset': offset,
