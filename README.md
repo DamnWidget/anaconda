@@ -80,6 +80,19 @@ You can add additional python extra paths that should be used for autocompletion
         }
     }
 
+##### Environment hook files
+
+If a valid environment hook config file (called .anaconda) exists in the root of your working folder
+it will bet used instead of project or general anaconda configuration. An .anaconda hook valid file
+is as fillows.
+
+    {
+        "python_interpreter": "pypy-c2.0",
+        "extra_paths": ["/usr/local/lib/awesome_lib"]
+    }
+
+Note that only ```python_interpreter``` and ```extra_paths``` can be hooked.
+
 
 #### Autocompletion on dot
 
