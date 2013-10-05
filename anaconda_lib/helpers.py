@@ -46,20 +46,21 @@ def get_settings(view, name, default=None):
     plugin_settings = sublime.load_settings('Anaconda.sublime-settings')
 
     if name in ('python_interpreter', 'extra_paths'):
-        environfile = os.path.join(view.window().folders()[0], '.anaconda')
-        if os.path.exists(environfile):
-            with open(environfile, 'r') as jsonfile:
-                try:
-                    data = json.loads(jsonfile.read())
-                except Exception as error:
-                    print(error)
-                else:
-                    return data.get(
-                        name,
-                        view.settings().get(name, plugin_settings.get(
-                            name, default)
+        if view.window().folders():
+            environfile = os.path.join(view.window().folders()[0], '.anaconda')
+            if os.path.exists(environfile):
+                with open(environfile, 'r') as jsonfile:
+                    try:
+                        data = json.loads(jsonfile.read())
+                    except Exception as error:
+                        print(error)
+                    else:
+                        return data.get(
+                            name,
+                            view.settings().get(name, plugin_settings.get(
+                                name, default)
+                            )
                         )
-                    )
 
     return view.settings().get(name, plugin_settings.get(name, default))
 
