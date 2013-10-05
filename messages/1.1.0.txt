@@ -1,0 +1,44 @@
+Changes in 1.1.0
+================
+
+ - Added linters rc configuration files support
+ - Added vagrant boxes python environments support
+ - Port gutter mark icon themes from SublimeLinter
+ - Added vagrant commands support
+ - Debug mode for jsonserver added
+
+Fixes
+=====
+
+ - Critical bug on python3, #47
+ - Wrong key in settings, #48
+ - Minor fixes on auto-format
+ - IndexError exception in is_python decorators in windows platform, #57
+ - Exception raised when no definiitions where returned on goto to imposible modules when using vagrant
+ - Linter does not try to lint mako templates now, #62
+ - Workaround to fix problem with versions of Python prior to 2.6.5 that doesn't support unicode strings as dictionary keys, #59
+ - Fix problems with unicode in linting, #66
+ - Fixes #69 being produced by a wrong indentation
+ - more SublimeLinter legacy code fixes, now Anaconda does not underlines words that are matched by the underline regex match in commen
+ts or strings, #68
+ - rename command was not working properly due bad subdirectory comparission, #70
+ - sublime text view.file_name() method was returning None instead of empty string whith unsaved buffers, #72
+ - now anaconda uses pep8 when pylint is configured as main linter library, #75
+ - fix silently ignored configuration option pyflakes_ignore_import_*, #76
+ - SublimeLinter/Sublime Lint regexes does not work (what a surprise), replace underline logic to fix it. #77
+ - goto command can handle now multiple results, #78
+ - seems like some packagers/versions of pylint add offsets to their output while others doesnt, #81
+ - fixed incorrect behaviour affecting anaconda_linting_behaviour option, #65
+
+
+Resolves
+========
+
+  - merge development branch into master, Resolves #52 /cc @enagorny
+  - added anaconda_linter_mark_style config option to fill, outline or disable outlines in linted files. Resolves #61
+  - fix typos in configuration file comments. #64
+  - now anaconda shows messages in the status bar when usages, goto and doc doesn't find anything, #79
+  - added workaround to resolve, #74
+  - added JSON environment config file support, #83
+
+For more detaild information about those changes run git v1.1.0..v1.0.1 on git repository
