@@ -14,6 +14,7 @@ import threading
 import sublime
 
 from .jsonclient import AsynClient
+from .decorators import auto_project_switch
 from .vagrant import VagrantStatus, VagrantIPAddress
 from .helpers import (
     get_settings, get_traceback, project_name, create_subprocess, active_view
@@ -113,11 +114,12 @@ class BaseWorker(object):
             )
             return False
 
+    @auto_project_switch
     def _execute(self, callback, **data):
-        """This method has to be reimplemented
+        """Execute the given method in the remote server
         """
 
-        raise RuntimeError('This method has to be reimplemented')
+        self.client.send_command(callback, **data)
 
 
 class LocalWorker(BaseWorker):
@@ -195,26 +197,16 @@ class LocalWorker(BaseWorker):
         except:
             python = 'python'
 
+        self.project_name = project_name()
         args = [
             python, '-B', script_file,  '-p',
-            project_name(), str(self.available_port)
+            self.project_name, str(self.available_port)
         ]
         if paths:
             args.extend(['-e', ','.join(paths)])
 
         args.extend([str(os.getpid())])
         self.process = create_subprocess(args)
-
-    def _execute(self, callback, **data):
-        """Execute the given method in the remote server
-        """
-
-        if self.client is not None:
-            if not self.client.connected:
-                self.reconnecting = True
-                self.start()
-
-            self.client.send_command(callback, **data)
 
 
 class RemoteWorker(BaseWorker):
@@ -363,6 +355,6 @@ class Worker(object):
                 worker.reconnecting = True
                 worker.start()
             else:
-                worker.client.send_command(callback, **data)
+                worker._execute(callback, **data)
         else:
             worker.start()

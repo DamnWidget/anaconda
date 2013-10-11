@@ -90,6 +90,9 @@ class JSONHandler(asynchat.async_chat):
                 self.return_back('Ok')
                 return
 
+            if self.data['method'] == 'shutdown':
+                checker.shutdown()
+
             self.server.last_call = time.time()
 
         if type(self.data) is dict:
@@ -303,6 +306,12 @@ class Checker(threading.Thread):
             time.sleep(self.delta)
 
         self.server.shutdown()
+
+    def shutdown(self):
+        """Force shutdown
+        """
+
+        self.die = True
 
     def _check(self):
         """Check for the ST3 pid

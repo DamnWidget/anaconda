@@ -3,6 +3,15 @@
 */
 {
     /*
+        Auto project switching
+
+        If you set this to true, anaconda will detect project switches and
+        will reconnect a new JsonServer with the switched project
+        configuration
+    */
+    "auto_project_switch": true,
+
+    /*
         Debug Mode:
 
         If you need to debug the jsonserver.py service for any reason, you

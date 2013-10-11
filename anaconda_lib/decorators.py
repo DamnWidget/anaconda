@@ -20,7 +20,7 @@ except ImportError:
 
 try:
     import sublime
-    from .helpers import get_settings
+    from .helpers import get_settings, project_name
 except ImportError:
     # we just imported the file from jsonserver so we don't need get_settings
     pass
@@ -132,6 +132,29 @@ def on_auto_formatting_enabled(func):
 
         if get_settings(view, 'auto_formatting', False) is True:
             return func(self, view, *args, **kwargs)
+
+    return wrapper
+
+
+def auto_project_switch(func):
+    """Auto kill and start a new jsonserver on project switching
+    """
+
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+
+        wid = sublime.active_window().id()
+        view = sublime.active_window().active_view()
+        if (
+            get_settings(view, 'auto_project_switch', False) and
+            self.project_name != 'anaconda-{id}'.format(id=wid) and
+            project_name() != self.project_name
+        ):
+                print('Project switch detected...')
+                self.reconnecting = True
+                self.start()
+        else:
+            func(self, *args, **kwargs)
 
     return wrapper
 
