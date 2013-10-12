@@ -63,7 +63,7 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
             JUST_COMPLETED = False
         elif view.substr(sublime.Region(
                 view.sel()[0].begin() - 7, view.sel()[0].end())) == 'import ':
-            view.run_command('auto_complete')
+            self._run_auto_complete()
 
     def _complete(self, data):
 
@@ -74,10 +74,16 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
             self.completions = proposals
             self.ready_from_defer = True
 
-            active_view().run_command("auto_complete", {
-                'disable_auto_insert': True,
-                'api_completions_only': get_settings(
-                    active_view(), 'hide_snippets_on_completion', False),
-                'next_completion_if_showing': False,
-                'auto_complete_commit_on_tab': True,
-            })
+            self._run_auto_complete()
+
+    def _run_auto_complete(self):
+        """Efectively call autocomplete using the ST API
+        """
+
+        active_view().run_command("auto_complete", {
+            'disable_auto_insert': True,
+            'api_completions_only': get_settings(
+                active_view(), 'hide_snippets_on_completion', False),
+            'next_completion_if_showing': False,
+            'auto_complete_commit_on_tab': True,
+        })
