@@ -144,6 +144,7 @@ With this command you can get the docstring of whatever function or method. You 
 * Context Menu: `Anaconda > Show Documentation`
 
 *note*: Context menu only works on Python code (no comments, no docstrings)
+*note*: If you set the option ```"display_signatures"``` as ```true```, anaconda will display method signatures and other help strings in the status bar while you edit the file.
 
 #### Refactor Rename
 
