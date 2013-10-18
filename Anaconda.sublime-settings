@@ -58,6 +58,12 @@
     "complete_all_parameters": false,
 
     /*
+        If you set the following option as true, anaconda will display the
+        signatures of the methods you are using while typying
+    */
+    "display_signatures": false,
+
+    /*
         The following set of options controls the pep8 autoformating behaviour
 
         The full list of errors that can be fixed are:

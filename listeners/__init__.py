@@ -4,11 +4,13 @@
 
 from .linting import BackgroundLinter
 from .completion import AnacondaComletionEventListener
+from .signatures import AnacondaSignaturesEventListener
 from .autopep8 import AnacondaAutoformatPEP8EventListener
 
 
 __all__ = [
     'BackgroundLinter',
     'AnacondaComletionEventListener',
+    'AnacondaSignaturesEventListener',
     'AnacondaAutoformatPEP8EventListener'
 ]

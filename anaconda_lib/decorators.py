@@ -58,6 +58,19 @@ def on_vagrant_enabled(func):
     return wrapper
 
 
+def on_display_signatures(func):
+    """Execute the given function if display signatures is enabled
+    """
+
+    @functools.wraps(func)
+    def wrapper(self, view, *args, **kwargs):
+
+        if get_settings(view, 'display_signatures', False):
+            return func(self, view, *args, **kwargs)
+
+    return wrapper
+
+
 def enable_for_python(func):
     """Returns True or False depending if we are in python sources
     """
