@@ -30,6 +30,11 @@ You can run the plugin in profiling mode on Windows (Sublime Text doesn't suppor
 
 Those profiles are really helpful for us to fix bugs and solve performance problems on Windows, add it to your issues reports always that you can.
 
+Project and Python Interpreter Switching
+----------------------------------------
+
+If you change your configured python intrepreter or you just switch your project, anaconda will detect it and reload a new completion/linting/IDE server killing the old one in a total transparent way so you don't need to restart your Sublime Text 3.
+
 Installation
 ------------
 
