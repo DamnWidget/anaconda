@@ -44,7 +44,7 @@ class AnacondaAutopep8(threading.Thread):
             args += ['--select={}'.format(
                 ','.join(settings.get('autoformat_select')))]
 
-        args += ['--max-line-length=79']
+        args += ['--max-line-length={}'.format(settings.get('pep8_max_line_length', 79))]
         args += ['anaconda_rocks']
 
         return args

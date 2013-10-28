@@ -46,6 +46,9 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
             ),
             'autoformat_select': get_settings(
                 self.view, 'autoformat_select', []
+            ),
+            'pep8_max_line_length': get_settings(
+                self.view, 'pep8_max_line_length', 79
             )
         }
         try:
