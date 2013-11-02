@@ -8,6 +8,7 @@ import sys
 import time
 import errno
 import socket
+import random
 import logging
 import threading
 
@@ -36,6 +37,7 @@ class BaseWorker(object):
     def __init__(self):
         self.available_port = None
         self.reconnecting = False
+        self.green_light = True
         self.last_error = None
         self.process = None
         self.client = None
@@ -153,10 +155,11 @@ class LocalWorker(BaseWorker):
                 self.available_port = self.port
 
             self.start_json_server()
-            while not self.server_is_active():
+            while not self.server_is_active() and self.green_light:
                 time.sleep(0.01)
 
-            self.client = AsynClient(self.available_port)
+            if self.green_light:
+                self.client = AsynClient(self.available_port)
         except Exception as error:
             logging.error(error)
             logging.error(get_traceback())
@@ -165,9 +168,10 @@ class LocalWorker(BaseWorker):
         """Disconnect all the clients and terminate the server process
         """
 
-        self.client.close()
-        self.process.kill()
-        self.start_json_server()
+        if self.client is not None:
+            self.client.close()
+            self.process.kill()
+            self.start_json_server()
 
     def build_server(self):
         """Create the subprocess for the anaconda json server
@@ -207,6 +211,24 @@ class LocalWorker(BaseWorker):
 
         args.extend([str(os.getpid())])
         self.process = create_subprocess(args)
+        if self.process is None:
+            # we can't spawn a new process for jsonserver. Wrong config?
+            self.green_light = False
+            example = '/usr/bin/python'
+            if os.name == 'nt':
+                example = 'C:\Python27\python.exe'
+
+            if random.randrange(10) == 4:
+                sublime.error_message(
+                    'Anaconda can not spawn a new process with your current '
+                    'configured python interpreter ({}), make sure your '
+                    'interpreter is a valid binary and is in your PATH or use '
+                    'an absolute route to it, for example: {}'.format(
+                        python, example
+                    )
+                )
+        else:
+            self.green_light = True
 
 
 class RemoteWorker(BaseWorker):

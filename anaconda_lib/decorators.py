@@ -156,6 +156,9 @@ def auto_project_switch(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
 
+        if not self.green_light:
+            return
+
         wid = sublime.active_window().id()
         view = sublime.active_window().active_view()
         auto_project_switch = get_settings(view, 'auto_project_switch', False)
