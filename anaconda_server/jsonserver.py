@@ -68,6 +68,9 @@ class JSONHandler(asynchat.async_chat):
                 print('About push back to ST3: {0}'.format(data))
             self.push(data)
 
+        # clear jedi cache
+        jedi.cache.clear_caches()
+
     def collect_incoming_data(self, data):
         """Called when data is ready to be read
         """
@@ -122,13 +125,14 @@ class JSONHandler(asynchat.async_chat):
         """Handle refactor command
         """
 
-        self.script = self.jedi_script(
+        script = self.jedi_script(
             self.data.pop('source'),
             self.data.pop('line'),
             self.data.pop('offset'),
             filename=self.data.pop('filename'),
             encoding='utf8'
         )
+        self.data['script'] = script
         getattr(self, method.split('_')[1])(uid, **self.data)
 
     def handle_jedi_command(self, method, uid):
@@ -139,7 +143,7 @@ class JSONHandler(asynchat.async_chat):
         if 'settings' in self.data:
             kwargs.update({'settings': self.data.pop('settings')})
 
-        self.script = self.jedi_script(**self.data)
+        kwargs['script'] = self.jedi_script(**self.data)
         getattr(self, method)(uid, **kwargs)
 
     def jedi_script(self, source, line, offset, filename='', encoding='utf8'):
@@ -195,39 +199,39 @@ class JSONHandler(asynchat.async_chat):
                 'uid': uid
             })
 
-    def rename(self, uid, directories, new_word):
+    def rename(self, uid, directories, new_word, script):
         """Rename the object under the cursor by the given word
         """
 
         Rename(
-            self.return_back, uid, self.script,
+            self.return_back, uid, script,
             directories, new_word, jedi_refactor
         )
 
-    def autocomplete(self, uid):
+    def autocomplete(self, uid, script):
         """Call autocomplete
         """
-        AutoComplete(self.return_back, uid, self.script)
+        AutoComplete(self.return_back, uid, script)
 
-    def parameters(self, uid, settings):
+    def parameters(self, uid, settings, script):
         """Call complete parameters
         """
-        CompleteParameters(self.return_back, uid, self.script, settings)
+        CompleteParameters(self.return_back, uid, script, settings)
 
-    def usages(self, uid):
+    def usages(self, uid, script):
         """Call Find Usages
         """
-        FindUsages(self.return_back, uid, self.script)
+        FindUsages(self.return_back, uid, script)
 
-    def goto(self, uid):
+    def goto(self, uid, script):
         """Call goto
         """
-        Goto(self.return_back, uid, self.script)
+        Goto(self.return_back, uid, script)
 
-    def doc(self, uid):
+    def doc(self, uid, script):
         """Call doc
         """
-        Doc(self.return_back, uid, self.script)
+        Doc(self.return_back, uid, script)
 
 
 class JSONServer(asyncore.dispatcher):

@@ -37,7 +37,9 @@ class AutoComplete(Command):
         except Exception as error:
             logging.error('The underlying Jedi library as raised an exception')
             logging.error(error)
-            logging.debug(traceback.format_exc().splitlines())
+            if DEBUG_MODE:
+                logging.debug(traceback.format_exc().splitlines())
+
             self.callback({
                 'success': False,
                 'error': error,
