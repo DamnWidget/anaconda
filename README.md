@@ -161,6 +161,8 @@ With this command you can rename the object under the cursor in a project basis 
 
 You can run the [McCabe complexity checker](http://en.wikipedia.org/wiki/Cyclomatic_complexity) tool in whatever python file you want. You can configure it threshold adjusting the option setting ```mccabe_threshold``` in the configuration file or in your project configuration file.
 
+* Context Menu: `Anaconda > McCabe complexity check`
+
 #### Autoformat PEP8 Errors
 
 Anaconda supports the [AutoPEP8](https://github.com/hhatto/autopep8) tool and its integrated as part of the plugin itself. You can reformat your files to follow PEP8 automatically using the command palette `Anaconda: Autoformat PEP8 Errors` or the same option in the contextual menu. Of course this operation is performed asynchronous but it set your current buffer as read only while the operation is performed, a progress bar is shown at the status bar while working.
