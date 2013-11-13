@@ -20,6 +20,10 @@
         "command": "anaconda_auto_format"
     },
     {
+        "caption": "Anaconda: McCabe complexity check",
+        "command": "anaconda_mc_cabe"
+    },
+    {
         "caption": "Anaconda: Vagrant Init",
         "command": "anaconda_vagrant_init"
     },

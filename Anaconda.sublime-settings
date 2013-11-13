@@ -155,6 +155,11 @@
     ],
 
     /*
+        Set the thresshold limit for McCabe complexity checker
+    */
+    "mccabe_threshold": 7,
+
+    /*
         Set is a false to disable Anaconda Linting totally
     */
     "anaconda_linting": true,

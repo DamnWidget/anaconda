@@ -5,6 +5,7 @@
 from .doc import AnacondaDoc
 from .goto import AnacondaGoto
 from .rename import AnacondaRename
+from .mccabe import AnacondaMcCabe
 from .get_lines import AnacondaGetLines
 from .autoformat import AnacondaAutoFormat
 from .find_usages import AnacondaFindUsages
@@ -21,6 +22,7 @@ __all__ = [
     'AnacondaDoc',
     'AnacondaGoto',
     'AnacondaRename',
+    'AnacondaMcCabe',
     'AnacondaGetLines',
     'AnacondaVagrantUp',
     'AnacondaVagrantSsh',

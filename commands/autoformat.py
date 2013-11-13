@@ -15,7 +15,6 @@ from ..anaconda_lib.progress_bar import ProgressBar
 
 
 class AnacondaAutoFormat(sublime_plugin.TextCommand):
-
     """Execute autopep8 formating
     """
 

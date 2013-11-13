@@ -5,6 +5,7 @@
 from .doc import Doc
 from .lint import Lint
 from .goto import Goto
+from .mccabe import McCabe
 from .rename import Rename
 from .pylint import PyLint
 from .find_usages import FindUsages
@@ -16,6 +17,7 @@ __all__ = [
     'Doc',
     'Lint',
     'Goto',
+    'McCabe',
     'Rename',
     'PyLint',
     'FindUsages',

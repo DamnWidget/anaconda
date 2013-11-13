@@ -31,7 +31,11 @@
             {
                 "command": "anaconda_auto_format",
                 "caption": "Autoformat PEP8 Errors"
-            }
+            },
+            {
+                "command": "anaconda_mc_cabe",
+                "caption": "McCabe complexity check"
+            },
         ]
     }
 ]

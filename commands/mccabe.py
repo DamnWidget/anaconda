@@ -1,0 +1,78 @@
+
+# Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
+# This program is Free Software see LICENSE file for details
+
+import sublime
+import sublime_plugin
+
+from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.helpers import get_settings, active_view
+
+
+class AnacondaMcCabe(sublime_plugin.WindowCommand):
+    """Execute McCabe complexity checker
+    """
+
+    def run(self):
+
+        view = self.window.active_view()
+        code = view.substr(sublime.Region(0, view.size()))
+        data = {
+            'code': code,
+            'threshold': get_settings(view, 'mccabe_threshold', 7),
+            'filename': active_view().file_name(),
+            'method': 'run_linter_mccabe'
+        }
+        Worker().execute(self.prepare_data, **data)
+
+    def is_enabled(self):
+        """Determine if this command is enabled or not
+        """
+
+        view = self.window.active_view()
+        location = view.sel()[0].begin()
+        matcher = 'source.python'
+        return view.match_selector(location, matcher)
+
+    def prepare_data(self, data):
+        """Prepare the data to present in the quick panel
+        """
+
+        if not data['success']:
+            sublime.status_message('Unable to run McCabe checker...')
+            return
+
+        if len(data['errors']) == 0:
+            view = self.window.active_view()
+            threshold = get_settings(view, 'mccabe_threshold', 7)
+            sublime.status_message(
+                'No code complexity beyond {} was found'.format(threshold)
+            )
+
+        self._show_options(data['errors'])
+
+    def _show_options(self, options):
+        """Show a dropdown quickpanel with options to jump
+        """
+
+        self.options = []
+        for option in options:
+            self.options.append(
+                [option['message'], 'line: {}'.format(option['line'])]
+            )
+
+        self.window.show_quick_panel(self.options, self._jump)
+
+    def _jump(self, item):
+        """Jump to a line in the view buffer
+        """
+
+        if item == -1:
+            return
+
+        lineno = int(self.options[item][1].split(':')[1].strip()) - 1
+        pt = self.window.active_view().text_point(lineno, 0)
+        self.window.active_view().sel().clear()
+        self.window.active_view().sel().add(sublime.Region(pt))
+
+        self.window.active_view().show(pt)

@@ -29,9 +29,10 @@ import jedi
 from linting import linter
 from contexts import json_decode
 from jedi import refactoring as jedi_refactor
+from linting.anaconda_mccabe import AnacondaMcCabe
 from commands import (
     Doc, Lint, Goto, Rename, PyLint, FindUsages, AutoComplete,
-    CompleteParameters
+    CompleteParameters, McCabe
 )
 
 try:
@@ -119,6 +120,7 @@ class JSONHandler(asynchat.async_chat):
         """Handle lint command
         """
 
+        print(method)
         getattr(self, method)(uid, **self.data)
 
     def handle_refactor_command(self, method, uid):
@@ -156,6 +158,14 @@ class JSONHandler(asynchat.async_chat):
             )
         return jedi.Script(
             source, int(line), int(offset), filename, encoding
+        )
+
+    def run_linter_mccabe(self, uid, code, threshold, filename):
+        """Return the McCabe code comlexity errors
+        """
+
+        McCabe(
+            self.return_back, uid, AnacondaMcCabe, code, threshold, filename
         )
 
     def run_linter(self, uid, settings, code, filename):
