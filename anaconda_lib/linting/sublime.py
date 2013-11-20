@@ -374,7 +374,9 @@ def run_linter(view):
         'pyflakes_disabled': get_settings(view, 'pyflakes_disabled', False),
         'use_pylint': get_settings(view, 'use_pylint', False),
         'pep8_rcfile': get_settings(view, 'pep8_rcfile'),
-        'pylint_rcfile': get_settings(view, 'pylint_rcfile')
+        'pylint_rcfile': get_settings(view, 'pylint_rcfile'),
+        'pyflakes_explicit_ignore': get_settings(
+            view, 'pyflakes_explicit_ignore', [])
     }
     text = view.substr(sublime.Region(0, view.size()))
     data = {'code': text, 'settings': settings, 'filename': view.file_name()}

@@ -262,6 +262,22 @@
     ],
 
     /*
+        Now is possible to ignore specific error types adding them on this
+        list, (just uncomment them)
+    */
+    "pyflakes_explicit_ignore":
+    [
+        // "Redefined",
+        // "UnusedImport",
+        // "UndefinedName",
+        // "UndefinedLocal",
+        // "UnusedVariable,",
+        // "UndefinedExport",
+        // "DuplicateArgument",
+        // "RedefinedWhileUnused"
+    ],
+
+    /*
         If setted, the given file will be used as configuration for PyLint
 
         **** WARNING ****

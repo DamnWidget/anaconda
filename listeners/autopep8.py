@@ -2,7 +2,6 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
-
 import sublime_plugin
 
 from ..anaconda_lib.decorators import only_python, on_auto_formatting_enabled

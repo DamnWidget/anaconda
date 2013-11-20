@@ -260,22 +260,23 @@ class Linter(object):
 
         pyflakes_ignore = settings.get('pyflakes_ignore', None)
         pyflakes_disabled = settings.get('pyflakes_disabled', False)
+        explicit_ignore = settings.get('pyflakes_explicit_ignore', [])
 
         if not pyflakes_disabled and not settings.get('use_pylint'):
             errors.extend(self.pyflakes_check(code, filename, pyflakes_ignore))
 
-        return self.parse_errors(errors)
+        return self.parse_errors(errors, explicit_ignore)
 
-    def parse_errors(self, errors):
+    def parse_errors(self, errors, explicit_ignore):
         """Parse errors returned from the PyFlakes and pep8 libraries
         """
 
+        print(explicit_ignore)
         errors_list = []
         if errors is None:
             return errors_list
 
         errors.sort(key=cmp_to_key(lambda a, b: a.lineno < b.lineno))
-
         for error in errors:
             error_level = 'W' if not hasattr(error, 'level') else error.level
             message = error.message.capitalize()
@@ -298,14 +299,15 @@ class Linter(object):
             if isinstance(error, (Pep8Error, Pep8Warning, OffsetError)):
                 error_data['pep8'] = True
                 errors_list.append(error_data)
-            elif isinstance(
+            elif (isinstance(
                 error, (
                     pyflakes.messages.RedefinedWhileUnused,
                     pyflakes.messages.UndefinedName,
                     pyflakes.messages.UndefinedExport,
                     pyflakes.messages.UndefinedLocal,
                     pyflakes.messages.Redefined,
-                    pyflakes.messages.UnusedVariable)):
+                    pyflakes.messages.UnusedVariable)) and
+                    error.__class__.__name__ not in explicit_ignore):
                 regex = (
                     r'((and|or|not|if|elif|while|in)\s+|[+\-*^%%<>=\(\{{])*\s'
                     '*(?P<underline>[\w\.]*{0}[\w]*)'.format(re.escape(
@@ -321,10 +323,11 @@ class Linter(object):
                 )
                 error_data['regex'] = regex
                 errors_list.append(error_data)
-            elif isinstance(
+            elif (isinstance(
                 error, (
                     pyflakes.messages.UnusedImport,
-                    pyflakes.messages.ImportStarUsed)):
+                    pyflakes.messages.ImportStarUsed)) and
+                    error.__class__.__name__ not in explicit_ignore):
                 if isinstance(error, pyflakes.messages.ImportStarUsed):
                     word = '*'
                 else:
@@ -337,7 +340,8 @@ class Linter(object):
                 error_data['regex'] = r
                 error_data['linematch'] = linematch
                 errors_list.append(error_data)
-            elif isinstance(error, pyflakes.messages.DuplicateArgument):
+            elif (isinstance(error, pyflakes.messages.DuplicateArgument) and
+                    error.__class__.__name__ not in explicit_ignore):
                 regex = 'def [\w_]+\(.*?(?P<underline>[\w]*{0}[\w]*)'.format(
                     re.escape(error.message_args[0])
                 )
