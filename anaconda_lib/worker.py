@@ -184,7 +184,8 @@ class LocalWorker(BaseWorker):
         )
 
         view = sublime.active_window().active_view()
-        paths = get_settings(view, 'extra_paths', [])
+        paths = [os.path.expanduser(p) for p
+                 in get_settings(view, 'extra_paths', [])]
         try:
             paths.extend(sublime.active_window().folders())
         except AttributeError:
