@@ -18,7 +18,7 @@ Because that architecture, **anaconda** can lint or complete with python interpr
 Supported platforms
 -------------------
 
-Anaconda has been tested in Linux, Windows and Mac OS X with possitive results. I don't have any way to test the plugin in Mac OS X so I depend completely on the community for this task. Several users tested the plugin in Mac OS X with really possitive feedback.
+Anaconda has been tested in Linux, Windows and Mac OS X with positive results. I don't have any way to test the plugin in Mac OS X so I depend completely on the community for this task. Several users tested the plugin in Mac OS X with really positive feedback.
 
 The status of the plugin in the different platforms is:
 
