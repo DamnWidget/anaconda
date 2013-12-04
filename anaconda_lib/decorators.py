@@ -33,6 +33,10 @@ def is_python(view, ignore_comments=False):
     if view is None:
         return False
 
+    # disable linting in SublimeREPL
+    if view.settings().get('repl', False):
+        return
+
     try:
         location = view.sel()[0].begin()
     except IndexError:
