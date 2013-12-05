@@ -191,8 +191,6 @@ On this situations we can just disable the linting for this specific file using 
 
 When our mate learns how to write proper and clean code we can just turn it on again with `Anaconda: Enable linting on this file`.
 
-**Note**: This status is not permanent so you have to do it every time that you open the file.
-
 #### Disabling specific PyFlakes errors
 
 You can disable specific PyFlakes errors (unused import module for example) uncommenting it in the ``pyflakes_explicit_ignore`` list in the configuration file or adding this list to your project configuration and adding there the type of warnings/errors that you want to disable.
