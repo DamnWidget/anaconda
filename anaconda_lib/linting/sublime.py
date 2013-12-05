@@ -13,6 +13,7 @@ import sublime
 from . import pep8
 from ..worker import Worker
 from ..decorators import is_python
+from ..persistent_list import PersistentList
 from ..helpers import get_settings, active_view
 
 ANACONDA = {
@@ -22,7 +23,7 @@ ANACONDA = {
     'UNDERLINES': {},
     'LAST_PULSE': time.time(),
     'ALREADY_LINTED': False,
-    'DISABLED': []
+    'DISABLED': PersistentList()
 }
 
 marks = {
@@ -362,7 +363,7 @@ def run_linter(view):
     """Run the linter for the given view
     """
 
-    if view.id() in ANACONDA['DISABLED']:
+    if view.file_name() in ANACONDA['DISABLED']:
         return
 
     settings = {

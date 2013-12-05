@@ -12,7 +12,9 @@ class AnacondaDisableLinting(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        ANACONDA['DISABLED'].append(self.window.active_view().id())
+        if self.window.active_view().file_name() is not None:
+            ANACONDA['DISABLED'].append(self.window.active_view().file_name())
+
         erase_lint_marks(self.window.active_view())
 
     def is_enabled(self):
@@ -20,7 +22,7 @@ class AnacondaDisableLinting(sublime_plugin.WindowCommand):
         """
 
         view = self.window.active_view()
-        if view.id() in ANACONDA['DISABLED']:
+        if view.file_name() in ANACONDA['DISABLED']:
             return False
 
         location = view.sel()[0].begin()

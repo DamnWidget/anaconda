@@ -22,7 +22,7 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
         """
 
         view = self.window.active_view()
-        if view.id() in ANACONDA['DISABLED']:
+        if view.file_name() in ANACONDA['DISABLED']:
             return False
 
         location = view.sel()[0].begin()
