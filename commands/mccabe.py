@@ -38,7 +38,7 @@ class AnacondaMcCabe(sublime_plugin.WindowCommand):
         """Prepare the data to present in the quick panel
         """
 
-        if not data['success']:
+        if not data['success'] or data['errors'] is None:
             sublime.status_message('Unable to run McCabe checker...')
             return
 

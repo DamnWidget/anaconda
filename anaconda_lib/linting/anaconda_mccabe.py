@@ -28,7 +28,8 @@ class AnacondaMcCabe(object):
         """
 
         try:
-            return compile(self.code, self.filename, 'exec', ast.PyCF_ONLY_AST)
+            code = self.code.encode('utf8') + b'\n'
+            return compile(code, self.filename, 'exec', ast.PyCF_ONLY_AST)
         except SyntaxError:
             return None
 
