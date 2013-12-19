@@ -5,6 +5,7 @@
 import sublime
 import sublime_plugin
 
+from ..anaconda_lib.helpers import get_settings
 from ..anaconda_lib.linting.sublime import ANACONDA
 
 
@@ -32,7 +33,8 @@ class AnacondaGetLines(sublime_plugin.WindowCommand):
         """
 
         view = self.window.active_view()
-        if view.file_name() in ANACONDA['DISABLED']:
+        if (view.file_name() in ANACONDA['DISABLED']
+                or not get_settings(view, 'anaconda_linting')):
             return False
 
         location = view.sel()[0].begin()
