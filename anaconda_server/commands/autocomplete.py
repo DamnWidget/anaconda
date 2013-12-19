@@ -41,9 +41,7 @@ class AutoComplete(Command):
                 logging.debug(traceback.format_exc().splitlines())
 
             self.callback({
-                'success': False,
-                'error': error,
-                'uid': self.uid
+                'success': False, 'error': str(error), 'uid': self.uid
             })
 
     def _parameters_for_complete(self):
