@@ -56,12 +56,12 @@ from __future__ import with_statement
 import os
 
 from jedi import cache
-from jedi import parsing_representation as pr
+from jedi.parser import representation as pr
 from jedi import modules
 from jedi import settings
 from jedi import common
 from jedi import debug
-from jedi import fast_parser
+from jedi.parser import fast as fast_parser
 import api_classes
 import evaluate
 import imports
@@ -563,7 +563,7 @@ def _check_isinstance_type(stmt, search_name):
         # this might be removed if we analyze and, etc
         assert len(commands) == 1
         call = commands[0]
-        assert type(call) is pr.Call and str(call.name) == 'isinstance'
+        assert isinstance(call, pr.Call) and str(call.name) == 'isinstance'
         assert bool(call.execution)
 
         # isinstance check
@@ -575,7 +575,7 @@ def _check_isinstance_type(stmt, search_name):
         assert isinstance(obj[0], pr.Call)
         # names fit?
         assert str(obj[0].name) == search_name
-        assert isinstance(classes[0], pr.Call)  # can be type or tuple
+        assert isinstance(classes[0], pr.StatementElement)  # can be type or tuple
     except AssertionError:
         return []
 

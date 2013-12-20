@@ -5,7 +5,7 @@ Module to handle interpreted Python objects.
 import itertools
 import tokenize
 
-from jedi import parsing_representation as pr
+from jedi.parser import representation as pr
 
 
 class ObjectImporter(object):
@@ -164,8 +164,6 @@ class ObjectImporter(object):
             ])
         return pr.Statement(
             module=submodule,
-            set_vars=[lhsname],
-            used_vars=[rhsname],
             token_list=token_list,
             start_pos=(0, 0),
             end_pos=(None, None))

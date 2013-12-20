@@ -5,6 +5,8 @@ use its methods.
 Additionally you can add a debug function with :func:`set_debug_function` and
 catch :exc:`NotFoundError` which is being raised if your completion is not
 possible.
+
+.. warning:: Please, note that Jedi is **not thread safe**.
 """
 from __future__ import with_statement
 
@@ -13,8 +15,8 @@ import os
 import warnings
 from itertools import chain
 
-from jedi import parsing
-from jedi import parsing_representation as pr
+from jedi.parser import Parser
+from jedi.parser import representation as pr
 from jedi import debug
 from jedi import settings
 from jedi import helpers
@@ -41,6 +43,9 @@ class Script(object):
     A Script is the base for completions, goto or whatever you want to do with
     |jedi|.
 
+    You can either use the ``source`` parameter or ``path`` to read a file.
+    Usually you're going to want to use both of them (in an editor).
+
     :param source: The source code of the current file, separated by newlines.
     :type source: str
     :param line: The line to perform actions on (starting with 1).
@@ -54,18 +59,28 @@ class Script(object):
         ``unicode`` object (default ``'utf-8'``).
     :type source_encoding: str
     """
-    def __init__(self, source, line=None, column=None, path=None,
+    def __init__(self, source=None, line=None, column=None, path=None,
                  source_encoding='utf-8', source_path=None):
         if source_path is not None:
             warnings.warn("Use path instead of source_path.", DeprecationWarning)
             path = source_path
+
+        if source is None:
+            with open(path) as f:
+                source = f.read()
 
         lines = source.splitlines() or ['']
         if source and source[-1] == '\n':
             lines.append('')
 
         self._line = max(len(lines), 1) if line is None else line
-        self._column = len(lines[-1]) if column is None else column
+        if not (0 < self._line <= len(lines)):
+            raise ValueError('`line` parameter is not in a valid range.')
+
+        line_len = len(lines[self._line - 1])
+        self._column = line_len if column is None else column
+        if not (0 <= self._column <= line_len):
+            raise ValueError('`column` parameter is not in a valid range.')
 
         api_classes._clear_caches()
         debug.reset_time()
@@ -123,7 +138,8 @@ class Script(object):
         bs = builtin.Builtin.scope
         completions = get_completions(user_stmt, bs)
 
-        if not dot:  # named params have no dots
+        if not dot:
+            # add named params
             for call_def in self.call_signatures():
                 if not call_def.module.is_builtin():
                     for p in call_def.params:
@@ -231,7 +247,7 @@ class Script(object):
 
     def _get_under_cursor_stmt(self, cursor_txt):
         offset = self._line - 1, self._column
-        r = parsing.Parser(cursor_txt, no_docstr=True, offset=offset)
+        r = Parser(cursor_txt, no_docstr=True, offset=offset)
         try:
             stmt = r.module.statements[0]
         except IndexError:
@@ -335,7 +351,7 @@ class Script(object):
             if op and op not in lower_priority_operators:
                 scopes = set([keywords.get_operator(op, self._pos)])
 
-        # Fetch definition of callee
+        # Fetch definition of callee, if there's no path otherwise.
         if not goto_path:
             (call, _) = self._func_call_and_param_index()
             if call is not None:
@@ -428,8 +444,9 @@ class Script(object):
             definitions = follow_inexistent_imports(defs)
             if isinstance(user_stmt, pr.Statement):
                 c = user_stmt.get_commands()
-                if c and not isinstance(c[0], (str, unicode)) and \
-                   c[0].start_pos > self._pos:
+                if c and not isinstance(c[0], (str, unicode)) \
+                        and c[0].start_pos > self._pos \
+                        and not re.search(r'\.\w+$', goto_path):
                     # The cursor must be after the start, otherwise the
                     # statement is just an assignee.
                     definitions = [user_stmt]
@@ -455,7 +472,7 @@ class Script(object):
             c = user_stmt.get_commands()[0]
             if not isinstance(c, unicode) and self._pos < c.start_pos:
                 # the search_name might be before `=`
-                definitions = [v for v in user_stmt.set_vars
+                definitions = [v for v in user_stmt.get_set_vars()
                                if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option
@@ -494,7 +511,7 @@ class Script(object):
 
         This would return ``None``.
 
-        :rtype: :class:`api_classes.CallDef`
+        :rtype: list of :class:`api_classes.CallDef`
         """
 
         call, index = self._func_call_and_param_index()
@@ -516,8 +533,7 @@ class Script(object):
         if call is None:
             user_stmt = self._user_stmt()
             if user_stmt is not None and isinstance(user_stmt, pr.Statement):
-                call, index, _ = helpers.search_call_signatures(
-                    user_stmt, self._pos)
+                call, index, _ = helpers.search_call_signatures(user_stmt, self._pos)
         debug.speed('func_call parsed')
         return call, index
 
@@ -656,7 +672,7 @@ def defined_names(source, path=None, source_encoding='utf-8'):
 
     :rtype: list of api_classes.Definition
     """
-    parser = parsing.Parser(
+    parser = Parser(
         modules.source_to_unicode(source, source_encoding),
         module_path=path,
     )

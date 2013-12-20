@@ -15,7 +15,7 @@ import copy
 import itertools
 
 from jedi._compatibility import use_metaclass, next, hasattr, unicode
-from jedi import parsing_representation as pr
+from jedi.parser import representation as pr
 from jedi import cache
 from jedi import helpers
 from jedi import debug
@@ -82,7 +82,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         normally self.
         """
         try:
-            return str(func.params[0].used_vars[0])
+            return str(func.params[0].get_name())
         except IndexError:
             return None
 
@@ -151,7 +151,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         """
         names = self._get_self_attributes()
 
-        class_names = self.base.get_defined_names()
+        class_names = self.base.instance_names()
         for var in class_names:
             names.append(InstanceElement(self, var, True))
         return names
@@ -164,7 +164,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         yield self, self._get_self_attributes()
 
         names = []
-        class_names = self.base.get_defined_names()
+        class_names = self.base.instance_names()
         for var in class_names:
             names.append(InstanceElement(self, var, True))
         yield self, names
@@ -270,7 +270,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         return supers
 
     @cache.memoize_default(default=())
-    def get_defined_names(self):
+    def instance_names(self):
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """
             for i in iterable:
@@ -285,11 +285,17 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         # TODO mro!
         for cls in self.get_super_classes():
             # Get the inherited names.
-            for i in cls.get_defined_names():
+            for i in cls.instance_names():
                 if not in_iterable(i, result):
                     super_result.append(i)
         result += super_result
         return result
+
+    @cache.memoize_default(default=())
+    def get_defined_names(self):
+        result = self.instance_names()
+        type_cls = evaluate.find_name(builtin.Builtin.scope, 'type')[0]
+        return result + type_cls.base.get_defined_names()
 
     def get_subscope_by_name(self, name):
         for sub in reversed(self.subscopes):
@@ -469,7 +475,7 @@ class Execution(Executable):
 
         if base.isinstance(Class):
             # There maybe executions of executions.
-            stmts = [Instance(base, self.var_args)]
+            return [Instance(base, self.var_args)]
         elif isinstance(base, Generator):
             return base.iter_content()
         else:
@@ -534,8 +540,7 @@ class Execution(Executable):
             arr.values = values
             key_stmts = []
             for key in keys:
-                stmt = pr.Statement(self._sub_module, [], [], [],
-                                    start_pos, None)
+                stmt = pr.Statement(self._sub_module, [], start_pos, None)
                 stmt._commands = [key]
                 key_stmts.append(stmt)
             arr.keys = key_stmts
@@ -650,7 +655,7 @@ class Execution(Executable):
                     old = stmt
                     # generate a statement if it's not already one.
                     module = builtin.Builtin.scope
-                    stmt = pr.Statement(module, [], [], [], (0, 0), None)
+                    stmt = pr.Statement(module, [], (0, 0), None)
                     stmt._commands = [old]
 
                 # *args
@@ -678,7 +683,7 @@ class Execution(Executable):
                                 call = key_stmt.get_commands()[0]
                                 if isinstance(call, pr.Name):
                                     yield call, value_stmt
-                                elif type(call) is pr.Call:
+                                elif isinstance(call, pr.Call):
                                     yield call.name, value_stmt
                 # Normal arguments (including key arguments).
                 else:
@@ -861,8 +866,8 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 if len(key_commands) != 1:  # cannot deal with complex strings
                     continue
                 key = key_commands[0]
-                if isinstance(key, pr.Call) and key.type == pr.Call.STRING:
-                    str_key = key.name
+                if isinstance(key, pr.String):
+                    str_key = key.value
                 elif isinstance(key, pr.Name):
                     str_key = str(key)
 

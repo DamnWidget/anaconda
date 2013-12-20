@@ -34,7 +34,7 @@ import inspect
 
 from jedi import common
 from jedi import debug
-from jedi import parsing
+from jedi.parser import Parser
 from jedi import modules
 import evaluate
 
@@ -253,9 +253,9 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
 
     code += get_doc(scope)
 
+    # Remove some magic vars, (TODO why?)
     names = set(dir(scope)) - set(['__file__', '__name__', '__doc__',
-                                   '__path__', '__package__']) \
-        | set(['mro'])
+                                   '__path__', '__package__'])
 
     classes, funcs, stmts, members = get_scope_objects(names)
 
@@ -435,7 +435,7 @@ class Builtin(object):
             class Container(object):
                 FunctionType = types.FunctionType
             source = _generate_code(Container, depth=0)
-            parser = parsing.Parser(source, None)
+            parser = Parser(source, None)
             module = parser.module
             module.parent = self.scope
             typ = evaluate.follow_path(iter(['FunctionType']), module, module)

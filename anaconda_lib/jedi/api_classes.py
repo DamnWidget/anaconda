@@ -11,7 +11,7 @@ import functools
 from jedi._compatibility import unicode, next
 from jedi import settings
 from jedi import common
-from jedi import parsing_representation as pr
+from jedi.parser import representation as pr
 from jedi import cache
 import keywords
 import recursion
@@ -80,6 +80,7 @@ class BaseDefinition(object):
         # generate a path to the definition
         self._module = definition.get_parent_until()
         self.module_path = self._module.path
+        """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
 
     @property
     def start_pos(self):

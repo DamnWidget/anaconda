@@ -26,6 +26,13 @@ def range(start, stop=None, step=1):
     return [0]
 
 
+class file():
+    def __iter__(self):
+        yield ''
+    def next(self):
+        return ''
+
+
 class xrange():
     # Attention: this function doesn't exist in Py3k (there it is range).
     def __iter__(self):
@@ -196,7 +203,11 @@ class reversed():
         return next(self.__iter__())
 
     def next(self):
-        return self.__next__()
+        return next(self.__iter__())
+
+
+def sorted(iterable, cmp=None, key=None, reverse=False):
+    return iterable
 
 
 #--------------------------------------------------------
@@ -211,8 +222,7 @@ class str():
     def __init__(self, obj):
         pass
 
-class object():
+
+class type():
     def mro():
-        """ mro() -> list
-        return a type's method resolution order """
         return [object]

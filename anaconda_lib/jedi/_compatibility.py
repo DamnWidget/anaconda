@@ -8,7 +8,7 @@ import imp
 import os
 try:
     import importlib
-except:
+except ImportError:
     pass
 
 is_py3k = sys.hexversion >= 0x03000000
@@ -33,7 +33,8 @@ def find_module_py33(string, path=None):
             module_path = loader.get_filename(string)
             module_file = open(module_path)
     except AttributeError:
-        module_path = loader.load_module(string).__name__
+        # is builtin module
+        module_path = string
         module_file = None
 
     return module_file, module_path, is_package
