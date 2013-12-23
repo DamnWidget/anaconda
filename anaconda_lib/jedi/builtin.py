@@ -364,7 +364,7 @@ def _parse_function_doc(func):
                 end = start + i
                 break
         param_str = doc[start + 1:end]
-    except (ValueError, UnboundLocalError):
+    except (ValueError, UnboundLocalError, AttributeError):
         # ValueError for doc.index
         # UnboundLocalError for undefined end in last line
         debug.dbg('no brackets found - no param')
