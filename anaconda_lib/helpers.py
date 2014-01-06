@@ -15,6 +15,60 @@ import subprocess
 
 import sublime
 
+NONE = 0x00
+ONLY_PYTHON = 0x01
+NOT_SCRATCH = 0x02
+LINTING_ENABLED = 0x04
+
+
+def check_linting(view, mask):
+    """Check common linting constraints
+    """
+
+    if mask & ONLY_PYTHON and not is_python(view):
+        return False
+
+    if mask & NOT_SCRATCH and view.is_scratch():
+        return False
+
+    if (mask & LINTING_ENABLED
+            and not get_settings(view, 'anaconda_linting', False)):
+        return False
+
+    return True
+
+
+def check_linting_behaviour(view, behaviours):
+    """Make sure the correct behaviours are applied
+    """
+
+    b = get_settings(view, 'anaconda_linting_behaviour', 'always')
+    return b in behaviours
+
+
+def is_python(view, ignore_comments=False):
+    """Determine if the given view location is python code
+    """
+
+    if view is None:
+        return False
+
+    # disable linting in SublimeREPL
+    if view.settings().get('repl', False):
+        return
+
+    try:
+        location = view.sel()[0].begin()
+    except IndexError:
+        return False
+
+    if ignore_comments is True:
+        matcher = 'source.python'
+    else:
+        matcher = 'source.python - string - comment'
+
+    return view.match_selector(location, matcher)
+
 
 def create_subprocess(args, **kwargs):
     """Create a subprocess and return it back
@@ -46,7 +100,7 @@ def get_settings(view, name, default=None):
     plugin_settings = sublime.load_settings('Anaconda.sublime-settings')
 
     if name in ('python_interpreter', 'extra_paths'):
-        if view.window().folders():
+        if view.window() is not None and view.window().folders():
             environfile = os.path.join(view.window().folders()[0], '.anaconda')
             if os.path.exists(environfile):
                 with open(environfile, 'r') as jsonfile:

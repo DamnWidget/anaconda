@@ -9,8 +9,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
-from ..anaconda_lib.helpers import prepare_send_data
-from ..anaconda_lib.decorators import enable_for_python
+from ..anaconda_lib.helpers import prepare_send_data, is_python
 
 
 class AnacondaRename(sublime_plugin.TextCommand):
@@ -30,10 +29,11 @@ class AnacondaRename(sublime_plugin.TextCommand):
         else:
             self.rename(edit)
 
-    @enable_for_python
     def is_enabled(self):
         """Determine if this command is enabled or not
         """
+
+        return is_python(self.view)
 
     def input_replacement(self, replacement):
         location = self.view.rowcol(self.view.sel()[0].begin())

@@ -9,8 +9,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib import autopep
-from ..anaconda_lib.decorators import is_python
-from ..anaconda_lib.helpers import get_settings
+from ..anaconda_lib.helpers import get_settings, is_python
 from ..anaconda_lib.progress_bar import ProgressBar
 
 

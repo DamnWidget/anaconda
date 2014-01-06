@@ -4,17 +4,16 @@
 
 import sublime_plugin
 
-from ..anaconda_lib.decorators import only_python, on_auto_formatting_enabled
+from ..anaconda_lib.helpers import get_settings, is_python
 
 
 class AnacondaAutoformatPEP8EventListener(sublime_plugin.EventListener):
     """Anaconda AutoPEP8 formatter event listener class
     """
 
-    @only_python
-    @on_auto_formatting_enabled
-    def on_pre_save_async(self, view):
+    def on_pre_save(self, view):
         """Called just before the file is going to be saved
         """
 
-        view.run_command('anaconda_auto_format')
+        if is_python(view) and get_settings(view, 'auto_formatting'):
+            view.run_command('anaconda_auto_format')

@@ -8,8 +8,7 @@ import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.jediusages import JediUsages
-from ..anaconda_lib.helpers import prepare_send_data
-from ..anaconda_lib.decorators import enable_for_python
+from ..anaconda_lib.helpers import prepare_send_data, is_python
 
 
 class AnacondaGoto(sublime_plugin.TextCommand):
@@ -24,7 +23,8 @@ class AnacondaGoto(sublime_plugin.TextCommand):
         except:
             pass
 
-    @enable_for_python
     def is_enabled(self):
         """Determine if this command is enabled or not
         """
+
+        return is_python(self.view)

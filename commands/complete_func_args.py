@@ -6,8 +6,9 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
-from ..anaconda_lib.decorators import enable_for_python
-from ..anaconda_lib.helpers import get_settings, active_view, prepare_send_data
+from ..anaconda_lib.helpers import (
+    get_settings, active_view, prepare_send_data, is_python
+)
 
 
 class AnacondaCompleteFuncargs(sublime_plugin.TextCommand):
@@ -35,10 +36,11 @@ class AnacondaCompleteFuncargs(sublime_plugin.TextCommand):
         }
         Worker().execute(self.insert_snippet, **data)
 
-    @enable_for_python
     def is_enabled(self):
         """Determine if this command is enabled or not
         """
+
+        return is_python(self.view)
 
     def _insert_characters(self, edit):
         """

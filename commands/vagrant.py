@@ -8,7 +8,6 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib import worker, vagrant
-from ..anaconda_lib.decorators import on_vagrant_enabled
 
 
 class AnacondaVagrantEnable(sublime_plugin.WindowCommand):
@@ -78,8 +77,10 @@ class AnacondaVagrantStatus(sublime_plugin.TextCommand, AnacondaVagrantBase):
 
     data = None
 
-    @on_vagrant_enabled
     def run(self, edit):
+        if self.view.settings().get('vagrant_environment') is None:
+            return
+
         cfg = self.view.settings().get('vagrant_environment')
         if self.data is None:
             try:
@@ -125,8 +126,10 @@ class AnacondaVagrantUp(sublime_plugin.TextCommand, AnacondaVagrantBase):
     """Execute vagrant up command
     """
 
-    @on_vagrant_enabled
     def run(self, edit):
+        if self.view.settings().get('vagrant_environment') is None:
+            return
+
         cfg = self.view.settings().get('vagrant_environment')
         if self.data is None:
             try:
@@ -142,8 +145,10 @@ class AnacondaVagrantSsh(sublime_plugin.TextCommand, AnacondaVagrantBase):
     """Execute remmote ssh command
     """
 
-    @on_vagrant_enabled
     def run(self, edit):
+        if self.view.settings().get('vagrant_environment') is None:
+            return
+
         cfg = self.view.settings().get('vagrant_environment')
         if self.data is None:
             self.view.window().show_input_panel(

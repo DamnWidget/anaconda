@@ -6,8 +6,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
-from ..anaconda_lib.helpers import prepare_send_data
-from ..anaconda_lib.decorators import enable_for_python
+from ..anaconda_lib.helpers import prepare_send_data, is_python
 
 
 class AnacondaDoc(sublime_plugin.TextCommand):
@@ -30,10 +29,11 @@ class AnacondaDoc(sublime_plugin.TextCommand):
         else:
             self.print_doc(edit)
 
-    @enable_for_python
     def is_enabled(self):
         """Determine if this command is enabled or not
         """
+
+        return is_python(self.view)
 
     def prepare_data(self, data):
         """Prepare the returned data

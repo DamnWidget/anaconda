@@ -5,16 +5,15 @@
 import os
 import re
 import time
-import threading
-from functools import partial
 
 import sublime
 
 from . import pep8
 from ..worker import Worker
-from ..decorators import is_python
+from ..helpers import get_settings
 from ..persistent_list import PersistentList
-from ..helpers import get_settings, active_view
+
+sublime_api = sublime.sublime_api
 
 ANACONDA = {
     'ERRORS': {},
@@ -36,28 +35,6 @@ marks = {
 ###############################################################################
 # Classes
 ###############################################################################
-class TypeMonitor(threading.Thread):
-    """Monitoring the typying
-    """
-
-    die = False
-
-    def run(self):
-
-        while not self.die:
-            if not ANACONDA['ALREADY_LINTED']:
-                view = sublime.active_window().active_view()
-                if is_python(view):
-                    delay = get_settings(view, 'anaconda_linter_delay', 0.5)
-                    if time.time() - ANACONDA['LAST_PULSE'] >= delay:
-                        ANACONDA['ALREADY_LINTED'] = True
-                        run_linter(view)
-
-            time.sleep(0.1)
-
-monitor = TypeMonitor()
-
-
 class Linter:
     """Linter class that can interacts with Sublime Linter GUI
     """
@@ -130,7 +107,7 @@ class Linter:
         """
 
         matcher = 'source.python - string - comment'
-        return active_view().match_selector(point, matcher)
+        return self.view.match_selector(point, matcher)
 
     def parse_errors(self, errors):
         """Parse errors returned from the PyFlakes and pep8 libraries
@@ -359,9 +336,12 @@ def get_lineno_msgs(view, lineno):
     return errors_msg
 
 
-def run_linter(view):
+def run_linter(view=None):
     """Run the linter for the given view
     """
+
+    if view is None:
+        view = sublime.active_window().active_view()
 
     if view.file_name() in ANACONDA['DISABLED']:
         return
@@ -372,15 +352,21 @@ def run_linter(view):
         'pep8_max_line_length': get_settings(
             view, 'pep8_max_line_length', pep8.MAX_LINE_LENGTH),
         'pyflakes_ignore': get_settings(view, 'pyflakes_ignore', []),
-        'pyflakes_disabled': get_settings(view, 'pyflakes_disabled', False),
+        'pyflakes_disabled': get_settings(
+            view, 'pyflakes_disabled', False),
         'use_pylint': get_settings(view, 'use_pylint', False),
         'pep8_rcfile': get_settings(view, 'pep8_rcfile'),
         'pylint_rcfile': get_settings(view, 'pylint_rcfile'),
         'pyflakes_explicit_ignore': get_settings(
             view, 'pyflakes_explicit_ignore', [])
     }
+
     text = view.substr(sublime.Region(0, view.size()))
-    data = {'code': text, 'settings': settings, 'filename': view.file_name()}
+    data = {
+        'code': text,
+        'settings': settings,
+        'filename': view.file_name()
+    }
     if get_settings(view, 'use_pylint', False) is False:
         data['method'] = 'run_linter'
     else:
@@ -389,27 +375,24 @@ def run_linter(view):
         else:
             data['method'] = 'run_linter_pylint'
 
-    Worker().execute(partial(parse_results, view), **data)
+    Worker().execute(parse_results, **data)
 
 
-def parse_results(view, data):
+def parse_results(data):
     """Parse the results from the server
     """
+
+    view = sublime.active_window().active_view()
 
     if data and data['success'] is False:
         if get_settings(view, 'use_pylint', False) is True:
             print(data['errors'])
         return
 
-    ERRORS = ANACONDA.get('ERRORS')
-    WARNINGS = ANACONDA.get('WARNINGS')
-    VIOLATIONS = ANACONDA.get('VIOLATIONS')
-    UNDERLINES = ANACONDA.get('UNDERLINES')
-
     vid = view.id()
-    ERRORS[vid] = {}
-    WARNINGS[vid] = {}
-    VIOLATIONS[vid] = {}
+    ANACONDA['ERRORS'][vid] = {}
+    ANACONDA['WARNINGS'][vid] = {}
+    ANACONDA['VIOLATIONS'][vid] = {}
 
     if get_settings(view, 'use_pylint', False) is False:
         results = Linter(view).parse_errors(data['errors'])
@@ -425,9 +408,9 @@ def parse_results(view, data):
     errors = results['results']
     lines = results['lines']
 
-    UNDERLINES[vid] = errors['E']['underlines'][:]
-    UNDERLINES[vid].extend(errors['V']['underlines'])
-    UNDERLINES[vid].extend(errors['W']['underlines'])
+    ANACONDA['UNDERLINES'][vid] = errors['E']['underlines'][:]
+    ANACONDA['UNDERLINES'][vid].extend(errors['V']['underlines'])
+    ANACONDA['UNDERLINES'][vid].extend(errors['W']['underlines'])
 
     errors = {
         'error_underlines': errors['E']['underlines'],
@@ -435,16 +418,4 @@ def parse_results(view, data):
         'violation_underlines': errors['V']['underlines']
     }
     add_lint_marks(view, lines, **errors)
-
     update_statusbar(view)
-
-
-def toggle_linting_behaviour():
-    """Called when linting behaviour is changed
-    """
-
-    if get_settings(active_view(), 'anaconda_linting_behaviour') == 'always':
-        monitor.die = False
-        monitor.start()
-    else:
-        monitor.die = True

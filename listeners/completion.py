@@ -6,8 +6,10 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
-from ..anaconda_lib.helpers import prepare_send_data, get_settings, active_view
-from ..anaconda_lib.decorators import only_python, profile
+from ..anaconda_lib.helpers import (
+    prepare_send_data, get_settings, active_view, is_python
+)
+from ..anaconda_lib.decorators import profile
 
 JUST_COMPLETED = False
 
@@ -19,11 +21,13 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
     completions = []
     ready_from_defer = False
 
-    @only_python
     @profile
     def on_query_completions(self, view, prefix, locations):
         """Sublime Text autocompletion event handler
         """
+
+        if not is_python(view):
+            return
 
         global JUST_COMPLETED
 
@@ -47,12 +51,14 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
         data = prepare_send_data(location, 'autocomplete')
 
         Worker().execute(self._complete, **data)
-        return
 
-    @only_python
-    def on_modified_async(self, view):
+    def on_modified(self, view):
         """Called after changes has been made to a view.
         """
+
+        if not is_python(view):
+            return
+
         global JUST_COMPLETED
 
         if (view.substr(view.sel()[0].begin() - 1) == '('
