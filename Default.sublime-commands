@@ -42,5 +42,9 @@
     {
         "caption": "Anaconda: Vagrant Enable",
         "command": "anaconda_vagrant_enable"
+    },
+    {
+        "caption": "Anaconda: Set Python interpreter",
+        "command": "anaconda_set_python_interpreter"
     }
 ]

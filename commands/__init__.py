@@ -34,5 +34,6 @@ __all__ = [
     'AnacondaVagrantEnable',
     'AnacondaVagrantStatus',
     'AnacondaDisableLinting',
-    'AnacondaCompleteFuncargs'
+    'AnacondaCompleteFuncargs',
+    'AnacondaSetPythonInterpreter'
 ]
