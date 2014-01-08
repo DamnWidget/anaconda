@@ -1,4 +1,3 @@
-
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
@@ -13,6 +12,7 @@ from .enable_linting import AnacondaEnableLinting
 from .next_lint_error import AnacondaNextLintError
 from .disable_linting import AnacondaDisableLinting
 from .complete_func_args import AnacondaCompleteFuncargs
+from .set_python_interpreter import AnacondaSetPythonInterpreter
 from .vagrant import (
     AnacondaVagrantEnable, AnacondaVagrantInit, AnacondaVagrantStatus,
     AnacondaVagrantUp, AnacondaVagrantSsh
