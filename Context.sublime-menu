@@ -36,6 +36,10 @@
                 "command": "anaconda_mc_cabe",
                 "caption": "McCabe complexity check"
             },
+            {
+                "command": "anaconda_auto_import",
+                "caption": "Auto import undefined word under cursor"
+            },
         ]
     }
 ]

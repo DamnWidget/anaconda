@@ -6,6 +6,7 @@ from .goto import AnacondaGoto
 from .rename import AnacondaRename
 from .mccabe import AnacondaMcCabe
 from .get_lines import AnacondaGetLines
+from .autoimport import AnacondaAutoImport
 from .autoformat import AnacondaAutoFormat
 from .find_usages import AnacondaFindUsages
 from .enable_linting import AnacondaEnableLinting
@@ -26,6 +27,7 @@ __all__ = [
     'AnacondaGetLines',
     'AnacondaVagrantUp',
     'AnacondaVagrantSsh',
+    'AnacondaAutoImport',
     'AnacondaAutoFormat',
     'AnacondaFindUsages',
     'AnacondaVagrantInit',

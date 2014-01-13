@@ -10,7 +10,6 @@ Anaconda is a python autocompletion and linting plugin for Sublime Text 3
 import os
 import sys
 import logging
-import sublime
 from string import Template
 
 from .anaconda_lib import ioloop
