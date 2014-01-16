@@ -43,7 +43,7 @@ class AnacondaAutoImport(sublime_plugin.TextCommand):
 
     def _guess_insertion_line(self):
         view_code = self.view.substr(sublime.Region(0, self.view.size()))
-        match = re.search(r'^(def|class)\s+', view_code, re.M)
+        match = re.search(r'^(@.+|def|class)\s+', view_code, re.M)
         if match is not None:
             code = view_code[:match.start()]
             print(code)
