@@ -160,14 +160,7 @@ class Linter(object):
             return [PythonError(filename, FakeLoc(), error.args[0])]
         else:
             # the file is syntactically valid, check it now
-            if ignore is not None:
-                _magic_globals = pyflakes._MAGIC_GLOBALS
-                pyflakes._MAGIC_GLOBALS += ignore
-
-            w = pyflakes.Checker(tree, filename)
-
-            if ignore is not None:
-                pyflakes._MAGIC_GLOBALS = _magic_globals
+            w = pyflakes.Checker(tree, filename, ignore)
 
             return w.messages
 
