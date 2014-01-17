@@ -9,7 +9,7 @@ import sublime_plugin
 
 from ..anaconda_lib.helpers import (
     check_linting, get_settings, check_linting_behaviour,
-    ONLY_PYTHON, NOT_SCRATCH, LINTING_ENABLED
+    ONLY_PYTHON, NOT_SCRATCH, LINTING_ENABLED, is_python
 )
 from ..anaconda_lib.linting.sublime import (
     ANACONDA, erase_lint_marks, run_linter,
@@ -37,7 +37,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
             return
 
         delay = get_settings(view, 'anaconda_linter_delay', 0.5)
-        if not ANACONDA['ALREADY_LINTED']:
+        if not ANACONDA['ALREADY_LINTED'] and is_python(view):
             if time.time() - ANACONDA['LAST_PULSE'] >= delay:
                 ANACONDA['ALREADY_LINTED'] = True
                 run_linter()
