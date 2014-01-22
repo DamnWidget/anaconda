@@ -291,10 +291,10 @@ You can control the way that anaconda mark the error lines in your files adjusti
 
 This program is distributed under the terms of the GNU GPL v3. See the [LICENSE](https://raw.github.com/DamnWidget/anaconda/master/LICENSE) file for details.
 
-Troubleshoting
---------------
+Troubleshootings
+----------------
 
-Guide to solve common trobleshootings
+Guide to solve common issues
 
 #### Anaconda does not appear in the available packages list on Package Control
 
