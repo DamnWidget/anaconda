@@ -80,6 +80,10 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
             self.completions = proposals
             self.ready_from_defer = True
 
+            # is the tab key is used to complete just undo the last insertion
+            if active_view().command_history(0)[0] == 'insert_best_completion':
+                active_view().run_command('undo')
+
             self._run_auto_complete()
 
     def _run_auto_complete(self):
