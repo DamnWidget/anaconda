@@ -69,6 +69,7 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
             JUST_COMPLETED = False
         elif view.substr(sublime.Region(
                 view.sel()[0].begin() - 7, view.sel()[0].end())) == 'import ':
+            print('wacamole')
             self._run_auto_complete()
 
     def _complete(self, data):
@@ -82,7 +83,10 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
 
             # is the tab key is used to complete just undo the last insertion
             if active_view().command_history(0)[0] == 'insert_best_completion':
-                active_view().run_command('undo')
+                if active_view().substr(sublime.Region(
+                        active_view().sel()[0].begin() - 5,
+                        active_view().sel()[0].end())) == 'self.':
+                    active_view().run_command('undo')
 
             self._run_auto_complete()
 
