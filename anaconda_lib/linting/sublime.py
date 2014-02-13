@@ -227,14 +227,16 @@ def add_lint_marks(view, lines, **errors):
         'illegal': errors['error_underlines'],
         'violation': errors['violation_underlines'],
     }
-
-    for type_name, underlines in types.items():
-        if len(underlines) > 0:
-            view.add_regions(
-                'anaconda-lint-underline-{}'.format(type_name), underlines,
-                'anaconda.underline.{}'.format(type_name),
-                flags=sublime.DRAW_EMPTY_AS_OVERWRITE
-            )
+    style = get_settings(view, 'anaconda_linter_mark_style', 'outline')
+    show_underlines = get_settings(view, 'anaconda_linter_underlines', True)
+    if style != 'none' or style == 'none' and show_underlines:
+        for type_name, underlines in types.items():
+            if len(underlines) > 0:
+                view.add_regions(
+                    'anaconda-lint-underline-{}'.format(type_name), underlines,
+                    'anaconda.underline.{}'.format(type_name),
+                    flags=sublime.DRAW_EMPTY_AS_OVERWRITE
+                )
 
     if len(lines) > 0:
         outline_style = {
@@ -242,7 +244,6 @@ def add_lint_marks(view, lines, **errors):
             'none': sublime.HIDDEN,
             'fill': None
         }
-        style = get_settings(view, 'anaconda_linter_mark_style', 'outline')
         gutter_theme = get_settings(view, 'anaconda_gutter_theme', 'basic')
         package_name = os.path.dirname(__file__).rsplit(os.path.sep, 3)[1]
         ico_path = (

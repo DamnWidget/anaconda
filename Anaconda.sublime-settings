@@ -184,7 +184,7 @@
     "anaconda_linter_delay": 0.5,
 
     // If true, anaconda draws gutter marks on line with errors
-    "anaconda_gutter_marks": false,
+    "anaconda_gutter_marks": true,
 
     /*
 
@@ -203,6 +203,15 @@
         If 'none' anaconda will not draw anything on error lines
     */
     "anaconda_linter_mark_style": "outline",
+
+    /*
+        If anaconda_linter_mark_style is set to none and this is set to false,
+        anaconda will not underline errors
+
+        If anaconda_linter_mark_style is set to anything else, this option is
+        ignored
+    */
+    "anaconda_linter_underlines": true,
 
     /*
         Use PyLint instead of PyFlakes and PEP-8
