@@ -60,6 +60,8 @@ class BackgroundLinter(sublime_plugin.EventListener):
             erase_lint_marks(view)
             if self.check_auto_lint:
                 self.lint()
+        else:
+            self._erase_marks_if_no_linting(view)
 
     def on_load(self, view):
         """Called after load a file
@@ -69,6 +71,8 @@ class BackgroundLinter(sublime_plugin.EventListener):
                 and check_linting_behaviour(view, ['always', 'load-save'])):
             if 'Python' in view.settings().get('syntax'):
                     run_linter(view)
+        else:
+            self._erase_marks_if_no_linting(view)
 
     def on_post_save(self, view):
         """Called post file save event
@@ -77,6 +81,8 @@ class BackgroundLinter(sublime_plugin.EventListener):
         if check_linting(view, NOT_SCRATCH | LINTING_ENABLED):
             if 'Python' in view.settings().get('syntax'):
                 run_linter(view)
+        else:
+            self._erase_marks_if_no_linting(view)
 
     def on_activated(self, view):
         """Called when a view gain the focus
@@ -86,6 +92,8 @@ class BackgroundLinter(sublime_plugin.EventListener):
                 and check_linting_behaviour(view, ['always'])):
             if 'Python' in view.settings().get('syntax'):
                 run_linter(view)
+        else:
+            self._erase_marks_if_no_linting(view)
 
     def on_selection_modified(self, view):
         """Called on selection modified
@@ -101,6 +109,13 @@ class BackgroundLinter(sublime_plugin.EventListener):
         if last_selected_line != self.last_selected_line:
             self.last_selected_line = last_selected_line
             update_statusbar(view)
+
+    def _erase_marks_if_no_linting(self, view):
+        """Erase the anaconda marks if linting is disabled
+        """
+
+        if not check_linting(view, LINTING_ENABLED):
+            self._erase_marks(view)
 
     def _erase_marks(self, view):
         """Just a wrapper for erase_lint_marks
