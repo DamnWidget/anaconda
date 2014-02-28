@@ -18,12 +18,12 @@ Because that architecture, **anaconda** can lint or complete with python interpr
 Supported platforms
 -------------------
 
-Anaconda has been tested in Linux, Windows and Mac OS X with positive results. I don't have any way to test the plugin in Mac OS X so I depend completely on the community for this task. Several users tested the plugin in Mac OS X with really positive feedback.
+Anaconda has been tested in Linux, Windows and Mac OS X with excelent results.
 
 The status of the plugin in the different platforms is:
 
 * **Linux**: Stable
-* **Mac OS X**: Stable
+* **OS X**: Stable
 * **Windows**: Stable
 
 You can run the plugin in profiling mode on Windows (Sublime Text doesn't support cProfile in POSIX platforms) setting the user variable `anaconda_debug` to `profiler`, then you will get a profiling support of where the plugin is spending the processor time.
@@ -328,11 +328,11 @@ Did you found a bug and you know how to fix it? First of all, thank you very muc
 
 So you thougth about a new killer feature to implement in Anaconda?. Great!. Open an issue tagged as "Feature" and we will discuss it with you.
 
-#### Mac OS X machine donator
+#### ~~Mac OS X machine donator~~
 
-Do you have a Mac OS X box that you don't use anymore and its abandoned in a corner? Just send it to us, put yourself in contact with us and lets talk.
+~~Do you have a Mac OS X box that you don't use anymore and its abandoned in a corner? Just send it to us, put yourself in contact with us and lets talk.~~
 
-*note*: we need only one so this section will disappear in the future
+**note**: this need has been already satisfied
 
 ### Donations
 
