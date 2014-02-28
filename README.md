@@ -3,6 +3,14 @@ Anaconda
 
 Anaconda is a python development suite that includes autocompletion, IDE features, linting with PyLint or PyFlakes + pep8, AutoPEP8 , Vagrant and more for Sublime Text 3.
 
+With performance in mind
+------------------------
+
+Are you tired of extensions that promise you nice features but make your Sublime Text freezes and blocks while you are typing?. Well, we too, this is why the main goal of anaconda is the performance. Anaconda will never freeze your Sublime Text as everything in anaconda runs asynchronous.
+
+It doesn't matters if you are linting a file with a few hundred or a few thousands of lines, anaconda will work smooth in each situation making you
+focus in your code and not interrupting your typing each few seconds.
+
 A bit of history
 ----------------
 
@@ -18,9 +26,7 @@ Because that architecture, **anaconda** can lint or complete with python interpr
 Supported platforms
 -------------------
 
-Anaconda has been tested in Linux, Windows and Mac OS X with excelent results.
-
-The status of the plugin in the different platforms is:
+Anaconda has been tested in Linux, Windows and Mac OS X with excelent results. The status of the plugin in the different platforms is:
 
 * **Linux**: Stable
 * **OS X**: Stable
