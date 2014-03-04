@@ -135,7 +135,6 @@ class LocalWorker(BaseWorker):
         """
 
         if get_settings(active_view(), 'jsonserver_debug', False) is True:
-            print('DEBUG')
             return get_settings(active_view(), 'jsonserver_debug_port', 9999)
 
         s = socket.socket()
