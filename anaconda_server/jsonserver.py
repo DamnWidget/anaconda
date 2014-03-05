@@ -30,9 +30,10 @@ from linting import linter
 from contexts import json_decode
 from jedi import refactoring as jedi_refactor
 from linting.anaconda_mccabe import AnacondaMcCabe
+from linting.anaconda_pep257 import PEP257 as AnacondaPep257
 from commands import (
     Doc, Lint, Goto, Rename, PyLint, FindUsages, AutoComplete,
-    CompleteParameters, McCabe
+    CompleteParameters, McCabe, PEP257
 )
 
 try:
@@ -172,7 +173,30 @@ class JSONHandler(asynchat.async_chat):
         """Return lintin errors on the given code
         """
 
-        Lint(self.return_back, uid, linter, settings, code, filename)
+        def merge_lint_and_pep257(lint_result, pep257_result):
+            """Merge the result from Lint and PEP257
+            """
+
+            logging.error('CHAPAPOTE PAL CIPOTE')
+            logging.error(lint_result['errors'] + pep257_result['errors'])
+            self.return_back({
+                'success': True,
+                'errors': lint_result['errors'] + pep257_result['errors'],
+                'uid': uid
+            })
+
+        def run_pep257_linter(result):
+            """Return pep257 lintin errors on the given code
+            """
+            ignore = settings.get('pep257_ignore')
+            callback = partial(merge_lint_and_pep257, result)
+            PEP257(callback, uid, AnacondaPep257, ignore, code, filename)
+
+        callback = self.return_back
+        if settings.get('use_pep257'):
+            callback = run_pep257_linter
+
+        Lint(callback, uid, linter, settings, code, filename)
 
     def run_linter_pylint(self, uid, settings, code, filename):
         """Return lintin errors on the given file

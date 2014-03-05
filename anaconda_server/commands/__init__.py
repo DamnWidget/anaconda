@@ -5,6 +5,7 @@
 from .doc import Doc
 from .lint import Lint
 from .goto import Goto
+from .pep257 import PEP257
 from .mccabe import McCabe
 from .rename import Rename
 from .pylint import PyLint
@@ -17,6 +18,7 @@ __all__ = [
     'Doc',
     'Lint',
     'Goto',
+    'PEP257',
     'McCabe',
     'Rename',
     'PyLint',

@@ -242,7 +242,7 @@
     "pep8_rcfile": false,
 
     /*
-        A list of pep8 error numbers to ignore. By default "line too long" errors are ignored.
+        A list of pep8 error numbers to ignore.
         The list of error codes is in this file: https://github.com/jcrocholl/pep8/blob/master/pep8.py.
         Search for "Ennn:", where nnn is a 3-digit number.
     */
@@ -252,6 +252,20 @@
 
     // Maximum line length for pep8
     "pep8_max_line_length": 79,
+
+    // Set this to true to turn pep257 checking on
+    "pep257": false,
+
+    /*
+        A list of pep257 error numbers to ignore.
+        The list can be found here: https://github.com/GreenSteam/pep257/#error-codes
+        D209 Multi-line docstring should end with 1 blank line is ignored by
+        default as it has been deprecated.
+    */
+    "pep257_ignore":
+    [
+        "D209"
+    ],
 
     /*
         You can ignore some of the "undefined name xxx"

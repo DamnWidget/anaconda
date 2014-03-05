@@ -232,6 +232,8 @@ def add_lint_marks(view, lines, **errors):
     if style != 'none' or style == 'none' and show_underlines:
         for type_name, underlines in types.items():
             if len(underlines) > 0:
+                print(type_name)
+                print(underlines)
                 view.add_regions(
                     'anaconda-lint-underline-{}'.format(type_name), underlines,
                     'anaconda.underline.{}'.format(type_name),
@@ -356,6 +358,8 @@ def run_linter(view=None):
         'pyflakes_disabled': get_settings(
             view, 'pyflakes_disabled', False),
         'use_pylint': get_settings(view, 'use_pylint', False),
+        'use_pep257': get_settings(view, 'pep257', False),
+        'pep257_ignore': get_settings(view, 'pep257_ignore', []),
         'pep8_rcfile': get_settings(view, 'pep8_rcfile'),
         'pylint_rcfile': get_settings(view, 'pylint_rcfile'),
         'pyflakes_explicit_ignore': get_settings(
