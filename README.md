@@ -222,6 +222,14 @@ Note: The order is not per line but for error severity in this order: ERRORS, WA
 * **Load and Save mode** - When ``anaconda_linting_behaviour`` is set as ``load-save`` linting is performed on file load and saving only.
 * **Save only mode** - When ``anaconda_linting_behabiour`` is set as ``save-only`` linting is performed on file saving only.
 
+#### Enabling pep257
+
+Anaconda supports docsrings linting using [pep257](http://legacy.python.org/dev/peps/pep-0257/) specification. This feature is disabled by default but can be enabled setting `pep257` as `true` in the configuration file.
+
+#### Disabling certain errors for pep257
+
+Specific errors can be disabled adding them (as string elements into a list) on the `pep257_ignore` user settings in the config file. The `D209` is disabled by default as it has been deprecated.
+
 
 #### Disabling pep8
 
