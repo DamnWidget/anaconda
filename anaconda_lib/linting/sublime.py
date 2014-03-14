@@ -232,8 +232,6 @@ def add_lint_marks(view, lines, **errors):
     if style != 'none' or style == 'none' and show_underlines:
         for type_name, underlines in types.items():
             if len(underlines) > 0:
-                print(type_name)
-                print(underlines)
                 view.add_regions(
                     'anaconda-lint-underline-{}'.format(type_name), underlines,
                     'anaconda.underline.{}'.format(type_name),
