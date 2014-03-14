@@ -74,6 +74,15 @@ class BackgroundLinter(sublime_plugin.EventListener):
         else:
             self._erase_marks_if_no_linting(view)
 
+    def on_pre_close(self, view):
+        """Called when the view is about to be closed
+        """
+
+        print('me la comes doblada')
+        self._erase_marks(view)
+        for severity in ['VIOLATIONS', 'WARNINGS', 'ERRORS']:
+            ANACONDA[severity][view.id()] = {}
+
     def on_post_save(self, view):
         """Called post file save event
         """
