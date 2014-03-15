@@ -78,7 +78,6 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """Called when the view is about to be closed
         """
 
-        print('me la comes doblada')
         self._erase_marks(view)
         for severity in ['VIOLATIONS', 'WARNINGS', 'ERRORS']:
             ANACONDA[severity][view.id()] = {}
