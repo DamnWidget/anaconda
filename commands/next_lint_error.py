@@ -16,7 +16,7 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
     current_error = None
 
     def run(self):
-        self.jump(self._harvest_first())
+        self.jump(self._harvest_next())
 
     def is_enabled(self):
         """Determines if the command is enabled
@@ -45,11 +45,19 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
 
         self.window.active_view().show(pt)
 
-    def _harvest_first(self):
-        """Harvest the first error that we find and return it back
+    def _harvest_next(self):
+        """Harvest the next error that we find and return it back
         """
 
+        klass = AnacondaNextLintError
+        lines = set([])
         vid = self.window.active_view().id()
         for error_type in ['ERRORS', 'WARNINGS', 'VIOLATIONS']:
             for line, _ in ANACONDA[error_type].get(vid, {}).items():
-                return int(line)
+                lines.add(int(line))
+        lines = list(lines)
+        if (klass.current_error and lines[-1] > klass.current_error):
+            lines = [l for l in lines if l > klass.current_error]
+        klass.current_error = lines[0]
+        return lines[0]
+
