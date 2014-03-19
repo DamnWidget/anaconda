@@ -6,17 +6,15 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.helpers import get_settings
-from ..anaconda_lib.linting.sublime import ANACONDA
-
+from ..anaconda_lib.linting.sublime import ANACONDA, update_statusbar
 
 class AnacondaNextLintError(sublime_plugin.WindowCommand):
-    """Jump to the next lint error on the list
+    """Jump to the next lint error on the page
     """
 
-    current_error = None
-
     def run(self):
-        self.jump(self._harvest_first())
+        self.jump(self._harvest_next())
+        update_statusbar(self.window.active_view())
 
     def is_enabled(self):
         """Determines if the command is enabled
@@ -43,13 +41,23 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
         self.window.active_view().sel().clear()
         self.window.active_view().sel().add(sublime.Region(pt))
 
-        self.window.active_view().show(pt)
+        self.window.active_view().show_at_center(pt)
 
-    def _harvest_first(self):
-        """Harvest the first error that we find and return it back
+    def _harvest_next(self):
+        """Harvest the next error that we find and return it back
         """
 
+        (cur_line, cur_col) = self.window.active_view().rowcol(
+            self.window.active_view().sel()[0].begin()
+        )
+        lines = set([])
         vid = self.window.active_view().id()
         for error_type in ['ERRORS', 'WARNINGS', 'VIOLATIONS']:
             for line, _ in ANACONDA[error_type].get(vid, {}).items():
-                return int(line)
+                lines.add(int(line))
+        lines = sorted(list(lines))
+        if not len(lines):
+            return None
+        if (cur_line and lines[-1] > cur_line):
+            lines = [l for l in lines if l > cur_line]
+        return lines[0]
