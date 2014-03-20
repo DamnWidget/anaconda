@@ -8,6 +8,7 @@ import sublime_plugin
 from ..anaconda_lib.helpers import get_settings
 from ..anaconda_lib.linting.sublime import ANACONDA, update_statusbar
 
+
 class AnacondaNextLintError(sublime_plugin.WindowCommand):
     """Jump to the next lint error on the page
     """
@@ -55,9 +56,12 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
         for error_type in ['ERRORS', 'WARNINGS', 'VIOLATIONS']:
             for line, _ in ANACONDA[error_type].get(vid, {}).items():
                 lines.add(int(line))
+
         lines = sorted(list(lines))
         if not len(lines):
             return None
-        if (cur_line and lines[-1] > cur_line):
+
+        if cur_line and lines[-1] > cur_line:
             lines = [l for l in lines if l > cur_line]
+
         return lines[0]
