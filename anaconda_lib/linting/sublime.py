@@ -10,8 +10,9 @@ import sublime
 
 from . import pep8
 from ..worker import Worker
-from ..helpers import get_settings
 from ..persistent_list import PersistentList
+from ..helpers import get_settings, is_python
+
 
 sublime_api = sublime.sublime_api
 
@@ -387,9 +388,10 @@ def parse_results(data):
 
     view = sublime.active_window().active_view()
 
-    if data and data['success'] is False:
+    if data and data['success'] is False or not is_python(view):
         if get_settings(view, 'use_pylint', False) is True:
-            print(data['errors'])
+            # print(data['errors'])
+            pass
         return
 
     vid = view.id()
