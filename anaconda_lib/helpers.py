@@ -97,6 +97,9 @@ def get_settings(view, name, default=None):
     """Get settings
     """
 
+    if view is None:
+        return None
+
     plugin_settings = sublime.load_settings('Anaconda.sublime-settings')
 
     if name in ('python_interpreter', 'extra_paths'):
@@ -173,3 +176,14 @@ def get_traceback():
         traceback_log.append(traceback_line)
 
     return '\n'.join(traceback_log)
+
+
+def get_view(window, vid):
+    """
+    Look for the given view id in the window opened views and return it back
+    """
+
+    for view in window.views():
+        if view.id() == vid:
+            return view
+
