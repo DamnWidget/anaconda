@@ -104,8 +104,9 @@ class JSONHandler(asynchat.async_chat):
 
             method = self.data.pop('method')
             uid = self.data.pop('uid')
+            vid = self.data.pop('vid', None)
             if 'lint' in method:
-                self.handle_lint_command(method, uid)
+                self.handle_lint_command(method, uid, vid)
             elif 'refactor' in method:
                 self.handle_refactor_command(method, uid)
             else:
@@ -117,12 +118,12 @@ class JSONHandler(asynchat.async_chat):
                 )
             )
 
-    def handle_lint_command(self, method, uid):
+    def handle_lint_command(self, method, uid, vid):
         """Handle lint command
         """
 
         print(method)
-        getattr(self, method)(uid, **self.data)
+        getattr(self, method)(uid, vid, **self.data)
 
     def handle_refactor_command(self, method, uid):
         """Handle refactor command
@@ -169,7 +170,7 @@ class JSONHandler(asynchat.async_chat):
             self.return_back, uid, AnacondaMcCabe, code, threshold, filename
         )
 
-    def run_linter(self, uid, settings, code, filename):
+    def run_linter(self, uid, vid, settings, code, filename):
         """Return lintin errors on the given code
         """
 
@@ -177,12 +178,12 @@ class JSONHandler(asynchat.async_chat):
             """Merge the result from Lint and PEP257
             """
 
-            logging.error('CHAPAPOTE PAL CIPOTE')
             logging.error(lint_result['errors'] + pep257_result['errors'])
             self.return_back({
                 'success': True,
                 'errors': lint_result['errors'] + pep257_result['errors'],
-                'uid': uid
+                'uid': uid,
+                'vid': vid
             })
 
         def run_pep257_linter(result):
@@ -196,9 +197,9 @@ class JSONHandler(asynchat.async_chat):
         if settings.get('use_pep257'):
             callback = run_pep257_linter
 
-        Lint(callback, uid, linter, settings, code, filename)
+        Lint(callback, uid, vid, linter, settings, code, filename)
 
-    def run_linter_pylint(self, uid, settings, code, filename):
+    def run_linter_pylint(self, uid, vid, settings, code, filename):
         """Return lintin errors on the given file
         """
 
@@ -210,7 +211,8 @@ class JSONHandler(asynchat.async_chat):
                 'success': True,
                 'errors': pylint_result['errors'],
                 'pep8_errors': pep8_result['errors'],
-                'uid': uid
+                'uid': uid,
+                'vid': vid
             })
 
         def lint_pep8(result):

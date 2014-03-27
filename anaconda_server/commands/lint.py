@@ -12,7 +12,8 @@ class Lint(Command):
     """Run PyFlakes and Pep8 linters and return back results
     """
 
-    def __init__(self, callback, uid, linter, settings, code, filename):
+    def __init__(self, callback, uid, vid, linter, settings, code, filename):
+        self.vid = vid
         self.code = code
         self.linter = linter
         self.settings = settings
@@ -28,7 +29,8 @@ class Lint(Command):
                 'success': True,
                 'errors': self.linter.Linter().run_linter(
                     self.settings, self.code, self.filename),
-                'uid': self.uid
+                'uid': self.uid,
+                'vid': self.vid
             })
         except Exception as error:
             logging.error(error)
@@ -36,5 +38,6 @@ class Lint(Command):
             self.callback({
                 'success': False,
                 'error': error,
-                'uid': self.uid
+                'uid': self.uid,
+                'vid': self.vid
             })

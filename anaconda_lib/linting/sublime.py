@@ -11,7 +11,7 @@ import sublime
 from . import pep8
 from ..worker import Worker
 from ..persistent_list import PersistentList
-from ..helpers import get_settings, is_python
+from ..helpers import get_settings, is_python, get_view
 
 
 sublime_api = sublime.sublime_api
@@ -346,6 +346,7 @@ def run_linter(view=None):
         view = sublime.active_window().active_view()
 
     if view.file_name() in ANACONDA['DISABLED']:
+        erase_lint_marks(view)
         return
 
     settings = {
@@ -367,6 +368,7 @@ def run_linter(view=None):
 
     text = view.substr(sublime.Region(0, view.size()))
     data = {
+        'vid': view.id(),
         'code': text,
         'settings': settings,
         'filename': view.file_name()
@@ -386,8 +388,7 @@ def parse_results(data):
     """Parse the results from the server
     """
 
-    view = sublime.active_window().active_view()
-
+    view = get_view(sublime.active_window(), data['vid'])
     if data and data['success'] is False or not is_python(view):
         if get_settings(view, 'use_pylint', False) is True:
             # print(data['errors'])
