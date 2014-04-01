@@ -104,20 +104,29 @@ def get_settings(view, name, default=None):
 
     if name in ('python_interpreter', 'extra_paths'):
         if view.window() is not None and view.window().folders():
-            environfile = os.path.join(view.window().folders()[0], '.anaconda')
-            if os.path.exists(environfile):
-                with open(environfile, 'r') as jsonfile:
-                    try:
-                        data = json.loads(jsonfile.read())
-                    except Exception as error:
-                        print(error)
-                    else:
-                        return data.get(
-                            name,
-                            view.settings().get(name, plugin_settings.get(
-                                name, default)
+            dirname = os.path.join(view.window().folders()[0])
+            while True:
+                environfile = os.path.join(dirname, '.anaconda')
+                if os.path.exists(environfile):
+                    print("Environ found on %s" % environfile)
+                    with open(environfile, 'r') as jsonfile:
+                        try:
+                            data = json.loads(jsonfile.read())
+                        except Exception as error:
+                            print(error)
+                        else:
+                            return data.get(
+                                name,
+                                view.settings().get(name, plugin_settings.get(
+                                    name, default)
+                                )
                             )
-                        )
+                else:
+                    parts = os.path.split(dirname)
+                    if len(parts[1]) > 0:
+                        dirname = os.path.dirname(dirname)  # up one directory level
+                    else:
+                        break  # stop loop
 
     return view.settings().get(name, plugin_settings.get(name, default))
 
