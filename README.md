@@ -94,8 +94,8 @@ You can add additional python extra paths that should be used for autocompletion
 #### Environment hook files
 
 If a valid environment hook config file (called ```.anaconda```) exists in the root of your working folder
-it will bet used instead of project or general anaconda configuration. A valid ```.anaconda```  hook file
-is as follows.
+or in any directory level up to drive root folder, it will be used instead of project or general anaconda
+configuration. A valid ```.anaconda```  hook file is as follows.
 
     {
         "python_interpreter": "pypy-c2.0",

@@ -104,11 +104,11 @@ def get_settings(view, name, default=None):
 
     if name in ('python_interpreter', 'extra_paths'):
         if view.window() is not None and view.window().folders():
-            dirname = os.path.join(view.window().folders()[0])
+            dirname = view.window().folders()[0]
             while True:
                 environfile = os.path.join(dirname, '.anaconda')
                 if os.path.exists(environfile):
-                    print("Environ found on %s" % environfile)
+                    # print("Environ found on %s" % environfile)
                     with open(environfile, 'r') as jsonfile:
                         try:
                             data = json.loads(jsonfile.read())
@@ -124,7 +124,7 @@ def get_settings(view, name, default=None):
                 else:
                     parts = os.path.split(dirname)
                     if len(parts[1]) > 0:
-                        dirname = os.path.dirname(dirname)  # up one directory level
+                        dirname = os.path.dirname(dirname)
                     else:
                         break  # stop loop
 
