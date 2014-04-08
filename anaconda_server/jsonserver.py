@@ -220,7 +220,7 @@ class JSONHandler(asynchat.async_chat):
             """
 
             callback = partial(merge_pylint_and_pep8, result)
-            Lint(callback, uid, linter, settings, code, filename)
+            Lint(callback, uid, vid, linter, settings, code, filename)
 
         if PYLINT_AVAILABLE:
             rcfile = settings.get('pylint_rcfile', False)
