@@ -48,6 +48,8 @@ def auto_project_switch(func):
         ):
                 print('Project or iterpreter switch detected...')
                 self.process.kill()
+                self.reconnecting = True
+                self.start()
         else:
             func(self, *args, **kwargs)
 

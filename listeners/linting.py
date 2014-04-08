@@ -67,10 +67,11 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """Called after load a file
         """
 
+        self._select_middle_line(view)
         if (check_linting(view, ONLY_PYTHON)
                 and check_linting_behaviour(view, ['always', 'load-save'])):
             if 'Python' in view.settings().get('syntax'):
-                    run_linter(view)
+                run_linter(view)
         else:
             self._erase_marks_if_no_linting(view)
 
@@ -130,3 +131,12 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """
 
         erase_lint_marks(view)
+
+    def _select_middle_line(self, view):
+        """Select the line in the middle of the file (try to avoid comments)
+        """
+
+        lines, _ = view.rowcol(view.size())
+        pt = view.text_point(int(lines / 2), 0)
+        view.sel().clear()
+        view.sel().add(sublime.Region(pt))

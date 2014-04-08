@@ -195,4 +195,3 @@ def get_view(window, vid):
     for view in window.views():
         if view.id() == vid:
             return view
-
