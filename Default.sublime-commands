@@ -37,7 +37,7 @@
     },
     {
         "caption": "Anaconda: Vagrant SSH",
-        "command": "anaconda_vagrant_ssh",
+        "command": "anaconda_vagrant_ssh"
     },
     {
         "caption": "Anaconda: Vagrant Enable",
