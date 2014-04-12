@@ -178,6 +178,9 @@ Anaconda can fix the following [PEP8 errors](https://github.com/DamnWidget/anaco
 
 Please, take a look at the configuration file to get a list of available options.
 
+* Shortcut: Linux `super+r`, Mac OS X and Windows `ctrl+alt+r`
+* Context Menu: `Anaconda > Autoformat PEP8 Errors`
+
 #### Autoimport undefined names
 
 Anaconda will add an `import <undefined_name>` at the end of your imports block if you use the context menu Autoimport anaconda option using the right mouse click over an undefined name in your buffer. Note that anaconda will NOT check if that is a valid import or not.
