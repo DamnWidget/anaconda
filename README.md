@@ -59,7 +59,7 @@ Go to your sublime text 3 packages directory and clone the repo:
 Anaconda autocompletion
 -----------------------
 
-Goto and Find Usages implementations are strongly inspired in SublimeJEDI ones, SublimeJEDI is [GNU LGPL v3](http://www.gnu.org/licenses/lgpl.txt) licensed, you can read it online.
+Anaconda autocompletion work out of the box but it can be configured with several options.
 
 #### Python interpreter settings
 
