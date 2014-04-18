@@ -55,7 +55,7 @@ def is_python(view, ignore_comments=False):
 
     # disable linting in SublimeREPL
     if view.settings().get('repl', False):
-        return
+        return False
 
     try:
         location = view.sel()[0].begin()
