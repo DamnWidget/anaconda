@@ -25,7 +25,7 @@ def check_linting(view, mask):
     """Check common linting constraints
     """
 
-    if mask & ONLY_PYTHON and not is_python(view):
+    if mask & ONLY_PYTHON and not is_python(view, ignore_comments=True):
         return False
 
     if mask & NOT_SCRATCH and view.is_scratch():

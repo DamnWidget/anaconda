@@ -389,7 +389,7 @@ def parse_results(data):
     """
 
     view = get_view(sublime.active_window(), data['vid'])
-    if data and data['success'] is False or not is_python(view):
+    if data and data['success'] is False or not is_python(view, True):
         if get_settings(view, 'use_pylint', False) is True:
             # print(data['errors'])
             pass
