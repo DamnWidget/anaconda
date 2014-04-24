@@ -7,6 +7,7 @@
 Anaconda decorators
 """
 
+import os
 import sys
 import time
 import pstats
@@ -40,6 +41,9 @@ def auto_project_switch(func):
         view = sublime.active_window().active_view()
         auto_project_switch = get_settings(view, 'auto_project_switch', False)
         python_interpreter = get_settings(view, 'python_interpreter')
+        if '$VIRTUAL_ENV' in python_interpreter:
+            python_interpreter = python_interpreter.replace(
+                '$VIRTUAL_ENV', os.environ.get('VIRTUAL_ENV', 'python'))
         if (
             auto_project_switch and hasattr(self, 'project_name') and
             self.project_name != 'anaconda-{id}'.format(id=wid) and (
