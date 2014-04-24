@@ -92,7 +92,7 @@ You can add additional python extra paths that should be used for autocompletion
     }
 
 Virtualenv environment variables
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------------
 
 If you are using a virtualenv for your `python_interpreter` and you start your Sublime Text 3 from the command line (to inherit environment variables) you can use the variable `$VIRTUAL_ENV` in your `python_interpreter` setting, for example:
 
@@ -104,7 +104,8 @@ If you are using a virtualenv for your `python_interpreter` and you start your S
         }
     }
 
-**note** if you use the `$VIRTUAL_ENV` variable in your `python_interpreter` but it is missing in the `os.environ` anaconda will fallback to `python`.
+**note**: if you use the `$VIRTUAL_ENV` variable in your `python_interpreter` but it is missing in the `os.environ` anaconda will fallback to `python`.
+
 
 #### Environment hook files
 
