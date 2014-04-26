@@ -12,7 +12,8 @@ class McCabe(Command):
     """Run McCabe complexity checker and return back results
     """
 
-    def __init__(self, callback, uid, mccabe, code, threshold, filename):
+    def __init__(self, callback, uid, vid, mccabe, code, threshold, filename):
+        self.vid = vid
         self.code = code
         self.filename = filename
         self.threshold = threshold
@@ -27,7 +28,8 @@ class McCabe(Command):
             self.callback({
                 'success': True,
                 'errors': self.mccabe.get_code_complexity(self.threshold),
-                'uid': self.uid
+                'uid': self.uid,
+                'vid': self.vid
             })
         except Exception as error:
             logging.error(error)
@@ -35,5 +37,6 @@ class McCabe(Command):
             self.callback({
                 'success': False,
                 'error': error,
-                'uid': self.uid
+                'uid': self.uid,
+                'vid': self.vid
             })

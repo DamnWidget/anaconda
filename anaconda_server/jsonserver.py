@@ -162,12 +162,13 @@ class JSONHandler(asynchat.async_chat):
             source, int(line), int(offset), filename, encoding
         )
 
-    def run_linter_mccabe(self, uid, code, threshold, filename):
+    def run_linter_mccabe(self, uid, vid, code, threshold, filename):
         """Return the McCabe code comlexity errors
         """
 
         McCabe(
-            self.return_back, uid, AnacondaMcCabe, code, threshold, filename
+            self.return_back, uid, vid, AnacondaMcCabe,
+            code, threshold, filename
         )
 
     def run_linter(self, uid, vid, settings, code, filename):
