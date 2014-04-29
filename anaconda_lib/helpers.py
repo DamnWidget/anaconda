@@ -195,3 +195,13 @@ def get_view(window, vid):
     for view in window.views():
         if view.id() == vid:
             return view
+
+
+def get_window_view(vid):
+    """Look for the given vid in all the opened windows
+    """
+
+    for window in sublime.windows():
+        view = get_view(window, vid)
+        if view is not None:
+            return view
