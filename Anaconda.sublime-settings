@@ -37,7 +37,7 @@
     /*
         Default python interpreter.
 
-        This can (an should) be overriden byb project settings
+        This can (an should) be overriden by project settings
     */
     "python_interpreter": "python",
 
