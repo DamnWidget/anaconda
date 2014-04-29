@@ -8,9 +8,9 @@ import traceback
 import sublime
 import sublime_plugin
 
-from ..anaconda_lib import autopep
-from ..anaconda_lib.helpers import get_settings, is_python
+from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.progress_bar import ProgressBar
+from ..anaconda_lib.helpers import get_settings, is_python, get_window_view
 
 
 class AnacondaAutoFormat(sublime_plugin.TextCommand):
@@ -51,15 +51,20 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         }
         try:
             messages = {
-                'start': 'Autoformatting please wait...',
+                'start': 'Autoformatting please wait... ',
                 'end': 'Autoformatting done!'
             }
             self.pbar = ProgressBar(messages)
             self.pbar.start()
             self.view.set_read_only(True)
 
-            autopep.AnacondaAutopep8(
-                settings, self.code, self.get_data).start()
+            data = {
+                'vid': self.view.id(),
+                'code': self.code,
+                'method': 'autoformat',
+                'settings': settings
+            }
+            Worker().execute(self.get_data, **data)
 
         except:
             logging.error(traceback.format_exc())
@@ -83,9 +88,10 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         """Replace the old code with what autopep8 gave to us
         """
 
-        if self.code != self.data:
-            region = sublime.Region(0, self.view.size())
-            self.view.replace(edit, region, self.data)
+        view = get_window_view(self.data['vid'])
+        if self.code != self.data.get('buffer'):
+            region = sublime.Region(0, view.size())
+            view.replace(edit, region, self.data.get('buffer'))
 
         self.code = None
         self.data = None
