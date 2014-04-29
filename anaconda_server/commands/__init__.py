@@ -9,6 +9,7 @@ from .pep257 import PEP257
 from .mccabe import McCabe
 from .rename import Rename
 from .pylint import PyLint
+from .autoformat import AutoPep8
 from .find_usages import FindUsages
 from .autocomplete import AutoComplete
 from .complete_parameters import CompleteParameters
@@ -22,6 +23,7 @@ __all__ = [
     'McCabe',
     'Rename',
     'PyLint',
+    'AutoPep8',
     'FindUsages',
     'AutoComplete',
     'CompleteParameters'
