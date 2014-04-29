@@ -24,7 +24,8 @@ class AnacondaRename(sublime_plugin.TextCommand):
                 location = self.view.word(self.view.sel()[0].begin())
                 old_name = self.view.substr(location)
                 sublime.active_window().show_input_panel(
-                    "Replace with:", old_name, self.input_replacement, None, None
+                    "Replace with:", old_name, self.input_replacement,
+                    None, None
                 )
             except:
                 logging.error(traceback.format_exc())
