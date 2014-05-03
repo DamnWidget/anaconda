@@ -11,7 +11,7 @@ import pickle
 
 
 class PersistentList(list):
-    """Just a persisten list
+    """Just a persistent list
     """
 
     _file_path = '{}/../.disabled_views'.format(os.path.dirname(__file__))
