@@ -76,9 +76,11 @@ class BaseWorker(object):
 
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(0.5)
+            s.settimeout(0.01)
             s.connect((self.hostaddr, self.available_port))
             s.close()
+        except socket.timeout:
+                return False
         except socket.error as error:
             if error.errno == errno.ECONNREFUSED:
                 return False
@@ -157,7 +159,7 @@ class LocalWorker(BaseWorker):
 
             self.start_json_server()
             while not self.server_is_active() and self.green_light:
-                time.sleep(0.01)
+                pass
 
             if self.green_light:
                 self.client = AsynClient(self.available_port)

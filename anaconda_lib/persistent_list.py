@@ -11,7 +11,7 @@ import pickle
 
 
 class PersistentList(list):
-    """Just a persisten list
+    """Just a persistent list
     """
 
     _file_path = '{}/../.disabled_views'.format(os.path.dirname(__file__))
@@ -23,7 +23,7 @@ class PersistentList(list):
             with open(self._file_path, 'rb') as fileobj:
                 self.load(fileobj)
         except IOError:
-            print('Persisten list does not exists, skiping load...')
+            print('Persistent list does not exist, skipping load...')
         except Exception as e:
             print('Detected error {}, deleting persistent list...'.format(e))
             os.remove(self._file_path)
