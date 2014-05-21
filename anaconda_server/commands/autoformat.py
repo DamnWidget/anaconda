@@ -7,6 +7,7 @@
 This file is a wrapper for autopep8 library.
 """
 
+import sys
 import logging
 import traceback
 
@@ -21,13 +22,15 @@ class AutoPep8(Command):
     def __init__(self, callback, uid, vid, code, settings):
         self.vid = vid
         self.code = code
-        self.options, _ = autopep8.parse_args(self.parse_settings(settings))
+        self.options = autopep8.parse_args(self.parse_settings(settings))
         super(AutoPep8, self).__init__(callback, uid)
 
     def run(self):
         """Run the command
         """
 
+        if sys.version_info < (3, 0):
+            self.code = unicode(self.code)
         try:
             self.callback({
                 'success': True,
