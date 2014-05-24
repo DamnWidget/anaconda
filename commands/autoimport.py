@@ -46,7 +46,6 @@ class AnacondaAutoImport(sublime_plugin.TextCommand):
         match = re.search(r'^(@.+|def|class)\s+', view_code, re.M)
         if match is not None:
             code = view_code[:match.start()]
-            print(code)
 
         return len(code.split('\n')) - 1
 

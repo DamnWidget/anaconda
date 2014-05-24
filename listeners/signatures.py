@@ -41,7 +41,8 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
 
         if data['success'] and 'No docstring' not in data['doc']:
             self.documentation = data['doc'].splitlines()[2]
-            if self.documentation not in self.exclude:
+            print(self.documentation)
+            if self.documentation.split('(')[0] not in self.exclude:
                 if self.documentation is not None and self.documentation != '':
                     self._show_status(view)
                     return
