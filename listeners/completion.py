@@ -26,7 +26,7 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
         """Sublime Text autocompletion event handler
         """
 
-        if not is_python(view):
+        if not is_python(view, autocomplete_ignore_repl=True):
             return
 
         global JUST_COMPLETED
@@ -56,7 +56,7 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
         """Called after changes has been made to a view.
         """
 
-        if not is_python(view):
+        if not is_python(view, autocomplete_ignore_repl=True):
             return
 
         global JUST_COMPLETED

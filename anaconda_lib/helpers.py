@@ -46,16 +46,17 @@ def check_linting_behaviour(view, behaviours):
     return b in behaviours
 
 
-def is_python(view, ignore_comments=False):
+def is_python(view, ignore_comments=False, autocomplete_ignore_repl=False):
     """Determine if the given view location is python code
     """
 
     if view is None:
         return False
 
-    # disable linting in SublimeREPL
+    # disable in SublimeREPL
     if view.settings().get('repl', False):
-        return False
+        if not autocomplete_ignore_repl:
+            return False
 
     try:
         location = view.sel()[0].begin()
