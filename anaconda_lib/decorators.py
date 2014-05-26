@@ -37,7 +37,6 @@ def auto_project_switch(func):
         if not self.green_light:
             return
 
-        wid = sublime.active_window().id()
         view = sublime.active_window().active_view()
         auto_project_switch = get_settings(view, 'auto_project_switch', False)
         python_interpreter = get_settings(view, 'python_interpreter')
@@ -45,8 +44,7 @@ def auto_project_switch(func):
             python_interpreter = python_interpreter.replace(
                 '$VIRTUAL_ENV', os.environ.get('VIRTUAL_ENV', 'python'))
         if (
-            auto_project_switch and hasattr(self, 'project_name') and
-            self.project_name != 'anaconda-{id}'.format(id=wid) and (
+            auto_project_switch and hasattr(self, 'project_name') and (
                 project_name() != self.project_name
                 or self.process.args[0] != python_interpreter)
         ):
