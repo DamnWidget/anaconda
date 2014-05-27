@@ -44,7 +44,7 @@ class AnacondaDoc(sublime_plugin.TextCommand):
             if self.documentation is None or self.documentation == '':
                 self._show_status()
             else:
-                sublime.active_window().run_command('anaconda_doc')
+                sublime.active_window().run_command(self.name())
         else:
             self._show_status()
 
