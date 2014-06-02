@@ -1,0 +1,4 @@
+Changes in 1.2.0
+================
+
+- Updated Jedi version to solve various autocompletion problems
