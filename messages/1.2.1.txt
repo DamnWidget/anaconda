@@ -1,0 +1,12 @@
+Changes in 1.2.1
+================
+
+-
+
+Fixes
+=====
+
+- Removed debug print left by mistake in signature listener
+- Fixed project switching in Mac OS X:
+    For some reason, OS X uses EBADF as EBADFD (9 and 77 rspectively in other
+    UNIX implementations), Why? I have no idea, asks Tim Cook.
