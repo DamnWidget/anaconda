@@ -1,9 +1,8 @@
-from __future__ import with_statement
-
 import copy
 
 from jedi import common
 from jedi.parser import representation as pr
+from jedi import debug
 
 
 def fast_parent_copy(obj):
@@ -16,7 +15,7 @@ def fast_parent_copy(obj):
         if isinstance(obj, pr.Statement):
             # Need to set _set_vars, otherwise the cache is not working
             # correctly, don't know why.
-            obj.get_set_vars()
+            obj.get_defined_names()
 
         new_obj = copy.copy(obj)
         new_elements[obj] = new_obj
@@ -62,32 +61,28 @@ def fast_parent_copy(obj):
     return recursion(obj)
 
 
-def check_arr_index(arr, pos):
-    positions = arr.arr_el_pos
-    for index, comma_pos in enumerate(positions):
-        if pos < comma_pos:
-            return index
-    return len(positions)
-
-
-def array_for_pos(stmt, pos, array_types=None):
-    """Searches for the array and position of a tuple"""
+def call_signature_array_for_pos(stmt, pos):
+    """
+    Searches for the array and position of a tuple.
+    """
     def search_array(arr, pos):
+        accepted_types = pr.Array.TUPLE, pr.Array.NOARRAY
         if arr.type == 'dict':
             for stmt in arr.values + arr.keys:
-                new_arr, index = array_for_pos(stmt, pos, array_types)
+                new_arr, index = call_signature_array_for_pos(stmt, pos)
                 if new_arr is not None:
                     return new_arr, index
         else:
             for i, stmt in enumerate(arr):
-                new_arr, index = array_for_pos(stmt, pos, array_types)
+                new_arr, index = call_signature_array_for_pos(stmt, pos)
                 if new_arr is not None:
                     return new_arr, index
+
                 if arr.start_pos < pos <= stmt.end_pos:
-                    if not array_types or arr.type in array_types:
+                    if arr.type in accepted_types and isinstance(arr.parent, pr.Call):
                         return arr, i
         if len(arr) == 0 and arr.start_pos < pos < arr.end_pos:
-            if not array_types or arr.type in array_types:
+            if arr.type in accepted_types and isinstance(arr.parent, pr.Call):
                 return arr, 0
         return None, 0
 
@@ -105,7 +100,7 @@ def array_for_pos(stmt, pos, array_types=None):
     if stmt.start_pos >= pos >= stmt.end_pos:
         return None, 0
 
-    for command in stmt.get_commands():
+    for command in stmt.expression_list():
         arr = None
         if isinstance(command, pr.Array):
             arr, index = search_array(command, pos)
@@ -116,27 +111,79 @@ def array_for_pos(stmt, pos, array_types=None):
     return None, 0
 
 
-def search_call_signatures(stmt, pos):
+def search_call_signatures(user_stmt, position):
     """
     Returns the function Call that matches the position before.
     """
-    # some parts will of the statement will be removed
-    stmt = fast_parent_copy(stmt)
-    arr, index = array_for_pos(stmt, pos, [pr.Array.TUPLE, pr.Array.NOARRAY])
-    if arr is not None and isinstance(arr.parent, pr.StatementElement):
-        call = arr.parent
-        while isinstance(call.parent, pr.StatementElement):
-            call = call.parent
-        arr.parent.execution = None
-        return call if isinstance(call, pr.Call) else None, index, False
-    return None, 0, False
+    debug.speed('func_call start')
+    call, index = None, 0
+    if user_stmt is not None and isinstance(user_stmt, pr.Statement):
+        # some parts will of the statement will be removed
+        user_stmt = fast_parent_copy(user_stmt)
+        arr, index = call_signature_array_for_pos(user_stmt, position)
+        if arr is not None:
+            call = arr.parent
+
+    debug.speed('func_call parsed')
+    return call, index
+
+
+def scan_statement_for_calls(stmt, search_name, assignment_details=False):
+    """ Returns the function Calls that match search_name in an Array. """
+    def scan_array(arr, search_name):
+        result = []
+        if arr.type == pr.Array.DICT:
+            for key_stmt, value_stmt in arr.items():
+                result += scan_statement_for_calls(key_stmt, search_name)
+                result += scan_statement_for_calls(value_stmt, search_name)
+        else:
+            for stmt in arr:
+                result += scan_statement_for_calls(stmt, search_name)
+        return result
+
+    check = list(stmt.expression_list())
+    if assignment_details:
+        for expression_list, op in stmt.assignment_details:
+            check += expression_list
+
+    result = []
+    for c in check:
+        if isinstance(c, pr.Array):
+            result += scan_array(c, search_name)
+        elif isinstance(c, pr.Call):
+            s_new = c
+            while s_new is not None:
+                n = s_new.name
+                if isinstance(n, pr.Name) \
+                        and search_name in [str(x) for x in n.names]:
+                    result.append(c)
+
+                if s_new.execution is not None:
+                    result += scan_array(s_new.execution, search_name)
+                s_new = s_new.next
+
+    return result
+
+
+class FakeSubModule():
+    line_offset = 0
+
+
+class FakeArray(pr.Array):
+    def __init__(self, values, parent, arr_type=pr.Array.LIST):
+        p = (0, 0)
+        super(FakeArray, self).__init__(FakeSubModule, p, arr_type, parent)
+        self.values = values
 
 
 class FakeStatement(pr.Statement):
-    class SubModule():
-        line_offset = 0
+    def __init__(self, expression_list, start_pos=(0, 0)):
+        p = start_pos
+        super(FakeStatement, self).__init__(FakeSubModule, expression_list, p, p)
+        self.set_expression_list(expression_list)
 
-    def __init__(self, content):
-        cls = type(self)
+
+class FakeName(pr.Name):
+    def __init__(self, name, parent=None):
         p = 0, 0
-        super(cls, self).__init__(cls.SubModule, [content], p, p)
+        super(FakeName, self).__init__(FakeSubModule, [(name, p)], p, p, parent)

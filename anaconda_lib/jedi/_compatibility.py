@@ -1,18 +1,19 @@
 """
 To ensure compatibility from Python ``2.6`` - ``3.3``, a module has been
-created. Clearly there is huge need to use conforming syntax. But many changes
-(e.g. ``property``, ``hasattr`` in ``2.5``) can be rewritten in pure python.
+created. Clearly there is huge need to use conforming syntax.
 """
 import sys
 import imp
 import os
+import re
 try:
     import importlib
 except ImportError:
     pass
 
-is_py3k = sys.hexversion >= 0x03000000
-is_py33 = sys.hexversion >= 0x03030000
+is_py3 = sys.version_info[0] >= 3
+is_py33 = is_py3 and sys.version_info.minor >= 3
+is_py26 = not is_py3 and sys.version_info[1] < 7
 
 
 def find_module_py33(string, path=None):
@@ -31,11 +32,18 @@ def find_module_py33(string, path=None):
             module_file = None
         else:
             module_path = loader.get_filename(string)
-            module_file = open(module_path)
+            module_file = open(module_path, 'rb')
     except AttributeError:
-        # is builtin module
-        module_path = string
-        module_file = None
+        # ExtensionLoader has not attribute get_filename, instead it has a
+        # path attribute that we can use to retrieve the module path
+        try:
+            module_path = loader.path
+            module_file = open(loader.path, 'rb')
+        except AttributeError:
+            module_path = string
+            module_file = None
+        finally:
+            is_package = False
 
     return module_file, module_path, is_package
 
@@ -81,17 +89,17 @@ try:
 except NameError:
     unicode = str
 
-if is_py3k:
-    utf8 = lambda s: s
+if is_py3:
+    u = lambda s: s
 else:
-    utf8 = lambda s: s.decode('utf-8')
+    u = lambda s: s.decode('utf-8')
 
-utf8.__doc__ = """
+u.__doc__ = """
 Decode a raw string into unicode object.  Do nothing in Python 3.
 """
 
 # exec function
-if is_py3k:
+if is_py3:
     def exec_function(source, global_map):
         exec(source, global_map)
 else:
@@ -99,7 +107,7 @@ else:
                         exec source in global_map """, 'blub', 'exec'))
 
 # re-raise function
-if is_py3k:
+if is_py3:
     def reraise(exception, traceback):
         raise exception.with_traceback(traceback)
 else:
@@ -117,14 +125,8 @@ Usage::
 
 """
 
-# StringIO (Python 2.5 has no io module), so use io only for py3k
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-
 # hasattr function used because python
-if is_py3k:
+if is_py3:
     hasattr = hasattr
 else:
     def hasattr(obj, name):
@@ -145,16 +147,13 @@ class Python3Method(object):
         else:
             return lambda *args, **kwargs: self.func(obj, *args, **kwargs)
 
+
 def use_metaclass(meta, *bases):
     """ Create a class with a metaclass. """
     if not bases:
         bases = (object,)
     return meta("HackClass", bases, {})
 
-try:
-    from functools import reduce  # Python 3
-except ImportError:
-    reduce = reduce
 
 try:
     encoding = sys.stdout.encoding
@@ -163,13 +162,14 @@ try:
 except AttributeError:
     encoding = 'ascii'
 
+
 def u(string):
     """Cast to unicode DAMMIT!
     Written because Python2 repr always implicitly casts to a string, so we
     have to cast back to a unicode (and we now that we always deal with valid
     unicode, because we check that in the beginning).
     """
-    if is_py3k:
+    if is_py3:
         return str(string)
     elif not isinstance(string, unicode):
         return unicode(str(string), 'UTF-8')
@@ -179,3 +179,15 @@ try:
     import builtins  # module name in python 3
 except ImportError:
     import __builtin__ as builtins
+
+
+import ast
+
+
+def literal_eval(string):
+    # py3.0, py3.1 and py32 don't support unicode literals. Support those, I
+    # don't want to write two versions of the tokenizer.
+    if is_py3 and sys.version_info.minor < 3:
+        if re.match('[uU][\'"]', string):
+            string = string[1:]
+    return ast.literal_eval(string)
