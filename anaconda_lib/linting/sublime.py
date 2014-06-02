@@ -11,7 +11,7 @@ import sublime
 from . import pep8
 from ..worker import Worker
 from ..persistent_list import PersistentList
-from ..helpers import get_settings, is_python, get_view
+from ..helpers import get_settings, is_python, get_view, check_linting, LINTING_ENABLED
 
 
 sublime_api = sublime.sublime_api
@@ -37,6 +37,7 @@ marks = {
 # Classes
 ###############################################################################
 class Linter:
+
     """Linter class that can interacts with Sublime Linter GUI
     """
 
@@ -393,6 +394,12 @@ def parse_results(data):
         if get_settings(view, 'use_pylint', False) is True:
             # print(data['errors'])
             pass
+        return
+
+    # Check if linting was disabled between now and when the request was sent to
+    # the server.
+    if (not check_linting(view, LINTING_ENABLED) or
+            view.file_name() in ANACONDA['DISABLED']):
         return
 
     vid = view.id()
