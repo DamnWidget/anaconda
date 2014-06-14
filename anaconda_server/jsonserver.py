@@ -118,7 +118,7 @@ class JSONHandler(asynchat.async_chat):
                 )
             )
 
-    def handle_lint_command(self, method, uid):
+    def handle_lint_command(self, method, uid, vid):
         """Handle lint command
         """
 
