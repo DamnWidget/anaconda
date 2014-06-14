@@ -352,7 +352,10 @@ class RemoteWorker(BaseWorker):
                 else:
                     self.checked = True
 
-        VagrantStatus(status, self.config['directory'], self.config['machine'])
+        VagrantStatus(
+            status, self.config['directory'],
+            self.config.get('machine', 'default')
+        )
         while not self.checked:
             time.sleep(0.01)
 
