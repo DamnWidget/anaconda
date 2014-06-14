@@ -152,25 +152,19 @@ class Linter(object):
             lineno = 0
 
         try:
-            tree = compile(str(code), filename, 'exec', _ast.PyCF_ONLY_AST)
-        except (SyntaxError, IndentationError) as value:
-            return self._handle_syntactic_error(code, filename, value)
+            code = code.encode('utf8') + b'\n'
+            tree = compile(code, filename or '', 'exec', _ast.PyCF_ONLY_AST)
+        except (SyntaxError, IndentationError):
+            return self._handle_syntactic_error(code, filename)
         except ValueError as error:
             return [PythonError(filename, FakeLoc(), error.args[0])]
         else:
             # the file is syntactically valid, check it now
-            if ignore is not None:
-                _magic_globals = pyflakes._MAGIC_GLOBALS
-                pyflakes._MAGIC_GLOBALS += ignore
-
-            w = pyflakes.Checker(tree, filename)
-
-            if ignore is not None:
-                pyflakes._MAGIC_GLOBALS = _magic_globals
+            w = pyflakes.Checker(tree, filename, ignore)
 
             return w.messages
 
-    def pep8_check(self, code, filename, ignore, max_line_length):
+    def pep8_check(self, code, filename, rcfile, ignore, max_line_length):
         """Check the code with pep8 to find PEP 8 errors
         """
 
@@ -219,10 +213,16 @@ class Linter(object):
 
                     return code
 
-            _ignore = ignore + pep8.DEFAULT_IGNORE.split(',')
-            options = pep8.StyleGuide(
-                reporter=SublimeLinterReport, ignore=_ignore).options
-            options.max_line_length = max_line_length
+            params = {'reporter': SublimeLinterReport}
+            if not rcfile:
+                _ignore = ignore + pep8.DEFAULT_IGNORE.split(',')
+                params['ignore'] = _ignore
+            else:
+                params['config_file'] = os.path.expanduser(rcfile)
+
+            options = pep8.StyleGuide(**params).options
+            if not rcfile:
+                options.max_line_length = max_line_length
 
             good_lines = [l + '\n' for l in _lines]
             good_lines[-1] = good_lines[-1].rstrip('\n')
@@ -243,40 +243,42 @@ class Linter(object):
         if settings.get("pep8", True):
             check_params = {
                 'ignore': settings.get('pep8_ignore', []),
-                'max_line_length': settings.get('pep8_max_line_length',
-                                                 pep8.MAX_LINE_LENGTH)
+                'max_line_length': settings.get(
+                    'pep8_max_line_length', pep8.MAX_LINE_LENGTH
+                )
             }
             errors.extend(self.pep8_check(
-                code, filename, **check_params)
-            )
+                code, filename, settings.get('pep8_rcfile'), **check_params
+            ))
 
         pyflakes_ignore = settings.get('pyflakes_ignore', None)
         pyflakes_disabled = settings.get('pyflakes_disabled', False)
+        explicit_ignore = settings.get('pyflakes_explicit_ignore', [])
 
-        if not pyflakes_disabled:
+        if not pyflakes_disabled and not settings.get('use_pylint'):
             errors.extend(self.pyflakes_check(code, filename, pyflakes_ignore))
 
-        return self.parse_errors(errors)
+        return self.parse_errors(errors, explicit_ignore)
 
-    def parse_errors(self, errors):
+    def parse_errors(self, errors, explicit_ignore):
         """Parse errors returned from the PyFlakes and pep8 libraries
         """
 
+        print(explicit_ignore)
         errors_list = []
         if errors is None:
             return errors_list
 
         errors.sort(key=cmp_to_key(lambda a, b: a.lineno < b.lineno))
-
         for error in errors:
             error_level = 'W' if not hasattr(error, 'level') else error.level
-            message = '{0}{1}'.format(
-                error.message[0].upper(), error.message[1:]
-            )
+            message = error.message.capitalize()
 
             offset = None
             if hasattr(error, 'offset'):
                 offset = error.offset
+            elif hasattr(error, 'col'):
+                offset = error.col
 
             error_data = {
                 'pep8': False,
@@ -290,20 +292,22 @@ class Linter(object):
             if isinstance(error, (Pep8Error, Pep8Warning, OffsetError)):
                 error_data['pep8'] = True
                 errors_list.append(error_data)
-            elif isinstance(
+            elif (isinstance(
                 error, (
                     pyflakes.messages.RedefinedWhileUnused,
                     pyflakes.messages.UndefinedName,
                     pyflakes.messages.UndefinedExport,
                     pyflakes.messages.UndefinedLocal,
                     pyflakes.messages.Redefined,
-                    pyflakes.messages.UnusedVariable)):
+                    pyflakes.messages.UnusedVariable)) and
+                    error.__class__.__name__ not in explicit_ignore):
                 regex = (
                     r'((and|or|not|if|elif|while|in)\s+|[+\-*^%%<>=\(\{{])*\s'
                     '*(?P<underline>[\w\.]*{0}[\w]*)'.format(re.escape(
                         error.message_args[0]
                     ))
                 )
+                error_data['len'] = len(error.message_args[0])
                 error_data['regex'] = regex
                 errors_list.append(error_data)
             elif isinstance(error, pyflakes.messages.ImportShadowedByLoopVar):
@@ -312,10 +316,11 @@ class Linter(object):
                 )
                 error_data['regex'] = regex
                 errors_list.append(error_data)
-            elif isinstance(
+            elif (isinstance(
                 error, (
                     pyflakes.messages.UnusedImport,
-                    pyflakes.messages.ImportStarUsed)):
+                    pyflakes.messages.ImportStarUsed)) and
+                    error.__class__.__name__ not in explicit_ignore):
                 if isinstance(error, pyflakes.messages.ImportStarUsed):
                     word = '*'
                 else:
@@ -328,7 +333,8 @@ class Linter(object):
                 error_data['regex'] = r
                 error_data['linematch'] = linematch
                 errors_list.append(error_data)
-            elif isinstance(error, pyflakes.messages.DuplicateArgument):
+            elif (isinstance(error, pyflakes.messages.DuplicateArgument) and
+                    error.__class__.__name__ not in explicit_ignore):
                 regex = 'def [\w_]+\(.*?(?P<underline>[\w]*{0}[\w]*)'.format(
                     re.escape(error.message_args[0])
                 )
@@ -343,10 +349,11 @@ class Linter(object):
 
         return errors_list
 
-    def _handle_syntactic_error(self, code, filename, value):
+    def _handle_syntactic_error(self, code, filename):
         """Handle PythonError and OffsetError
         """
 
+        value = sys.exc_info()[1]
         msg = value.args[0]
 
         (lineno, offset, text) = value.lineno, value.offset, value.text

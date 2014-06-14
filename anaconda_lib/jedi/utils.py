@@ -4,8 +4,14 @@ Utilities for end-users.
 
 from __future__ import absolute_import
 import __main__
+from collections import namedtuple
+import re
+import os
+import sys
 
 from jedi import Interpreter
+from jedi.api.helpers import completion_parts
+from jedi.parser.user_context import UserContext
 
 
 def setup_readline(namespace_module=__main__):
@@ -32,15 +38,15 @@ def setup_readline(namespace_module=__main__):
 
     This will fallback to the readline completer if Jedi is not installed.
     The readline completer will only complete names in the global namespace,
-    so for example,
+    so for example::
 
-    >>> ran<TAB> # doctest: +SKIP
+        ran<TAB>
 
     will complete to ``range``
 
-    with both Jedi and readline, but
+    with both Jedi and readline, but::
 
-    >>> range(10).cou<TAB> # doctest: +SKIP
+        range(10).cou<TAB>
 
     will show complete to ``range(10).count`` only with Jedi.
 
@@ -49,7 +55,7 @@ def setup_readline(namespace_module=__main__):
     bash).
 
     """
-    class JediRL():
+    class JediRL(object):
         def complete(self, text, state):
             """
             This complete stuff is pretty weird, a generator would make
@@ -61,13 +67,13 @@ def setup_readline(namespace_module=__main__):
             library module.
             """
             if state == 0:
-                import os, sys
                 sys.path.insert(0, os.getcwd())
                 # Calling python doesn't have a path, so add to sys.path.
                 try:
                     interpreter = Interpreter(text, [namespace_module.__dict__])
 
-                    path, dot, like = interpreter._get_completion_parts()
+                    path = UserContext(text, (1, len(text))).get_path_until_cursor()
+                    path, dot, like = completion_parts(path)
                     before = text[:len(text) - len(like)]
                     completions = interpreter.completions()
                 finally:
@@ -95,3 +101,14 @@ def setup_readline(namespace_module=__main__):
         readline.parse_and_bind("set completion-prefix-display-length 2")
         # No delimiters, Jedi handles that.
         readline.set_completer_delims('')
+
+
+def version_info():
+    """
+    Returns a namedtuple of Jedi's version, similar to Python's
+    ``sys.version_info``.
+    """
+    Version = namedtuple('Version', 'major, minor, micro, releaselevel, serial')
+    from jedi import __version__
+    tupl = re.findall('[a-z]+|\d+', __version__)
+    return Version(*[x if i == 3 else int(x) for i, x in enumerate(tupl)])

@@ -55,7 +55,7 @@ class IOHandlers(object):
             return
 
         self._handler_pool = {}
-        self._lock = threading.RLock()
+        self._lock = threading.Lock()
         self.instanced = True
 
     def ready_to_read(self):
@@ -135,10 +135,18 @@ class EventHandler(object):
                     ):
                         self.close()
                         return 0
-                    elif os.name == 'posix' and error.args[0] == errno.EBADFD:
+                    elif os.name == 'posix':
                         # Windows doesn't seems to have EBADFD
-                        self.close()
-                        return 0
+                        if sys.platform == 'darwin':
+                            # OS X uses EBADF as EBADFD. why? no idea asks Tim
+                            if error.args[0] == errno.EBADF:
+                                self.close()
+                                return 0
+                        else:
+                            if error.args[0] == errno.EBADFD:
+                                self.close()
+                                return 0
+                        raise
                     else:
                         raise
 
@@ -279,9 +287,11 @@ def loop():
                 print(error)
                 for traceback_line in traceback.format_exc().splitlines():
                     print(traceback_line)
-                for handler in IOHandlers()._handler_pool.values():
-                    handler.close()
-                IOHandlers()._handler_pool = {}
+
+                with IOHandlers()._lock:
+                    for handler in IOHandlers()._handler_pool.values():
+                        handler.close()
+                    IOHandlers()._handler_pool = {}
 
         # cleanup
         for handler in IOHandlers()._handler_pool.values():

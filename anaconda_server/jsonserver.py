@@ -10,10 +10,9 @@ import socket
 import logging
 import asyncore
 import asynchat
-import threading
 import traceback
-import subprocess
 from logging import handlers
+from functools import partial
 from optparse import OptionParser
 
 # we use ujson if it's available on the target intrepreter
@@ -28,9 +27,11 @@ import jedi
 from linting import linter
 from contexts import json_decode
 from jedi import refactoring as jedi_refactor
+from linting.anaconda_mccabe import AnacondaMcCabe
+from linting.anaconda_pep257 import PEP257 as AnacondaPep257
 from commands import (
     Doc, Lint, Goto, Rename, PyLint, FindUsages, AutoComplete,
-    CompleteParameters
+    CompleteParameters, McCabe, PEP257, AutoPep8
 )
 
 try:
@@ -63,7 +64,12 @@ class JSONHandler(asynchat.async_chat):
             data = '{0}\r\n'.format(json.dumps(data))
             data = bytes(data, 'utf8') if PY3 else data
 
+            if DEBUG_MODE is True:
+                print('About push back to ST3: {0}'.format(data))
             self.push(data)
+
+        # clear jedi_cache
+        jedi.cache.clear_caches()
 
     def collect_incoming_data(self, data):
         """Called when data is ready to be read
@@ -84,7 +90,7 @@ class JSONHandler(asynchat.async_chat):
                 return
 
             if self.data['method'] == 'check':
-                self.return_back('Ok')
+                self.return_back(message='Ok', uid=self.data['uid'])
                 return
 
             self.server.last_call = time.time()
@@ -96,10 +102,13 @@ class JSONHandler(asynchat.async_chat):
 
             method = self.data.pop('method')
             uid = self.data.pop('uid')
+            vid = self.data.pop('vid', None)
             if 'lint' in method:
-                self.handle_lint_command(method, uid)
+                self.handle_lint_command(method, uid, vid)
             elif 'refactor' in method:
-                self.handle_refactor_command(method, uid)
+                self.handle_refactor_command(method, uid, vid)
+            elif 'autoformat' in method:
+                self.handle_common_command(method, uid, vid)
             else:
                 self.handle_jedi_command(method, uid)
         else:
@@ -119,14 +128,21 @@ class JSONHandler(asynchat.async_chat):
         """Handle refactor command
         """
 
-        self.script = self.jedi_script(
+        script = self.jedi_script(
             self.data.pop('source'),
             self.data.pop('line'),
             self.data.pop('offset'),
             filename=self.data.pop('filename'),
             encoding='utf8'
         )
+        self.data['script'] = script
         getattr(self, method.split('_')[1])(uid, **self.data)
+
+    def handle_common_command(self, method, uid, vid):
+        """Handle a non Jedi/Linting command
+        """
+
+        self.autoformat(uid, vid, **self.data)
 
     def handle_jedi_command(self, method, uid):
         """Handle jedi related commands
@@ -136,7 +152,7 @@ class JSONHandler(asynchat.async_chat):
         if 'settings' in self.data:
             kwargs.update({'settings': self.data.pop('settings')})
 
-        self.script = self.jedi_script(**self.data)
+        kwargs['script'] = self.jedi_script(**self.data)
         getattr(self, method)(uid, **kwargs)
 
     def jedi_script(self, source, line, offset, filename='', encoding='utf8'):
@@ -151,27 +167,79 @@ class JSONHandler(asynchat.async_chat):
             source, int(line), int(offset), filename, encoding
         )
 
-    def run_linter(self, uid, settings, code, filename):
+    def run_linter_mccabe(self, uid, vid, code, threshold, filename):
+        """Return the McCabe code comlexity errors
+        """
+
+        McCabe(
+            self.return_back, uid, vid, AnacondaMcCabe,
+            code, threshold, filename
+        )
+
+    def run_linter(self, uid, vid, settings, code, filename):
         """Return lintin errors on the given code
         """
 
-        Lint(self.return_back, uid, linter, settings, code, filename)
+        def merge_lint_and_pep257(lint_result, pep257_result):
+            """Merge the result from Lint and PEP257
+            """
 
-    def run_linter_pylint(self, uid, filename):
+            logging.error(lint_result['errors'] + pep257_result['errors'])
+            self.return_back({
+                'success': True,
+                'errors': lint_result['errors'] + pep257_result['errors'],
+                'uid': uid,
+                'vid': vid
+            })
+
+        def run_pep257_linter(result):
+            """Return pep257 lintin errors on the given code
+            """
+            ignore = settings.get('pep257_ignore')
+            callback = partial(merge_lint_and_pep257, result)
+            PEP257(callback, uid, AnacondaPep257, ignore, code, filename)
+
+        callback = self.return_back
+        if settings.get('use_pep257'):
+            callback = run_pep257_linter
+
+        Lint(callback, uid, vid, linter, settings, code, filename)
+
+    def run_linter_pylint(self, uid, vid, settings, code, filename):
         """Return lintin errors on the given file
         """
 
+        def merge_pylint_and_pep8(pylint_result, pep8_result):
+            """Merge the result from PyLint with the result given by pep8
+            """
+
+            self.return_back({
+                'success': True,
+                'errors': pylint_result['errors'],
+                'pep8_errors': pep8_result['errors'],
+                'uid': uid,
+                'vid': vid
+            })
+
+        def lint_pep8(result):
+            """Execute the pep8 linter
+            """
+
+            callback = partial(merge_pylint_and_pep8, result)
+            Lint(callback, uid, vid, linter, settings, code, filename)
+
         if PYLINT_AVAILABLE:
-            PyLint(self.return_back, uid, PyLinter, filename)
+            rcfile = settings.get('pylint_rcfile', False)
+            PyLint(lint_pep8, uid, PyLinter, rcfile, filename)
         else:
             success = False
             errors = 'Your configured python interpreter can\'t import pylint'
 
-        self.return_back({
-            'success': success,
-            'errors': errors,
-            'uid': uid
-        })
+            self.return_back({
+                'success': success,
+                'errors': errors,
+                'uid': uid
+            })
 
     def rename(self, uid, directories, new_word):
         """Rename the object under the cursor by the given word
@@ -182,30 +250,35 @@ class JSONHandler(asynchat.async_chat):
             directories, new_word, jedi_refactor
         )
 
-    def autocomplete(self, uid):
+    def autocomplete(self, uid, script):
         """Call autocomplete
         """
-        AutoComplete(self.return_back, uid, self.script)
+        AutoComplete(self.return_back, uid, script)
 
-    def parameters(self, uid, settings):
+    def parameters(self, uid, settings, script):
         """Call complete parameters
         """
-        CompleteParameters(self.return_back, uid, self.script, settings)
+        CompleteParameters(self.return_back, uid, script, settings)
 
-    def usages(self, uid):
+    def usages(self, uid, script):
         """Call Find Usages
         """
-        FindUsages(self.return_back, uid, self.script)
+        FindUsages(self.return_back, uid, script)
 
-    def goto(self, uid):
+    def goto(self, uid, script):
         """Call goto
         """
-        Goto(self.return_back, uid, self.script)
+        Goto(self.return_back, uid, script)
 
-    def doc(self, uid):
+    def doc(self, uid, script):
         """Call doc
         """
-        Doc(self.return_back, uid, self.script)
+        Doc(self.return_back, uid, script)
+
+    def autoformat(self, uid, vid, code, settings):
+        """Call autoformat
+        """
+        AutoPep8(self.return_back, uid, vid, code, settings)
 
 
 class JSONServer(asyncore.dispatcher):
