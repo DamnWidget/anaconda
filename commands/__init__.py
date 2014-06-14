@@ -16,7 +16,7 @@ from .complete_func_args import AnacondaCompleteFuncargs
 from .set_python_interpreter import AnacondaSetPythonInterpreter
 from .vagrant import (
     AnacondaVagrantEnable, AnacondaVagrantInit, AnacondaVagrantStatus,
-    AnacondaVagrantUp, AnacondaVagrantSsh
+    AnacondaVagrantUp, AnacondaVagrantReload, AnacondaVagrantSsh
 )
 
 __all__ = [
@@ -35,6 +35,7 @@ __all__ = [
     'AnacondaNextLintError',
     'AnacondaVagrantEnable',
     'AnacondaVagrantStatus',
+    'AnacondaVagrantReload',
     'AnacondaDisableLinting',
     'AnacondaCompleteFuncargs',
     'AnacondaSetPythonInterpreter'

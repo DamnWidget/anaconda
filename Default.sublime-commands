@@ -36,8 +36,8 @@
         "command": "anaconda_vagrant_up"
     },
     {
-        "caption": "Anaconda: Vagrant SSH",
-        "command": "anaconda_vagrant_ssh"
+        "caption": "Anaconda: Vagrant Reload",
+        "command": "anaconda_vagrant_reload"
     },
     {
         "caption": "Anaconda: Vagrant Enable",

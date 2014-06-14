@@ -1,0 +1,17 @@
+Changes in 1.2.2
+================
+
+- Added McCabe complexity syntax checker to vagrant support
+- Added PEP257 linter to vagrant support
+- Added AutoPEP8 format to vagrant support
+- Updated JEDI on vagrant support
+- Updated autopep8 on vagrant support
+- Added Reload command to vagrant commands
+
+Fixes
+=====
+
+- Removed debug print left by mistake in jsonserver
+- Fixed Vagrant Support that was broken
+
+For detailed information about those changed run git v1.2.2..v1.2.1 on git repository (there are many changes in vagrant_server branch)

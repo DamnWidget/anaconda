@@ -66,6 +66,21 @@ class VagrantUp(VagrantBase):
         self.wait_answer(['vagrant', 'up', self.machine])
 
 
+class VagrantReload(VagrantBase):
+    """Reload a vagrant box
+    """
+
+    def __init__(self, callback, vagrant_root, machine=None):
+        super(VagrantReload, self).__init__(callback, vagrant_root, machine)
+        self.start()
+
+    def run(self):
+        """Reload the vagrant box machine
+        """
+
+        self.wait_answer(['vagrant', 'reload', self.machine])
+
+
 class VagrantStatus(VagrantBase):
     """Check vagrant box status
     """

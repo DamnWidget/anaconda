@@ -141,6 +141,27 @@ class AnacondaVagrantUp(sublime_plugin.TextCommand, AnacondaVagrantBase):
             self.print_status(edit)
 
 
+class AnacondaVagrantReload(sublime_plugin.TextCommand, AnacondaVagrantBase):
+    """Execute vagrant reload command
+    """
+
+    def run(self, edit):
+        if self.view.settings().get('vagrant_environment') is None:
+            return
+
+        cfg = self.view.settings().get('vagrant_environment')
+        if self.data is None:
+            try:
+                machine = cfg.get('machine', 'default')
+                vagrant.VagrantReload(
+                    self.prepare_data, cfg['directory'], machine
+                )
+            except Exception as error:
+                print(error)
+        else:
+            self.print_status(edit)
+
+
 class AnacondaVagrantSsh(sublime_plugin.TextCommand, AnacondaVagrantBase):
     """Execute remmote ssh command
     """
