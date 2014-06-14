@@ -13,7 +13,11 @@ import logging
 import traceback
 import subprocess
 
-import sublime
+try:
+    import sublime
+except ImportError:
+    # we are running in a vagrant/remote environment
+    pass
 
 NONE = 0x00
 ONLY_PYTHON = 0x01

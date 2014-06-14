@@ -8,17 +8,17 @@ import traceback
 from .base import Command
 
 
-class Lint(Command):
-    """Run PyFlakes and Pep8 linters and return back results
+class McCabe(Command):
+    """Run McCabe complexity checker and return back results
     """
 
-    def __init__(self, callback, uid, vid, linter, settings, code, filename):
+    def __init__(self, callback, uid, vid, mccabe, code, threshold, filename):
         self.vid = vid
         self.code = code
-        self.linter = linter
-        self.settings = settings
         self.filename = filename
-        super(Lint, self).__init__(callback, uid)
+        self.threshold = threshold
+        self.mccabe = mccabe(self.code, self.filename)
+        super(McCabe, self).__init__(callback, uid)
 
     def run(self):
         """Run the command
@@ -27,8 +27,7 @@ class Lint(Command):
         try:
             self.callback({
                 'success': True,
-                'errors': self.linter.Linter().run_linter(
-                    self.settings, self.code, self.filename),
+                'errors': self.mccabe.get_code_complexity(self.threshold),
                 'uid': self.uid,
                 'vid': self.vid
             })
