@@ -122,7 +122,7 @@ class JSONHandler(asynchat.async_chat):
         """Handle lint command
         """
 
-        getattr(self, method)(uid, **self.data)
+        getattr(self, method)(uid, vid, **self.data)
 
     def handle_refactor_command(self, method, uid):
         """Handle refactor command
