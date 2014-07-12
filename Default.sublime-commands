@@ -46,5 +46,17 @@
     {
         "caption": "Anaconda: Set Python interpreter",
         "command": "anaconda_set_python_interpreter"
+    },
+    {
+        "caption": "Anaconda: Goto object definition",
+        "command": "anaconda_goto"
+    },
+    {
+        "caption": "Anaconda: Find object usage",
+        "command": "anaconda_find_usages"
+    },
+    {
+        "caption": "Anaconda: Display object docs",
+        "command": "anaconda_doc"
     }
 ]
