@@ -112,6 +112,14 @@ class JSONHandler(asynchat.async_chat):
             handler_type, AnacondaHandler.get_handler(handler_type))
         handler(method, data, uid, vid, self.return_back, DEBUG_MODE).run()
 
+    def run_test(self):
+        pass
+
+    def run_module_tests(self):
+        pass
+
+    def run_project_tests(self):
+        pass
 
 class JSONServer(asyncore.dispatcher):
     """Asynchronous standard library TCP JSON server
