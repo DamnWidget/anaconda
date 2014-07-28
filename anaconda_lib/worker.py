@@ -31,6 +31,7 @@ LOOP_RUNNING = False
 
 
 class BaseWorker(object):
+
     """Base class for different worker interfaces
     """
 
@@ -128,6 +129,7 @@ class BaseWorker(object):
 
 
 class LocalWorker(BaseWorker):
+
     """This worker is used with local interpreter
     """
 
@@ -220,7 +222,7 @@ class LocalWorker(BaseWorker):
 
         self.project_name = project_name()
         args = [
-            python, '-B', script_file,  '-p',
+            python, '-B', script_file, '-p',
             self.project_name, str(self.available_port)
         ]
         if paths:
@@ -249,6 +251,7 @@ class LocalWorker(BaseWorker):
 
 
 class RemoteWorker(BaseWorker):
+
     """This worker is used with non local machine interpreters
     """
 
@@ -361,6 +364,7 @@ class RemoteWorker(BaseWorker):
 
 
 class Worker(object):
+
     """Worker class that start the server and handle the function calls
     """
 
