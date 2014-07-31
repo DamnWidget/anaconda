@@ -15,6 +15,13 @@ from jedi.evaluate.helpers import FakeName
 from . import fake
 
 
+_sep = os.path.sep
+if os.path.altsep is not None:
+    _sep += os.path.altsep
+_path_re = re.compile('(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
+del _sep
+
+
 class CompiledObject(Base):
     # comply with the parser
     start_pos = 0, 0
@@ -41,7 +48,7 @@ class CompiledObject(Base):
         for p in tokens:
             parts = [FakeName(part) for part in p.strip().split('=')]
             if len(parts) >= 2:
-                parts.insert(1, Operator('=', (0, 0)))
+                parts.insert(1, Operator(module, '=', module, (0, 0)))
             params.append(Param(module, parts, start_pos,
                                 end_pos, builtin))
         return params
@@ -82,16 +89,22 @@ class CompiledObject(Base):
             return CompiledObject(c, self.parent)
         return self
 
-    @underscore_memoization
     def get_defined_names(self):
+        if inspect.ismodule(self.obj):
+            return self.instance_names()
+        else:
+            return type_names + self.instance_names()
+
+    def scope_names_generator(self, position=None):
+        yield self, self.get_defined_names()
+
+    @underscore_memoization
+    def instance_names(self):
         names = []
         cls = self._cls()
         for name in dir(cls.obj):
             names.append(CompiledName(cls, name))
         return names
-
-    def instance_names(self):
-        return self.get_defined_names()
 
     def get_subscope_by_name(self, name):
         if name in dir(self._cls().obj):
@@ -99,7 +112,7 @@ class CompiledObject(Base):
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
 
-    def get_index_types(self, index_types):
+    def get_index_types(self, evaluator, index_array):
         # If the object doesn't have `__getitem__`, just raise the
         # AttributeError.
         if not hasattr(self.obj, '__getitem__'):
@@ -110,7 +123,8 @@ class CompiledObject(Base):
             return []
 
         result = []
-        for typ in index_types:
+        from jedi.evaluate.iterable import create_indexes_or_slices
+        for typ in create_indexes_or_slices(evaluator, index_array):
             index = None
             try:
                 index = typ.obj
@@ -168,6 +182,9 @@ class CompiledObject(Base):
                 faked_subscopes.append(f)
         return faked_subscopes
 
+    def is_scope(self):
+        return True
+
     def get_self_attributes(self):
         return []  # Instance compatibility
 
@@ -187,7 +204,11 @@ class CompiledName(FakeName):
         self.start_pos = 0, 0  # an illegal start_pos, to make sorting easy.
 
     def __repr__(self):
-        return '<%s: (%s).%s>' % (type(self).__name__, self._obj.name, self.name)
+        try:
+            name = self._obj.name  # __name__ is not defined all the time
+        except AttributeError:
+            name = None
+        return '<%s: (%s).%s>' % (type(self).__name__, name, self.name)
 
     @property
     @underscore_memoization
@@ -200,7 +221,37 @@ class CompiledName(FakeName):
         pass  # Just ignore this, FakeName tries to overwrite the parent attribute.
 
 
+def dotted_from_fs_path(fs_path, sys_path=None):
+    """
+    Changes `/usr/lib/python3.4/email/utils.py` to `email.utils`.  I.e.
+    compares the path with sys.path and then returns the dotted_path. If the
+    path is not in the sys.path, just returns None.
+    """
+    if sys_path is None:
+        sys_path = get_sys_path()
+
+    # prefer
+    #   - UNIX
+    #     /path/to/pythonX.Y/lib-dynload
+    #     /path/to/pythonX.Y/site-packages
+    #   - Windows
+    #     C:\path\to\DLLs
+    #     C:\path\to\Lib\site-packages
+    # over
+    #   - UNIX
+    #     /path/to/pythonX.Y
+    #   - Windows
+    #     C:\path\to\Lib
+    path = ''
+    for s in sys_path:
+        if (fs_path.startswith(s) and
+            len(path) < len(s)):
+            path = s
+    return _path_re.sub('', fs_path[len(path):].lstrip(os.path.sep)).replace(os.path.sep, '.')
+
+
 def load_module(path, name):
+    """
     if not name:
         name = os.path.basename(path)
         name = name.rpartition('.')[0]  # cut file type (normally .so)
@@ -222,17 +273,22 @@ def load_module(path, name):
         else:
             path = os.path.dirname(path)
 
+    """
+    if path is not None:
+        dotted_path = dotted_from_fs_path(path)
+    else:
+        dotted_path = name
+
     sys_path = get_sys_path()
-    if path:
-        sys_path.insert(0, path)
+    if dotted_path is None:
+        p, _, dotted_path = path.partition(os.path.sep)
+        sys_path.insert(0, p)
 
     temp, sys.path = sys.path, sys_path
-    try:
-        module = __import__(name, {}, {}, dot_path[:-1])
-    except AttributeError:
-        # use sys.modules, because you cannot access some modules
-        # directly. -> github issue #59
-        module = sys.modules[name]
+    __import__(dotted_path)
+    # Just access the cache after import, because of #59 as well as the very
+    # complicated import structure of Python.
+    module = sys.modules[dotted_path]
     sys.path = temp
     return CompiledObject(module)
 
@@ -308,12 +364,6 @@ def _parse_function_doc(doc):
 
 class Builtin(CompiledObject, IsScope):
     @memoize
-    def get_defined_names(self):
-        # Filter None, because it's really just a keyword, nobody wants to
-        # access it.
-        return [d for d in super(Builtin, self).get_defined_names() if d.name != 'None']
-
-    @memoize
     def get_by_name(self, name):
         item = [n for n in self.get_defined_names() if n.get_code() == name][0]
         return item.parent
@@ -323,10 +373,6 @@ def _a_generator(foo):
     """Used to have an object to return for generators."""
     yield 42
     yield foo
-
-builtin = Builtin(_builtins)
-magic_function_class = CompiledObject(type(load_module), parent=builtin)
-generator_obj = CompiledObject(_a_generator(1.0))
 
 
 def _create_from_name(module, parent, name):
@@ -344,6 +390,13 @@ def _create_from_name(module, parent, name):
         # -> just set it to None
         obj = None
     return CompiledObject(obj, parent)
+
+
+builtin = Builtin(_builtins)
+magic_function_class = CompiledObject(type(load_module), parent=builtin)
+generator_obj = CompiledObject(_a_generator(1.0))
+type_names = []  # Need this, because it's return in get_defined_names.
+type_names = builtin.get_by_name('type').get_defined_names()
 
 
 def compiled_objects_cache(func):

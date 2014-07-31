@@ -22,11 +22,17 @@ def execute(evaluator, obj, params):
         pass
     else:
         if obj.parent == compiled.builtin:
-            # for now we just support builtin functions.
-            try:
-                return _implemented['builtins'][obj_name](evaluator, obj, params)
-            except KeyError:
-                pass
+            module_name = 'builtins'
+        elif isinstance(obj.parent, pr.Module):
+            module_name = str(obj.parent.name)
+        else:
+            module_name = ''
+
+        # for now we just support builtin functions.
+        try:
+            return _implemented[module_name][obj_name](evaluator, obj, params)
+        except KeyError:
+            pass
     raise NotInStdLib()
 
 
@@ -86,7 +92,7 @@ def builtins_super(evaluator, obj, params):
 
 
 def builtins_reversed(evaluator, obj, params):
-    objects = _follow_param(evaluator, params, 0)
+    objects = tuple(_follow_param(evaluator, params, 0))
     if objects:
         # unpack the iterator values
         objects = tuple(iterable.get_iterator_types(objects))
@@ -97,8 +103,14 @@ def builtins_reversed(evaluator, obj, params):
             # would fail in certain cases like `reversed(x).__iter__` if we
             # just returned the result directly.
             stmts = [FakeStatement([r]) for r in rev]
-            objects = (FakeArray(stmts, objects[0].parent),)
+            objects = (iterable.Array(evaluator, FakeArray(stmts, objects[0].parent)),)
     return [er.Instance(evaluator, obj, objects)]
+
+
+def _return_first_param(evaluator, obj, params):
+    if len(params) == 1:
+        return _follow_param(evaluator, params, 0)
+    return []
 
 
 _implemented = {
@@ -107,5 +119,13 @@ _implemented = {
         'type': builtins_type,
         'super': builtins_super,
         'reversed': builtins_reversed,
-    }
+    },
+    'copy': {
+        'copy': _return_first_param,
+        'deepcopy': _return_first_param,
+    },
+    'json': {
+        'load': lambda *args: [],
+        'loads': lambda *args: [],
+    },
 }

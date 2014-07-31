@@ -49,6 +49,21 @@ from jedi.parser import tokenize
 SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
 
 
+def filter_after_position(names, position):
+    """
+    Removes all names after a certain position. If position is None, just
+    returns the names list.
+    """
+    if position is None:
+        return names
+
+    names_new = []
+    for n in names:
+        if n.start_pos[0] is not None and n.start_pos < position:
+            names_new.append(n)
+    return names_new
+
+
 class GetCodeState(object):
     """A helper class for passing the state of get_code in a thread-safe
     manner."""
@@ -70,7 +85,13 @@ class DocstringMixin(object):
         """ Returns a cleaned version of the docstring token. """
         try:
             # Returns a literal cleaned version of the ``Token``.
-            return unicode(cleandoc(literal_eval(self._doc_token.string)))
+            cleaned = cleandoc(literal_eval(self._doc_token.string))
+            # Since we want the docstr output to be always unicode, just force
+            # it.
+            if is_py3 or isinstance(cleaned, unicode):
+                return cleaned
+            else:
+                return unicode(cleaned, 'UTF-8', 'replace')
         except AttributeError:
             return u('')
 
@@ -191,12 +212,18 @@ class Simple(Base):
         return "<%s: %s@%s,%s>" % \
             (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
 
+    def is_scope(self):
+        return False
+
 
 class IsScope(Base):
     __slots__ = ()
 
+    def is_scope(self):
+        return True
 
-class Scope(Simple, IsScope, DocstringMixin):
+
+class Scope(IsScope, Simple, DocstringMixin):
     """
     Super class for the parser tree, which represents the state of a python
     text file.
@@ -351,6 +378,18 @@ class Scope(Simple, IsScope, DocstringMixin):
         return "<%s: %s@%s-%s>" % (type(self).__name__, name,
                                    self.start_pos[0], self.end_pos[0])
 
+    def walk(self):
+        yield self
+        for s in self.subscopes:
+            for scope in s.walk():
+                yield scope
+
+        for r in self.statements:
+            while isinstance(r, Flow):
+                for scope in r.walk():
+                    yield scope
+                r = r.next
+
 
 class Module(IsScope):
     """
@@ -481,6 +520,9 @@ class Class(Scope):
                     sub.get_call_signature(funcname=self.name.names[-1]), docstr)
         return docstr
 
+    def scope_names_generator(self, position=None):
+        yield self, filter_after_position(self.get_defined_names(), position)
+
 
 class Function(Scope):
     """
@@ -526,6 +568,9 @@ class Function(Scope):
             except IndexError:
                 debug.warning("multiple names in param %s", n)
         return n
+
+    def scope_names_generator(self, position=None):
+        yield self, filter_after_position(self.get_defined_names(), position)
 
     def get_call_signature(self, width=72, funcname=None):
         """
@@ -670,16 +715,19 @@ class Flow(Scope):
             self.next.parent = self.parent
             return next
 
+    def scope_names_generator(self, position=None):
+        # For `with` and `for`.
+        yield self, filter_after_position(self.get_defined_names(), position)
+
 
 class ForFlow(Flow):
     """
     Used for the for loop, because there are two statement parts.
     """
-    def __init__(self, module, inputs, start_pos, set_stmt, is_list_comp=False):
+    def __init__(self, module, inputs, start_pos, set_stmt):
         super(ForFlow, self).__init__(module, 'for', inputs, start_pos)
 
         self.set_stmt = set_stmt
-        self.is_list_comp = is_list_comp
 
         if set_stmt is not None:
             set_stmt.parent = self.use_as_parent
@@ -776,28 +824,44 @@ class Import(Simple):
             n.append(self.alias)
         return n
 
+    def is_nested(self):
+        """
+        This checks for the special case of nested imports, without aliases and
+        from statement::
+
+            import foo.bar
+        """
+        return not self.alias and not self.from_ns and self.namespace is not None \
+            and len(self.namespace.names) > 1
+
 
 class KeywordStatement(Base):
     """
     For the following statements: `assert`, `del`, `global`, `nonlocal`,
     `raise`, `return`, `yield`, `pass`, `continue`, `break`, `return`, `yield`.
     """
-    __slots__ = ('name', 'start_pos', '_stmt', 'parent')
+    __slots__ = ('name', 'start_pos', 'stmt', 'parent')
 
     def __init__(self, name, start_pos, parent, stmt=None):
         self.name = name
         self.start_pos = start_pos
-        self._stmt = stmt
+        self.stmt = stmt
         self.parent = parent
 
         if stmt is not None:
             stmt.parent = self
 
+    def is_scope(self):
+        return False
+
+    def __repr__(self):
+        return "<%s(%s): %s>" % (type(self).__name__, self.name, self.stmt)
+
     def get_code(self):
-        if self._stmt is None:
+        if self.stmt is None:
             return "%s\n" % self.name
         else:
-            return '%s %s\n' % (self.name, self._stmt)
+            return '%s %s\n' % (self.name, self.stmt)
 
     def get_defined_names(self):
         return []
@@ -805,7 +869,7 @@ class KeywordStatement(Base):
     @property
     def end_pos(self):
         try:
-            return self._stmt.end_pos
+            return self.stmt.end_pos
         except AttributeError:
             return self.start_pos[0], self.start_pos[1] + len(self.name)
 
@@ -854,7 +918,7 @@ class Statement(Simple, DocstringMixin):
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
             pieces = [c.get_code() if isinstance(c, Simple) else c.string if
-isinstance(c, (tokenize.Token, Operator)) else unicode(c)
+isinstance(c, tokenize.Token) else unicode(c)
                       for c in command_list]
             if assignment is None:
                 return ''.join(pieces)
@@ -876,7 +940,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
 
             def search_calls(calls):
                 for call in calls:
-                    if isinstance(call, Array):
+                    if isinstance(call, Array) and call.type != Array.DICT:
                         for stmt in call:
                             search_calls(stmt.expression_list())
                     elif isinstance(call, Call):
@@ -965,7 +1029,11 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                 # always dictionaries and not sets.
                 arr.type = Array.DICT
 
-            arr.end_pos = (break_tok or stmt or old_stmt).end_pos
+            try:
+                arr.end_pos = (break_tok or stmt or old_stmt).end_pos
+            except UnboundLocalError:
+                # In case of something like `(def`
+                arr.end_pos = start_pos[0], start_pos[1] + 1
             return arr, break_tok
 
         def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
@@ -984,18 +1052,19 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
 
                 if isinstance(tok, Base):
                     # the token is a Name, which has already been parsed
-                    if isinstance(tok, ListComprehension):
-                        # it's not possible to set it earlier
-                        tok.parent = self
-                    elif tok == 'lambda':
-                        lambd, tok = parse_lambda(token_iterator)
-                        if lambd is not None:
-                            token_list.append(lambd)
-                    elif tok == 'for':
-                        list_comp, tok = parse_list_comp(token_iterator, token_list,
-                                                         start_pos, tok.end_pos)
-                        if list_comp is not None:
-                            token_list = [list_comp]
+                    if not level:
+                        if isinstance(tok, ListComprehension):
+                            # it's not possible to set it earlier
+                            tok.parent = self
+                        elif tok == 'lambda':
+                            lambd, tok = parse_lambda(token_iterator)
+                            if lambd is not None:
+                                token_list.append(lambd)
+                        elif tok == 'for':
+                            list_comp, tok = parse_list_comp(token_iterator, token_list,
+                                                             start_pos, tok.end_pos)
+                            if list_comp is not None:
+                                token_list = [list_comp]
 
                     if tok in closing_brackets:
                         level -= 1
@@ -1010,7 +1079,8 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                         end_pos = end_pos[0], end_pos[1] - 1
                         break
 
-                token_list.append(tok)
+                if tok is not None:  # Can be None, because of lambda/for.
+                    token_list.append(tok)
 
             if not token_list:
                 return None, tok
@@ -1070,7 +1140,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                 debug.warning('list comprehension in @%s', start_pos)
                 return None, tok
 
-            return ListComprehension(st, middle, in_clause, self), tok
+            return ListComprehension(self._sub_module, st, middle, in_clause, self), tok
 
         # initializations
         result = []
@@ -1403,6 +1473,9 @@ class NamePart(object):
     def get_parent_until(self, *args, **kwargs):
         return self.parent.get_parent_until(*args, **kwargs)
 
+    def isinstance(self, *cls):
+        return isinstance(self, cls)
+
     @property
     def start_pos(self):
         offset = self.parent._sub_module.line_offset
@@ -1453,22 +1526,31 @@ class Name(Simple):
         return len(self.names)
 
 
-class ListComprehension(Base):
+class ListComprehension(ForFlow):
     """ Helper class for list comprehensions """
-    def __init__(self, stmt, middle, input, parent):
+    def __init__(self, module, stmt, middle, input, parent):
+        self.input = input
+        nested_lc = input.expression_list()[0]
+        if isinstance(nested_lc, ListComprehension):
+            # is nested LC
+            input = nested_lc.stmt
+            nested_lc.parent = self
+
+        super(ListComprehension, self).__init__(module, [input],
+                                                stmt.start_pos, middle)
+        self.parent = parent
         self.stmt = stmt
         self.middle = middle
-        self.input = input
-        for s in stmt, middle, input:
+        for s in middle, input:
             s.parent = self
-        self.parent = parent
+        # The stmt always refers to the most inner list comprehension.
+        stmt.parent = self._get_most_inner_lc()
 
-    def get_parent_until(self, *args, **kwargs):
-        return Simple.get_parent_until(self, *args, **kwargs)
-
-    @property
-    def start_pos(self):
-        return self.stmt.start_pos
+    def _get_most_inner_lc(self):
+        nested_lc = self.input.expression_list()[0]
+        if isinstance(nested_lc, ListComprehension):
+            return nested_lc._get_most_inner_lc()
+        return self
 
     @property
     def end_pos(self):
@@ -1483,25 +1565,20 @@ class ListComprehension(Base):
         return "%s for %s in %s" % tuple(code)
 
 
-class Operator(Base):
-    __slots__ = ('string', '_line', '_column')
+class Operator(Simple):
+    __slots__ = ('string',)
 
-    def __init__(self, string, start_pos):
-        # TODO needs module param
+    def __init__(self, module, string, parent, start_pos):
+        end_pos = start_pos[0], start_pos[1] + len(string)
+        super(Operator, self).__init__(module, start_pos, end_pos)
         self.string = string
-        self._line = start_pos[0]
-        self._column = start_pos[1]
+        self.parent = parent
+
+    def get_code(self):
+        return self.string
 
     def __repr__(self):
         return "<%s: `%s`>" % (type(self).__name__, self.string)
-
-    @property
-    def start_pos(self):
-        return self._line, self._column
-
-    @property
-    def end_pos(self):
-        return self._line, self._column + len(self.string)
 
     def __eq__(self, other):
         """Make comparisons easy. Improves the readability of the parser."""

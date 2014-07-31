@@ -39,7 +39,7 @@ class RecursionDetector(object):
     def push_stmt(self, stmt):
         self.current = _RecursionNode(stmt, self.current)
         check = self._check_recursion()
-        if check:  # TODO remove False!!!!
+        if check:
             debug.warning('catched stmt recursion: %s against %s @%s', stmt,
                           check.stmt, stmt.start_pos)
             self.pop_stmt()
@@ -88,7 +88,10 @@ class _RecursionNode(object):
         if not other:
             return None
 
-        is_list_comp = lambda x: isinstance(x, pr.ForFlow) and x.is_list_comp
+        # List Comprehensions start on the same line as its statement.
+        # Therefore we have the unfortunate situation of the same start_pos for
+        # two statements.
+        is_list_comp = lambda x: isinstance(x, pr.ListComprehension)
         return self.script == other.script \
             and self.position == other.position \
             and not is_list_comp(self.stmt.parent) \

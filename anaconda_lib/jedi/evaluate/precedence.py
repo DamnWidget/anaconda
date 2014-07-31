@@ -7,6 +7,7 @@ from jedi.parser import representation as pr
 from jedi import debug
 from jedi.common import PushBackIterator
 from jedi.evaluate.compiled import CompiledObject, create, builtin
+from jedi.evaluate import analysis
 
 
 class PythonGrammar(object):
@@ -70,7 +71,7 @@ class Precedence(object):
                 which = which.value
             return which
 
-        return (process(self.left), self.operator, process(self.right))
+        return (process(self.left), self.operator.string, process(self.right))
 
     def __repr__(self):
         return '(%s %s %s)' % (self.left, self.operator, self.right)
@@ -107,8 +108,25 @@ def _get_number(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
             _syntax_error(el)
             return _get_number(iterator, priority)
         return Precedence(None, el, right)
+    elif isinstance(el, pr.tokenize.Token):
+        return _get_number(iterator, priority)
     else:
         return el
+
+
+class MergedOperator(pr.Operator):
+    """
+    A way to merge the two operators `is not` and `not int`, which are two
+    words instead of one.
+    Maybe there's a better way (directly in the tokenizer/parser? but for now
+    this is fine.)
+    """
+    def __init__(self, first, second):
+        string = first.string + ' ' + second.string
+        super(MergedOperator, self).__init__(first._sub_module, string,
+                                             first.parent, first.start_pos)
+        self.first = first
+        self.second = second
 
 
 def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
@@ -137,14 +155,14 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
             match = check[match_index]
             if isinstance(match, PythonGrammar.MultiPart):
                 next_tok = next(iterator)
-                if next_tok != match.second:
+                if next_tok == match.second:
+                    el = MergedOperator(el, next_tok)
+                else:
                     iterator.push_back(next_tok)
-                    if el == 'is':  # `is not` special case
-                        match = 'is'
-                    else:
+                    if el == 'not':
                         continue
 
-            operator = match
+            operator = el
             break
 
         if operator is None:
@@ -168,9 +186,9 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
             _syntax_error(iterator.current, 'SyntaxError operand missing')
         else:
             if operator in PythonGrammar.TERNARY:
-                left = TernaryPrecedence(left, str(operator), right, middle)
+                left = TernaryPrecedence(left, operator, right, middle)
             else:
-                left = Precedence(left, str(operator), right)
+                left = Precedence(left, operator, right)
     return left
 
 
@@ -232,16 +250,48 @@ def is_literal(obj):
     return _is_number(obj) or _is_string(obj)
 
 
+def _is_tuple(obj):
+    from jedi.evaluate import iterable
+    return isinstance(obj, iterable.Array) and obj.type == pr.Array.TUPLE
+
+
+def _is_list(obj):
+    from jedi.evaluate import iterable
+    return isinstance(obj, iterable.Array) and obj.type == pr.Array.LIST
+
+
 def _element_calculate(evaluator, left, operator, right):
+    from jedi.evaluate import iterable, representation as er
+    l_is_num = _is_number(left)
+    r_is_num = _is_number(right)
     if operator == '*':
         # for iterables, ignore * operations
-        from jedi.evaluate import iterable
         if isinstance(left, iterable.Array) or _is_string(left):
             return [left]
+        elif isinstance(right, iterable.Array) or _is_string(right):
+            return [right]
     elif operator == '+':
-        if _is_number(left) and _is_number(right) or _is_string(left) and _is_string(right):
+        if l_is_num and r_is_num or _is_string(left) and _is_string(right):
             return [create(evaluator, left.obj + right.obj)]
+        elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
+            return [iterable.MergedArray(evaluator, (left, right))]
     elif operator == '-':
-        if _is_number(left) and _is_number(right):
+        if l_is_num and r_is_num:
             return [create(evaluator, left.obj - right.obj)]
+    elif operator == '%':
+        # With strings and numbers the left type typically remains. Except for
+        # `int() % float()`.
+        return [left]
+
+    def check(obj):
+        """Checks if a Jedi object is either a float or an int."""
+        return isinstance(obj, er.Instance) and obj.name in ('int', 'float')
+
+    # Static analysis, one is a number, the other one is not.
+    if operator in ('+', '-') and l_is_num != r_is_num \
+            and not (check(left) or check(right)):
+        message = "TypeError: unsupported operand type(s) for +: %s and %s"
+        analysis.add(evaluator, 'type-error-operation', operator,
+                     message % (left, right))
+
     return [left, right]

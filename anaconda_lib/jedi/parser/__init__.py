@@ -76,11 +76,16 @@ class Parser(object):
             d.parent = self.module
 
         self.module.end_pos = self._gen.current.end_pos
-        if self._gen.current.type in (tokenize.NEWLINE,):
+        if self._gen.current.type == tokenize.NEWLINE:
             # This case is only relevant with the FastTokenizer, because
-            # otherwise there's always an EndMarker.
+            # otherwise there's always an ENDMARKER.
             # we added a newline before, so we need to "remove" it again.
-            self.module.end_pos = self._gen.tokenizer_previous.end_pos
+            #
+            # NOTE: It should be keep end_pos as-is if the last token of
+            # a source is a NEWLINE, otherwise the newline at the end of
+            # a source is not included in a ParserNode.code.
+            if self._gen.previous.type != tokenize.NEWLINE:
+                self.module.end_pos = self._gen.previous.end_pos
 
         del self._gen
 
@@ -320,7 +325,9 @@ class Parser(object):
                 # print 'parse_stmt', tok, tokenize.tok_name[token_type]
                 is_kw = tok.string in OPERATOR_KEYWORDS
                 if tok.type == tokenize.OP or is_kw:
-                    tok_list.append(pr.Operator(tok.string, tok.start_pos))
+                    tok_list.append(
+                        pr.Operator(self.module, tok.string, self._scope, tok.start_pos)
+                    )
                 else:
                     tok_list.append(tok)
 
@@ -557,6 +564,8 @@ class Parser(object):
                 if stmt is not None:
                     stmt.parent = use_as_parent_scope
                 try:
+                    func.statements.append(pr.KeywordStatement(tok_str, s,
+                                           use_as_parent_scope, stmt))
                     func.returns.append(stmt)
                     # start_pos is the one of the return statement
                     stmt.start_pos = s
@@ -566,6 +575,7 @@ class Parser(object):
                 stmt, tok = self._parse_statement()
                 if stmt is not None:
                     stmt.parent = use_as_parent_scope
+                    self._scope.statements.append(stmt)
                     self._scope.asserts.append(stmt)
             elif tok_str in STATEMENT_KEYWORDS:
                 stmt, _ = self._parse_statement()
@@ -620,17 +630,10 @@ class PushBackTokenizer(object):
         if self._push_backs:
             return self._push_backs.pop(0)
 
-        self.previous = self.current
+        previous = self.current
         self.current = next(self._tokenizer)
+        self.previous = previous
         return self.current
 
     def __iter__(self):
         return self
-
-    @property
-    def tokenizer_previous(self):
-        """
-        Temporary hack, basically returns the last previous if the fast parser
-        sees an EndMarker. The fast parser positions have to be changed anyway.
-        """
-        return self._tokenizer.previous

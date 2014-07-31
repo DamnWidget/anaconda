@@ -35,6 +35,7 @@ from jedi.evaluate import imports
 from jedi.evaluate.helpers import FakeName
 from jedi.evaluate.finder import get_names_of_scope
 from jedi.evaluate.helpers import search_call_signatures
+from jedi.evaluate import analysis
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -85,9 +86,8 @@ class Script(object):
             with open(path) as f:
                 source = f.read()
 
-        lines = source.splitlines() or ['']
-        if source and source[-1] == '\n':
-            lines.append('')
+        self.source = common.source_to_unicode(source, encoding)
+        lines = common.splitlines(self.source)
         line = max(len(lines), 1) if line is None else line
         if not (0 < line <= len(lines)):
             raise ValueError('`line` parameter is not in a valid range.')
@@ -100,7 +100,6 @@ class Script(object):
 
         cache.clear_caches()
         debug.reset_time()
-        self.source = common.source_to_unicode(source, encoding)
         self._user_context = UserContext(self.source, self._pos)
         self._parser = UserContextParser(self.source, path, self._pos, self._user_context)
         self._evaluator = Evaluator()
@@ -204,11 +203,11 @@ class Script(object):
             scopes = list(self._prepare_goto(path, True))
         except NotFoundError:
             scopes = []
-            scope_generator = get_names_of_scope(self._evaluator,
-                                                 self._parser.user_scope(),
-                                                 self._pos)
+            scope_names_generator = get_names_of_scope(self._evaluator,
+                                                       self._parser.user_scope(),
+                                                       self._pos)
             completions = []
-            for scope, name_list in scope_generator:
+            for scope, name_list in scope_names_generator:
                 for c in name_list:
                     completions.append((c, scope))
         else:
@@ -217,19 +216,20 @@ class Script(object):
             for s in scopes:
                 if s.isinstance(er.Function):
                     names = s.get_magic_function_names()
-                else:
-                    if isinstance(s, imports.ImportWrapper):
-                        under = like + self._user_context.get_path_after_cursor()
-                        if under == 'import':
-                            current_line = self._user_context.get_position_line()
-                            if not current_line.endswith('import import'):
-                                continue
-                        a = s.import_stmt.alias
-                        if a and a.start_pos <= self._pos <= a.end_pos:
+                elif isinstance(s, imports.ImportWrapper):
+                    under = like + self._user_context.get_path_after_cursor()
+                    if under == 'import':
+                        current_line = self._user_context.get_position_line()
+                        if not current_line.endswith('import import'):
                             continue
-                        names = s.get_defined_names(on_import_stmt=True)
-                    else:
-                        names = s.get_defined_names()
+                    a = s.import_stmt.alias
+                    if a and a.start_pos <= self._pos <= a.end_pos:
+                        continue
+                    names = s.get_defined_names(on_import_stmt=True)
+                else:
+                    names = []
+                    for _, new_names in s.scope_names_generator():
+                        names += new_names
 
                 for c in names:
                     completions.append((c, s))
@@ -259,7 +259,7 @@ class Script(object):
             if not is_completion:
                 # goto_definition returns definitions of its statements if the
                 # cursor is on the assignee. By changing the start_pos of our
-                # "pseud" statement, the Jedi evaluator can find the assignees.
+                # "pseudo" statement, the Jedi evaluator can find the assignees.
                 if user_stmt is not None:
                     eval_stmt.start_pos = user_stmt.end_pos
             scopes = self._evaluator.eval_statement(eval_stmt)
@@ -273,6 +273,8 @@ class Script(object):
             stmt = r.module.statements[-1]
         except IndexError:
             raise NotFoundError()
+        if isinstance(stmt, pr.KeywordStatement):
+            stmt = stmt.stmt
         if not isinstance(stmt, pr.Statement):
             raise NotFoundError()
 
@@ -345,7 +347,7 @@ class Script(object):
            Use :attr:`.call_signatures` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use line instead.", DeprecationWarning)
+        warnings.warn("Use call_signatures instead.", DeprecationWarning)
         sig = self.call_signatures()
         return sig[0] if sig else None
 
@@ -585,6 +587,23 @@ class Script(object):
         return [classes.CallSignature(self._evaluator, o, call, index, key_name)
                 for o in origins if o.is_callable()]
 
+    def _analysis(self):
+        #statements = set(chain(*self._parser.module().used_names.values()))
+        stmts, imps = analysis.get_module_statements(self._parser.module())
+        # Sort the statements so that the results are reproducible.
+        for i in imps:
+            iw = imports.ImportWrapper(self._evaluator, i,
+                                       nested_resolve=True).follow()
+            if i.is_nested() and any(not isinstance(i, pr.Module) for i in iw):
+                analysis.add(self._evaluator, 'import-error', i.namespace.names[-1])
+        for stmt in sorted(stmts, key=lambda obj: obj.start_pos):
+            if not (isinstance(stmt.parent, pr.ForFlow)
+                    and stmt.parent.set_stmt == stmt):
+                self._evaluator.eval_statement(stmt)
+
+        ana = [a for a in self._evaluator.analysis if self.path == a.path]
+        return sorted(set(ana), key=lambda x: x.line)
+
 
 class Interpreter(Script):
     """
@@ -626,7 +645,7 @@ class Interpreter(Script):
         user_stmt = self._parser.user_stmt_with_whitespace()
         is_simple_path = not path or re.search('^[\w][\w\d.]*$', path)
         if isinstance(user_stmt, pr.Import) or not is_simple_path:
-            return super(type(self), self)._simple_complete(path, like)
+            return super(Interpreter, self)._simple_complete(path, like)
         else:
             class NamespaceModule(object):
                 def __getattr__(_, name):
@@ -638,8 +657,8 @@ class Interpreter(Script):
                     raise AttributeError()
 
                 def __dir__(_):
-                    return list(set(chain.from_iterable(n.keys()
-                                    for n in self.namespaces)))
+                    gen = (n.keys() for n in self.namespaces)
+                    return list(set(chain.from_iterable(gen)))
 
             paths = path.split('.') if path else []
 

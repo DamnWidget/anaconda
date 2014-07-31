@@ -73,6 +73,7 @@ import itertools
 from jedi._compatibility import next, hasattr, unicode
 from jedi.parser import representation as pr
 from jedi.parser.tokenize import Token
+from jedi.parser import fast
 from jedi import debug
 from jedi.evaluate import representation as er
 from jedi.evaluate import imports
@@ -83,6 +84,7 @@ from jedi.evaluate import stdlib
 from jedi.evaluate import finder
 from jedi.evaluate import compiled
 from jedi.evaluate import precedence
+from jedi.evaluate.helpers import FakeStatement
 
 
 class Evaluator(object):
@@ -92,6 +94,7 @@ class Evaluator(object):
         self.compiled_cache = {}  # see `compiled.create()`
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector()
+        self.analysis = []
 
     def find_types(self, scope, name_str, position=None, search_global=False,
                    is_goto=False, resolve_decorator=True):
@@ -107,7 +110,7 @@ class Evaluator(object):
         scopes = f.scopes(search_global)
         if is_goto:
             return f.filter_name(scopes)
-        return f.find(scopes, resolve_decorator)
+        return f.find(scopes, resolve_decorator, search_global)
 
     @memoize_default(default=[], evaluator_is_first_arg=True)
     @recursion.recursion_decorator
@@ -123,6 +126,8 @@ class Evaluator(object):
         """
         debug.dbg('eval_statement %s (%s)', stmt, seek_name)
         expression_list = stmt.expression_list()
+        if isinstance(stmt, FakeStatement):
+            return expression_list  # Already contains the results.
 
         result = self.eval_expression_list(expression_list)
 
@@ -132,7 +137,10 @@ class Evaluator(object):
             # `=` is always the last character in aug assignments -> -1
             operator = operator[:-1]
             name = str(expr_list[0].name)
-            left = self.find_types(stmt.parent, name, stmt.start_pos)
+            parent = stmt.parent
+            if isinstance(parent, (pr.SubModule, fast.Module)):
+                parent = er.ModuleWrapper(self, parent)
+            left = self.find_types(parent, name, stmt.start_pos)
             if isinstance(stmt.parent, pr.ForFlow):
                 # iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
@@ -169,25 +177,28 @@ class Evaluator(object):
                 return self._eval_precedence(el)
             else:
                 # normal element, no operators
-                return self._eval_statement_element(el)
+                return self.eval_statement_element(el)
 
     def _eval_precedence(self, _precedence):
         left = self.process_precedence_element(_precedence.left)
         right = self.process_precedence_element(_precedence.right)
         return precedence.calculate(self, left, _precedence.operator, right)
 
-    def _eval_statement_element(self, element):
+    def eval_statement_element(self, element):
         if pr.Array.is_type(element, pr.Array.NOARRAY):
-            r = list(itertools.chain.from_iterable(self.eval_statement(s)
-                                                   for s in element))
+            try:
+                lst_cmp = element[0].expression_list()[0]
+                if not isinstance(lst_cmp, pr.ListComprehension):
+                    raise IndexError
+            except IndexError:
+                r = list(itertools.chain.from_iterable(self.eval_statement(s)
+                                                       for s in element))
+            else:
+                r = [iterable.GeneratorComprehension(self, lst_cmp)]
             call_path = element.generate_call_path()
             next(call_path, None)  # the first one has been used already
             return self.follow_path(call_path, r, element.parent)
         elif isinstance(element, pr.ListComprehension):
-            loop = _evaluate_list_comprehension(element)
-            # Caveat: parents are being changed, but this doesn't matter,
-            # because nothing else uses it.
-            element.stmt.parent = loop
             return self.eval_statement(element.stmt)
         elif isinstance(element, pr.Lambda):
             return [er.Function(self, element)]
@@ -198,10 +209,10 @@ class Evaluator(object):
         # The string tokens are just operations (+, -, etc.)
         elif isinstance(element, compiled.CompiledObject):
             return [element]
-        elif not isinstance(element, Token):
-            return self.eval_call(element)
-        else:
+        elif isinstance(element, Token):
             return []
+        else:
+            return self.eval_call(element)
 
     def eval_call(self, call):
         """Follow a call is following a function, variable, string, etc."""
@@ -211,7 +222,8 @@ class Evaluator(object):
         s = call
         while not s.parent.isinstance(pr.IsScope):
             s = s.parent
-        return self.eval_call_path(path, s.parent, s.start_pos)
+        par = s.parent
+        return self.eval_call_path(path, par, s.start_pos)
 
     def eval_call_path(self, path, scope, position):
         """
@@ -229,7 +241,7 @@ class Evaluator(object):
             else:
                 # for pr.Literal
                 types = [compiled.create(self, current.value)]
-            types = imports.strip_imports(self, types)
+            types = imports.follow_imports(self, types)
 
         return self.follow_path(path, types, scope)
 
@@ -274,8 +286,11 @@ class Evaluator(object):
             # This must be an execution, either () or [].
             if current.type == pr.Array.LIST:
                 if hasattr(typ, 'get_index_types'):
-                    slc = iterable.create_indexes_or_slices(self, current)
-                    result = typ.get_index_types(slc)
+                    if isinstance(typ, compiled.CompiledObject):
+                        # CompiledObject doesn't contain an evaluator instance.
+                        result = typ.get_index_types(self, current)
+                    else:
+                        result = typ.get_index_types(current)
             elif current.type not in [pr.Array.DICT]:
                 # Scope must be a class or func - make an instance or execution.
                 result = self.execute(typ, current)
@@ -291,7 +306,7 @@ class Evaluator(object):
                 if filter_private_variable(typ, scope, current):
                     return []
             types = self.find_types(typ, current)
-            result = imports.strip_imports(self, types)
+            result = imports.follow_imports(self, types)
         return self.follow_path(path, result, scope)
 
     @debug.increase_indent
@@ -329,7 +344,7 @@ class Evaluator(object):
                     debug.warning("no execution possible %s", obj)
 
             debug.dbg('execute result: %s in %s', stmts, obj)
-            return imports.strip_imports(self, stmts)
+            return imports.follow_imports(self, stmts)
 
     def goto(self, stmt, call_path):
         scope = stmt.get_parent_until(pr.IsScope)
@@ -365,20 +380,3 @@ def filter_private_variable(scope, call_scope, var_name):
                 if s != scope.base.base:
                     return True
     return False
-
-
-def _evaluate_list_comprehension(lc, parent=None):
-    input = lc.input
-    nested_lc = input.expression_list()[0]
-    if isinstance(nested_lc, pr.ListComprehension):
-        # is nested LC
-        input = nested_lc.stmt
-    module = input.get_parent_until()
-    # create a for loop, which does the same as list comprehensions
-    loop = pr.ForFlow(module, [input], lc.stmt.start_pos, lc.middle, True)
-
-    loop.parent = parent or lc.get_parent_until(pr.IsScope)
-
-    if isinstance(nested_lc, pr.ListComprehension):
-        loop = _evaluate_list_comprehension(nested_lc, loop)
-    return loop
