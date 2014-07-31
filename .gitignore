@@ -41,3 +41,6 @@ nosetests.xml
 # Don't track Main.sublime-menu anymore
 Main.sublime-menu
 *.pickle
+
+# don't track .disabled_views
+.disabled_views

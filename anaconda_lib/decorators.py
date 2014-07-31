@@ -40,9 +40,13 @@ def auto_project_switch(func):
         view = sublime.active_window().active_view()
         auto_project_switch = get_settings(view, 'auto_project_switch', False)
         python_interpreter = get_settings(view, 'python_interpreter')
-        if '$VIRTUAL_ENV' in python_interpreter:
-            python_interpreter = python_interpreter.replace(
-                '$VIRTUAL_ENV', os.environ.get('VIRTUAL_ENV', 'python'))
+
+        # expand ~/ in the python_interpreter path
+        python_interpreter = os.path.expanduser(python_interpreter)
+        
+        # expand $shell vars in the python_interpreter path
+        python_interpreter = os.path.expandvars(python_interpreter)
+
         if (
             auto_project_switch and hasattr(self, 'project_name') and (
                 project_name() != self.project_name
