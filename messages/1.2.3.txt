@@ -1,0 +1,14 @@
+Changes in 1.2.3
+================
+
+- Jedi library updated to commit cd648e933bfa89adcb2a92d856abe0b1900c0d90
+- Added enhanced suppot for shell variables in the pyhton_interpreter setting
+- Added goto, find_usage and doc to the Control Palette commands
+
+Fixes
+=====
+
+- Added .disabled_views to .gitignore #181
+- Fixed weird autocomplete ehavior with function parameters #176
+
+For detailed information about those changed run git v1.2.3..v1.2.2 on git repository
