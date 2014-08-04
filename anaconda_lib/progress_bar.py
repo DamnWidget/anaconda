@@ -11,7 +11,6 @@ import sublime
 
 
 class ProgressBar(threading.Thread):
-
     """A progress bar animation that runs in other thread
     """
 

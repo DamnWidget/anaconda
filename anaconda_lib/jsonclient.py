@@ -29,6 +29,22 @@ logger.setLevel(logging.DEBUG)
 
 
 class Callback(object):
+    """This class implements a error safe non retriable callbacks mechanism
+
+    Instances of this class can be passed as callbacks to Anaconda's
+    asynchronous client methods. Code using this callbacks implementation
+    must define an `on_success` method or fucntion that is being called
+    with the results of the remote operation as unique parameter.
+
+    The `on_failure` and `on_timeout` methods can be passed as well, they
+    will be called on failures and timeouts respectively. If no `on_failure`
+    is passed, `on_success` should be called on failures.
+
+    .. note::
+
+        A callback object can be called only once, try to call it more than
+        one should result in a RuntimeError raising
+    """
 
     @enum.unique
     class CallbackStatus(enum.Enum):
@@ -81,7 +97,9 @@ class Callback(object):
         return self._status
 
     def set_status(self, value):
-        """status can only be set once"""
+        """Status can only be set once
+        """
+
         if self._status == self.CallbackStatus.none:
             if isinstance(value, self.CallbackStatus):
                 self._status = value
@@ -97,6 +115,7 @@ class Callback(object):
         1) data = {'callback_status': 'success|failure|timeout' }
         2) data = {'success': True|False}
         """
+
         data = kwargs.get('data') or args[0] if args else {}
 
         if 'callback_status' in data:
@@ -119,9 +138,9 @@ class Callback(object):
         return self.status is self.CallbackStatus.timeout
 
     def test_and_set_called(self):
+        """Raise an exception if the callback has already fired.
         """
-        Raise an exception if the callback has already fired.
-        """
+
         if self.called is self.CallbackStatus.called:
             raise RuntimeError('Callback can not be used twice')
         self.called = self.CallbackStatus.called
@@ -167,6 +186,13 @@ class AsynClient(EventHandler):
         self.rbuffer.append(data)
 
     def add_callback(self, callback):
+        """Add a new callback to the callbacks dictionary
+
+        The hex representation of the callback's uuid4 is used as index. In
+        case that the callback is a regular callable and not a Callback
+        class instance, a new uuid4 code is created on the fly.
+        """
+
         if not isinstance(callback, Callback):
             hexid = uuid.uuid4().hex
         else:
@@ -176,6 +202,9 @@ class AsynClient(EventHandler):
         return hexid
 
     def pop_callback(self, hexid):
+        """Remove and return a callback callable from the callback dictionary
+        """
+
         return self.callbacks.pop(hexid)
 
     def process_message(self):
