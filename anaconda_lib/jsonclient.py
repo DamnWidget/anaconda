@@ -33,7 +33,7 @@ class Callback(object):
 
     Instances of this class can be passed as callbacks to Anaconda's
     asynchronous client methods. Code using this callbacks implementation
-    must define an `on_success` method or fucntion that is being called
+    must define an `on_success` method or function that is being called
     with the results of the remote operation as unique parameter.
 
     The `on_failure` and `on_timeout` methods can be passed as well, they
@@ -43,7 +43,7 @@ class Callback(object):
     .. note::
 
         A callback object can be called only once, try to call it more than
-        one should result in a RuntimeError raising
+        once should result in a RuntimeError raising
     """
 
     @enum.unique
