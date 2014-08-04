@@ -11,9 +11,11 @@ import sublime_plugin
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.progress_bar import ProgressBar
 from ..anaconda_lib.helpers import get_settings, is_python, get_window_view
+from ..anaconda_lib.jsonclient import Callback
 
 
 class AnacondaAutoFormat(sublime_plugin.TextCommand):
+
     """Execute autopep8 formating
     """
 
@@ -52,7 +54,9 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         try:
             messages = {
                 'start': 'Autoformatting please wait... ',
-                'end': 'Autoformatting done!'
+                'end': 'Autoformatting done!',
+                'fail': 'Autoformatting failed, buffer not changed.',
+                'timeout': 'Autoformatting failed, buffer not changed.',
             }
             self.pbar = ProgressBar(messages)
             self.pbar.start()
@@ -64,10 +68,22 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
                 'method': 'autoformat',
                 'settings': settings
             }
-            Worker().execute(self.get_data, **data)
+
+            callback = Callback(
+                on_success=self.get_data,
+                on_failure=self.on_failure,
+                on_timeout=self.on_failure,
+                timeout=1,
+            )
+
+            Worker().execute(callback, **data)
 
         except:
             logging.error(traceback.format_exc())
+
+    def on_failure(self, *args, **kwargs):
+        self.pbar.terminate(status=self.pbar.Status.FAILURE)
+        self.view.set_read_only(False)
 
     def is_enabled(self):
         """Determine if this command is enabled or not
