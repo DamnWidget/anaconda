@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>name</key>
+	<string>PythonTestOutput</string>
+	<key>patterns</key>
+	<array>
+		<dict>
+			<key>begin</key>
+			<string>^[=-]+$</string>
+			<key>comment</key>
+			<string>error details</string>
+			<key>end</key>
+			<string>\[Finished in [\d+\.]+s\]</string>
+			<key>name</key>
+			<string>raw</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>begin</key>
+					<string>^\=+$</string>
+					<key>comment</key>
+					<string>test fail</string>
+					<key>end</key>
+					<string>^\-+$</string>
+					<key>match</key>
+					<string>.*FAIL: (.*)</string>
+					<key>name</key>
+					<string>test.fail</string>
+				</dict>
+				<dict>
+					<key>begin</key>
+					<string>^\=+$</string>
+					<key>comment</key>
+					<string>test error</string>
+					<key>end</key>
+					<string>^\-+$</string>
+					<key>match</key>
+					<string>.*ERROR: (.*)</string>
+					<key>name</key>
+					<string>test.error</string>
+				</dict>
+				<dict>
+					<key>begin</key>
+					<string>File </string>
+					<key>captures</key>
+					<dict>
+						<key>1</key>
+						<dict>
+							<key>name</key>
+							<string>test.filename</string>
+						</dict>
+					</dict>
+					<key>comment</key>
+					<string>file in traceback</string>
+					<key>end</key>
+					<string>,</string>
+					<key>match</key>
+					<string>"(...*?)"</string>
+				</dict>
+				<dict>
+					<key>begin</key>
+					<string>Ran \d+ tests</string>
+					<key>comment</key>
+					<string>all test pass</string>
+					<key>match</key>
+					<string>OK</string>
+					<key>name</key>
+					<string>test.pass</string>
+				</dict>
+				<dict>
+					<key>begin</key>
+					<string>Ran \d+ tests</string>
+					<key>comment</key>
+					<string>tests broken</string>
+					<key>match</key>
+					<string>FAILED (.*)</string>
+					<key>name</key>
+					<string>test.fail</string>
+				</dict>
+			</array>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>inline failures</string>
+			<key>name</key>
+			<string>verbosity2</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>comment</key>
+					<string>test error</string>
+					<key>match</key>
+					<string>ERROR$</string>
+					<key>name</key>
+					<string>test.error</string>
+				</dict>
+				<dict>
+					<key>comment</key>
+					<string>test fail</string>
+					<key>match</key>
+					<string>FAIL$</string>
+					<key>name</key>
+					<string>test.fail</string>
+				</dict>
+				<dict>
+					<key>comment</key>
+					<string>test pass</string>
+					<key>match</key>
+					<string>ok$</string>
+					<key>name</key>
+					<string>test.pass</string>
+				</dict>
+			</array>
+		</dict>
+		<dict>
+			<key>begin</key>
+			<string>^(?:(E)|(F)|(s)|\.)</string>
+			<key>beginCaptures</key>
+			<dict>
+				<key>1</key>
+				<dict>
+					<key>name</key>
+					<string>test.error</string>
+				</dict>
+				<key>2</key>
+				<dict>
+					<key>name</key>
+					<string>test.fail</string>
+				</dict>
+				<key>3</key>
+				<dict>
+					<key>name</key>
+					<string>test.skip</string>
+				</dict>
+			</dict>
+			<key>comment</key>
+			<string>dots line</string>
+			<key>end</key>
+			<string>\n</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>comment</key>
+					<string>test dot error</string>
+					<key>match</key>
+					<string>E</string>
+					<key>name</key>
+					<string>test.error</string>
+				</dict>
+				<dict>
+					<key>comment</key>
+					<string>test dot fail</string>
+					<key>match</key>
+					<string>F</string>
+					<key>name</key>
+					<string>test.fail</string>
+				</dict>
+				<dict>
+					<key>comment</key>
+					<string>test dot skip</string>
+					<key>match</key>
+					<string>s</string>
+					<key>name</key>
+					<string>test.skip</string>
+				</dict>
+			</array>
+		</dict>
+	</array>
+	<key>scopeName</key>
+	<string>tests.python</string>
+	<key>uuid</key>
+	<string>461be01e-d282-4798-b5e1-c718d682ab5e</string>
+</dict>
+</plist>

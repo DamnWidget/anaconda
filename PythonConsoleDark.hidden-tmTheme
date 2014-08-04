@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>name</key>
+  <string>PythonTestOutputTheme</string>
+  <key>settings</key>
+  <array>
+    <dict>
+      <key>settings</key>
+      <dict>
+        <key>background</key>
+        <string>#000000</string>
+        <key>caret</key>
+        <string>#DDDDDD</string>
+        <key>foreground</key>
+        <string>#AAAAAA</string>
+        <key>invisibles</key>
+        <string>#666666</string>
+        <key>lineHighlight</key>
+        <string>#8070D8</string>
+        <key>selection</key>
+        <string>#DDF0FF33</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>Test</string>
+      <key>scope</key>
+      <string>test.pass</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#46A229</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>Test</string>
+      <key>scope</key>
+      <string>test.error</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#B62E40</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>Test</string>
+      <key>scope</key>
+      <string>test.fail</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#A68400</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>Test</string>
+      <key>scope</key>
+      <string>test.skip</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#A684FF</string>
+      </dict>
+    </dict>
+
+    <dict>
+      <key>name</key>
+      <string>Test</string>
+      <key>scope</key>
+      <string>test.filename</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#3B2E84</string>
+      </dict>
+    </dict>
+
+
+  </array>
+  <key>uuid</key>
+  <string>76063104-cbee-402a-b396-dc23a2d05139</string>
+</dict>
+</plist>
