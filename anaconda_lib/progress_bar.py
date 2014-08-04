@@ -62,6 +62,6 @@ class ProgressBar(threading.Thread):
         """
         status = status or self.Status.SUCCESS
 
-        message = self.messages.get(status) or self.messages[self.Status.SUCCESS]
+        message = self.messages.get(status) or self.messages[self.Status.SUCCESS]  # noqa
         sublime.status_message(message)
         self.die = True

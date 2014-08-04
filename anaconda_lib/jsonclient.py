@@ -38,7 +38,8 @@ class Callback(object):
         failure = 'fail'
         timeout = 'timeout'
 
-    def __init__(self, on_success, on_failure=None, on_timeout=None, timeout=0):
+    def __init__(
+            self, on_success, on_failure=None, on_timeout=None, timeout=0):
         self.uid = uuid.uuid4()
         self.called = self.CallbackStatus.none
         self._status = self.CallbackStatus.none

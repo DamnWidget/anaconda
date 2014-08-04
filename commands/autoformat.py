@@ -15,7 +15,6 @@ from ..anaconda_lib.jsonclient import Callback
 
 
 class AnacondaAutoFormat(sublime_plugin.TextCommand):
-
     """Execute autopep8 formating
     """
 
@@ -77,7 +76,6 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
             )
 
             Worker().execute(callback, **data)
-
         except:
             logging.error(traceback.format_exc())
 

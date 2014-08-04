@@ -31,7 +31,6 @@ LOOP_RUNNING = False
 
 
 class BaseWorker(object):
-
     """Base class for different worker interfaces
     """
 
@@ -129,7 +128,6 @@ class BaseWorker(object):
 
 
 class LocalWorker(BaseWorker):
-
     """This worker is used with local interpreter
     """
 
@@ -251,7 +249,6 @@ class LocalWorker(BaseWorker):
 
 
 class RemoteWorker(BaseWorker):
-
     """This worker is used with non local machine interpreters
     """
 
@@ -364,7 +361,6 @@ class RemoteWorker(BaseWorker):
 
 
 class Worker(object):
-
     """Worker class that start the server and handle the function calls
     """
 
