@@ -132,7 +132,7 @@ If you want to trigger autocompletion when you write down the dot character you 
 
 #### Word and Explicit Sublime Text 3 Completions
 
-Some developers preffer that SublimeText 3 does not autocomplete by itself so you can disable word and explicit autocompletiond setting ``suppress_word_completions`` and ``suppress_explicit_completions`` as ``true``.
+Some developers preffer that SublimeText 3 does not autocomplete by itself so you can disable word and explicit autocompletion setting ``suppress_word_completions`` and ``suppress_explicit_completions`` as ``true``.
 
 #### Python snippets
 
