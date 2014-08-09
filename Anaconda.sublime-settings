@@ -133,6 +133,13 @@
     "auto_formatting": false,
 
     /*
+        TImeout for the autoformatting tool before fail
+        Note: Take into account that depending on the size of the file you
+        want to autoformate, this can take a while
+    */
+    "auto_formatting_timeout": 1,  // seconds
+
+    /*
         Enable unsafe changes:
             https://github.com/hhatto/autopep8#more-advanced-usage
 

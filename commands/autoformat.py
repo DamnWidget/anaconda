@@ -67,13 +67,12 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
                 'method': 'autoformat',
                 'settings': settings
             }
+            timeout = get_settings(self.view, 'auto_formatting_timeout', 1)
 
-            callback = Callback(
-                on_success=self.get_data,
-                on_failure=self.on_failure,
-                on_timeout=self.on_failure,
-                timeout=1,
-            )
+            callback = Callback(timeout=timeout)
+            callback.on(success=self.get_data)
+            callback.on(error=self.on_failure)
+            callback.on(timeout=self.on_failure)
 
             Worker().execute(callback, **data)
         except:
