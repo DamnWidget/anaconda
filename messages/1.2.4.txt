@@ -1,0 +1,11 @@
+Changes in 1.2.4
+================
+
+- Anhanced callbacks mechanism based on @NorthIsUp pull request at https://github.com/DamnWidget/anaconda/pull/182
+
+Fixes
+=====
+
+- Fixed hang problems in PEP8 AutoFormat feature
+
+For detailed information about those changed run git v1.2.3..v1.2.2 on git repository

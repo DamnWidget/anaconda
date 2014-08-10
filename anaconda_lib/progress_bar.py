@@ -14,6 +14,12 @@ class ProgressBar(threading.Thread):
     """A progress bar animation that runs in other thread
     """
 
+    class Status(object):
+        NONE = None
+        SUCCESS = 'end'
+        FAILURE = 'fail'
+        TIMEOUT = 'timeout'
+
     def __init__(self, messages):
         threading.Thread.__init__(self)
         self.messages = messages
@@ -50,9 +56,11 @@ class ProgressBar(threading.Thread):
 
         sublime.set_timeout_async(lambda: self.update(i), 100)
 
-    def terminate(self):
+    def terminate(self, status=None):
         """Terminate this thread
         """
+        status = status or self.Status.SUCCESS
 
-        sublime.status_message(self.messages['end'])
+        message = self.messages.get(status) or self.messages[self.Status.SUCCESS]  # noqa
+        sublime.status_message(message)
         self.die = True

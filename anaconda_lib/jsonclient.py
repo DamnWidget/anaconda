@@ -19,6 +19,7 @@ except ImportError:
     except ImportError:
         import json
 
+from .callback import Callback
 from .ioloop import EventHandler
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ logger.setLevel(logging.DEBUG)
 
 
 class AsynClient(EventHandler):
+
     """Asynchronous JSON connection to anaconda server
     """
 
@@ -47,6 +49,28 @@ class AsynClient(EventHandler):
 
         self.rbuffer.append(data)
 
+    def add_callback(self, callback):
+        """Add a new callback to the callbacks dictionary
+
+        The hex representation of the callback's uuid4 is used as index. In
+        case that the callback is a regular callable and not a Callback
+        class instance, a new uuid4 code is created on the fly.
+        """
+
+        if not isinstance(callback, Callback):
+            hexid = uuid.uuid4().hex
+        else:
+            hexid = callback.hexid
+
+        self.callbacks[hexid] = callback
+        return hexid
+
+    def pop_callback(self, hexid):
+        """Remove and return a callback callable from the callback dictionary
+        """
+
+        return self.callbacks.pop(hexid)
+
     def process_message(self):
         """Called when a full line has been read from the socket
         """
@@ -59,7 +83,7 @@ class AsynClient(EventHandler):
         except NameError:
             data = json.loads(message.decode('utf8'))
 
-        callback = self.callbacks.pop(data.pop('uid'))
+        callback = self.pop_callback(data.pop('uid'))
         if callback is None:
             logger.error(
                 'Received {} from the JSONServer but there is not callback '
@@ -76,10 +100,7 @@ class AsynClient(EventHandler):
     def send_command(self, callback, **data):
         """Send the given command that should be handled bu the given callback
         """
-
-        uid = uuid.uuid4()
-        self.callbacks[uid.hex] = callback
-        data['uid'] = uid.hex
+        data['uid'] = self.add_callback(callback)
 
         try:
             self.push(

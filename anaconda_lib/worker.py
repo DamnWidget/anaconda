@@ -220,7 +220,7 @@ class LocalWorker(BaseWorker):
 
         self.project_name = project_name()
         args = [
-            python, '-B', script_file,  '-p',
+            python, '-B', script_file, '-p',
             self.project_name, str(self.available_port)
         ]
         if paths:
