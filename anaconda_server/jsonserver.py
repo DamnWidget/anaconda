@@ -43,7 +43,7 @@ except ImportError:
     PYLINT_AVAILABLE = False
 
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 logger = logging.getLogger('')
 PY3 = True if sys.version_info >= (3,) else False
 
