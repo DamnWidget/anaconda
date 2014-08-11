@@ -143,7 +143,7 @@ class Linter:
                 error['lineno'], lines, error['raw_error'], messages
             )
 
-            if error['pep8'] is True:
+            if error['underline_range'] is True:
                 self.underline_range(
                     error['lineno'], error['offset'], underlines
                 )
@@ -385,12 +385,12 @@ def run_linter(view=None):
     Worker().execute(parse_results, **data)
 
 
-def parse_results(data):
+def parse_results(data, is_code=is_python):
     """Parse the results from the server
     """
 
     view = get_view(sublime.active_window(), data['vid'])
-    if data and data['success'] is False or not is_python(view, True):
+    if data and data['success'] is False or not is_code(view, True):
         if get_settings(view, 'use_pylint', False) is True:
             # print(data['errors'])
             pass

@@ -72,7 +72,21 @@ pyflakes.messages.Message.__str__ = (
 )
 
 
-class LintError(pyflakes.messages.Message):
+class LintError(object):
+    """Lint error base class
+    """
+
+    def __init__(self, filename, loc, level, message, message_args, **kwargs):
+        self.loc = loc
+        self.level = level
+        self.message = message
+        self.message_args = message_args
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
+class LintErrorOld(pyflakes.messages.Message):
     """Lint error base class
     """
 
@@ -259,6 +273,16 @@ class Linter(object):
             errors.extend(self.pyflakes_check(code, filename, pyflakes_ignore))
 
         return self.parse_errors(errors, explicit_ignore)
+
+    def sort_errors(self, errors):
+        """Sort errors by line number
+        """
+        errors.sort(key=cmp_to_key(lambda a, b: a.lineno < b.lineno))
+
+    def prepare_error_level(self, error):
+        """Prepare a common error level in case that the error does't define
+        """
+        return 'W' if not hasattr(error, 'level') else error.level
 
     def parse_errors(self, errors, explicit_ignore):
         """Parse errors returned from the PyFlakes and pep8 libraries

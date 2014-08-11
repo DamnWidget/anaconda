@@ -43,7 +43,7 @@ def auto_project_switch(func):
 
         # expand ~/ in the python_interpreter path
         python_interpreter = os.path.expanduser(python_interpreter)
-        
+
         # expand $shell vars in the python_interpreter path
         python_interpreter = os.path.expandvars(python_interpreter)
 
