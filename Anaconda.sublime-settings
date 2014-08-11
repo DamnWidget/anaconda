@@ -255,6 +255,116 @@
     */
     "pep8_ignore":
     [
+//
+//        ERROR CODE          EXPLANATION
+//
+//        Uncomment the line to disable the error code.
+//
+//   E1                       Indentation
+//        "E101", //          Indentation contains mixed spaces and tabs
+//        "E111", //          Indentation is not a multiple of four
+//        "E112", //          Expected an indented block
+//        "E113", //          Unexpected indentation
+//        "E114", //          Indentation is not a multiple of four (comment)
+//        "E115", //          Expected an indented block (comment)
+//        "E116", //          Unexpected indentation (comment)
+//
+//        "E121", //   (^)    Continuation line under-indented for hanging indent
+//        "E122", //   (^)    Continuation line missing indentation or outdented
+//        "E123", //   (*)    Closing bracket does not match indentation of opening bracket’s line
+//        "E124", //   (^)    Closing bracket does not match visual indentation
+//        "E125", //   (^)    Continuation line with same indent as next logical line
+//        "E126", //   (^)    Continuation line over-indented for hanging indent
+//        "E127", //   (^)    Continuation line over-indented for visual indent
+//        "E128", //   (^)    Continuation line under-indented for visual indent
+//        "E129", //   (^)    Visually indented line with same indent as next logical line
+//        "E131", //   (^)    Continuation line unaligned for hanging indent
+//        "E133", //   (*)    Closing bracket is missing indentation
+//
+//   E2                       Whitespace
+//        "E201", //          Whitespace after ‘(‘
+//        "E202", //          Whitespace before ‘)’
+//        "E203", //          Whitespace before ‘:’
+//
+//        "E211", //          Whitespace before ‘(‘
+//
+//        "E221", //          Multiple spaces before operator
+//        "E222", //          Multiple spaces after operator
+//        "E223", //          Tab before operator
+//        "E224", //          Tab after operator
+//        "E225", //          Missing whitespace around operator
+//        "E226", //   (*)    Missing whitespace around arithmetic operator
+//        "E227", //          Missing whitespace around bitwise or shift operator
+//        "E228", //          Missing whitespace around modulo operator
+//
+//        "E231", //          Missing whitespace after ‘,’
+//
+//        "E241", //   (*)    Multiple spaces after ‘,’
+//        "E242", //   (*)    Tab after ‘,’
+//
+//        "E251", //          Unexpected spaces around keyword / parameter equals
+//
+//        "E261", //          At least two spaces before inline comment
+//        "E262", //          Inline comment should start with ‘# ‘
+//        "E265", //          Block comment should start with ‘# ‘
+//        "E266", //          Too many leading ‘#’ for block comment
+//
+//        "E271", //          Multiple spaces after keyword
+//        "E272", //          Multiple spaces before keyword
+//        "E273", //          Tab after keyword
+//        "E274", //          Tab before keyword
+//
+//   E3                       Blank line
+//        "E301", //          Expected 1 blank line, found 0
+//        "E302", //          Expected 2 blank lines, found 0
+//        "E303", //          Too many blank lines (3)
+//        "E304", //          Blank lines found after function decorator
+//
+//   E4                       Import
+//        "E401", //          Multiple imports on one line
+//
+//   E5                       Line length
+//        "E501", //   (^)    Line too long (82 > 79 characters)
+//        "E502", //          The backslash is redundant between brackets
+//
+//   E7                       Statement
+//        "E701", //          Multiple statements on one line (colon)
+//        "E702", //          Multiple statements on one line (semicolon)
+//        "E703", //          Statement ends with a semicolon
+//        "E704", //          Multiple statements on one line (def)
+//        "E711", //   (^)    Comparison to None should be ‘if cond is None:’
+//        "E712", //   (^)    Comparison to True should be ‘if cond is True:’ or ‘if cond:’
+//        "E713", //          Test for membership should be ‘not in’
+//        "E714", //          Test for object identity should be ‘is not’
+//        "E721", //          Do not compare types, use ‘isinstance()’
+//        "E731", //          Do not assign a lambda expression, use a def
+//
+//   E9                       Runtime
+//        "E901", //          SyntaxError or IndentationError
+//        "E902", //          IOError
+//
+//   W1                       Indentation warning
+//        "W191", //          Indentation contains tabs
+//
+//   W2                       Whitespace warning
+//        "W291", //          Trailing whitespace
+//        "W292", //          no newline at end of file
+//        "W293", //          Blank line contains whitespace
+//
+//   W3                       Blank line warning
+//        "W391", //          Blank line at end of file
+//
+//   W6                       Deprecation warning
+//        "W601", //          .has_key() is deprecated, use ‘in’
+//        "W602", //          Deprecated form of raising exception
+//        "W603", //          ‘<>’ is deprecated, use ‘!=’
+//        "W604", //          Backticks are deprecated, use ‘repr()’
+//
+//        (*) In the default configuration, the checks E123, E133, E226, E241 and E242 are ignored because they are not rules unanimously accepted, and PEP 8 does not enforce them.
+//            The check E133 is mutually exclusive with check E123. Use switch --hang-closing to report E133 instead of E123.
+//
+//        (^) These checks can be disabled at the line level using the # noqa special comment. This possibility should be reserved for special cases.
+//
     ],
 
     // Maximum line length for pep8
