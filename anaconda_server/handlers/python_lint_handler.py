@@ -21,7 +21,7 @@ except ImportError:
     PYLINT_AVAILABLE = False
 
 
-class PythonLintHanler(AnacondaHandler):
+class PythonLintHandler(AnacondaHandler):
     """Handle request to execute Python linting commands form the JsonServer
     """
 
@@ -52,7 +52,7 @@ class PythonLintHanler(AnacondaHandler):
         if len(self._errors) == 0:
             self._callback({
                 'success': False,
-                'errors': self._failures,
+                'errors': '. '.join([e['error'] for e in self._failures]),
                 'uid': self.uid,
                 'vid': self.vid
             })
@@ -60,7 +60,7 @@ class PythonLintHanler(AnacondaHandler):
 
         self._callback({
             'success': True,
-            'errors': self._errors,
+               'errors': [e['errors'] for e in self._errors],
             'uid': self.uid,
             'vid': self.vid
         })

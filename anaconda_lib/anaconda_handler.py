@@ -18,7 +18,7 @@ class AnacondaHandler(object):
         super(HandlerName, self).__init__(command, data, uid)
     """
 
-    def __init__(self, command, data, uid, callback, debug=False):
+    def __init__(self, command, data, uid, vid, callback, debug=False):
         self.uid = uid
         self.data = data
         self.debug = debug

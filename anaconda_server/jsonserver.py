@@ -25,22 +25,7 @@ except ImportError:
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../anaconda_lib'))
 
-import jedi
-from linting import linter
-from contexts import json_decode
-from jedi import refactoring as jedi_refactor
-from linting.anaconda_mccabe import AnacondaMcCabe
-from linting.anaconda_pep257 import PEP257 as AnacondaPep257
-from commands import (
-    Doc, Lint, Goto, Rename, PyLint, FindUsages, AutoComplete,
-    CompleteParameters, McCabe, PEP257, AutoPep8
-)
-
-try:
-    from linting.anaconda_pylint import PyLinter
-    PYLINT_AVAILABLE = True
-except ImportError:
-    PYLINT_AVAILABLE = False
+from handlers import ANACONDA_HANDLERS
 
 
 DEBUG_MODE = False
@@ -86,7 +71,7 @@ class JSONHandler(asynchat.async_chat):
         message = b''.join(self.rbuffer) if PY3 else ''.join(self.rbuffer)
         self.rbuffer = []
 
-        with json_decode(message) as self.data:
+        with json_decode(message) as data:
             if not self.data:
                 logging.info('No data received in the handler')
                 return
@@ -105,6 +90,7 @@ class JSONHandler(asynchat.async_chat):
             method = self.data.pop('method')
             uid = self.data.pop('uid')
             vid = self.data.pop('vid', None)
+            self.handle_command(method, uid, vid, data)
             if 'lint' in method:
                 self.handle_lint_command(method, uid, vid)
             elif 'refactor' in method:
@@ -116,9 +102,16 @@ class JSONHandler(asynchat.async_chat):
         else:
             logging.error(
                 'client sent somethinf that I don\'t understand: {0}'.format(
-                    self.data
+                    data
                 )
             )
+
+    def handle_command(self, handler_type, method, uid, vid, data):
+        """Call the right commands handler
+        """
+
+        handler = ANACONDA_HANDLERS[handler_type]
+        handler(method, uid, vid, self.return_back, data, DEBUG_MODE)
 
     def handle_lint_command(self, method, uid, vid):
         """Handle lint command

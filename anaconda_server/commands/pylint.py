@@ -34,6 +34,6 @@ class PyLint(Command):
             logging.debug(traceback.format_exc().splitlines())
             self.callback({
                 'success': False,
-                'errors': error,
+                'error': error,
                 'uid': self.uid
             })
