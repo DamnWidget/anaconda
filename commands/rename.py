@@ -40,7 +40,7 @@ class AnacondaRename(sublime_plugin.TextCommand):
 
     def input_replacement(self, replacement):
         location = self.view.rowcol(self.view.sel()[0].begin())
-        data = prepare_send_data(location, 'refactor_rename')
+        data = prepare_send_data(location, 'rename', 'jedi')
         data['directories'] = sublime.active_window().folders()
         data['new_word'] = replacement
         Worker().execute(self.store_data, **data)

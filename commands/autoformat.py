@@ -64,8 +64,9 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
             data = {
                 'vid': self.view.id(),
                 'code': self.code,
-                'method': 'autoformat',
-                'settings': settings
+                'method': 'pep8',
+                'settings': settings,
+                'handler': 'autoformat'
             }
             timeout = get_settings(self.view, 'auto_formatting_timeout', 1)
 

@@ -48,7 +48,7 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
             return (cpl, completion_flags)
 
         location = view.rowcol(locations[0])
-        data = prepare_send_data(location, 'autocomplete')
+        data = prepare_send_data(location, 'autocomplete', 'jedi')
 
         Worker().execute(self._complete, **data)
 

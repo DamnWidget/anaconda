@@ -372,15 +372,10 @@ def run_linter(view=None):
         'vid': view.id(),
         'code': text,
         'settings': settings,
-        'filename': view.file_name()
+        'filename': view.file_name(),
+        'method': 'lint',
+        'handler': 'python_linter'
     }
-    if get_settings(view, 'use_pylint', False) is False:
-        data['method'] = 'run_linter'
-    else:
-        if view.file_name() is None:
-            data['method'] = 'run_linter'
-        else:
-            data['method'] = 'run_linter_pylint'
 
     Worker().execute(parse_results, **data)
 
@@ -396,8 +391,8 @@ def parse_results(data, is_code=is_python):
             pass
         return
 
-    # Check if linting was disabled between now and when the request was sent to
-    # the server.
+    # Check if linting was disabled between now and when the request was sent
+    # to the server.
     if (not check_linting(view, LINTING_ENABLED) or
             view.file_name() in ANACONDA['DISABLED']):
         return

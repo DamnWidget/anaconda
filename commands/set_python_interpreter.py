@@ -32,7 +32,9 @@ class AnacondaSetPythonInterpreter(sublime_plugin.TextCommand):
                 project_data['settings'].get('python_interpreter', False)
             except AttributeError:
                 # If this happens that mean your settings is a sting not a dict
-                sublime.message_dialog("Ops your project settings is missed up")
+                sublime.message_dialog(
+                    'Ops your project settings is missed up'
+                )
             else:
                 # Set the path and save the project
                 project_data['settings']['python_interpreter'] = venv_path

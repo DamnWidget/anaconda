@@ -22,7 +22,7 @@ class AnacondaDoc(sublime_plugin.TextCommand):
                 if self.view.substr(self.view.sel()[0].begin()) in ['(', ')']:
                     location = (location[0], location[1] - 1)
 
-                data = prepare_send_data(location, 'doc')
+                data = prepare_send_data(location, 'doc', 'jedi')
                 Worker().execute(self.prepare_data, **data)
             except Exception as error:
                 print(error)

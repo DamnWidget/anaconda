@@ -18,7 +18,7 @@ class AnacondaFindUsages(sublime_plugin.TextCommand):
     def run(self, edit):
         try:
             location = active_view().rowcol(self.view.sel()[0].begin())
-            data = prepare_send_data(location, 'usages')
+            data = prepare_send_data(location, 'usages', 'jedi')
             Worker().execute(
                 partial(JediUsages(self).process, True), **data
             )

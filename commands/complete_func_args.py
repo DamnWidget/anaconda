@@ -25,7 +25,7 @@ class AnacondaCompleteFuncargs(sublime_plugin.TextCommand):
         self._insert_characters(edit)
 
         location = active_view().rowcol(self.view.sel()[0].begin())
-        data = prepare_send_data(location, 'parameters')
+        data = prepare_send_data(location, 'parameters', 'jedi')
         data['settings'] = {
             'complete_parameters': get_settings(
                 self.view, 'complete_parameters', False

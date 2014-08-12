@@ -17,7 +17,7 @@ class QAHandler(AnacondaHandler):
     """Handle request to execute quality assurance commands form the JsonServer
     """
 
-    def mccabe_check(self, code, threshold, filename):
+    def mccabe(self, code, threshold, filename):
         """Return the McCabe code complexity errors
         """
 

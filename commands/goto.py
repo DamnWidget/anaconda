@@ -18,7 +18,7 @@ class AnacondaGoto(sublime_plugin.TextCommand):
     def run(self, edit):
         try:
             location = self.view.rowcol(self.view.sel()[0].begin())
-            data = prepare_send_data(location, 'goto')
+            data = prepare_send_data(location, 'goto', 'jedi')
             Worker().execute(partial(JediUsages(self).process, False), **data)
         except:
             pass

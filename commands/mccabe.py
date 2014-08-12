@@ -21,7 +21,8 @@ class AnacondaMcCabe(sublime_plugin.WindowCommand):
             'code': code,
             'threshold': get_settings(view, 'mccabe_threshold', 7),
             'filename': active_view().file_name(),
-            'method': 'run_linter_mccabe'
+            'method': 'mccabe',
+            'handler': 'qa'
         }
         Worker().execute(self.prepare_data, **data)
 
