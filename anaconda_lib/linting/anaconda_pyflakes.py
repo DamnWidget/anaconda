@@ -3,9 +3,8 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
-import os
 import re
-import sys
+import _ast
 
 from linting import linter
 import pyflakes.checker as pyflakes
@@ -76,13 +75,13 @@ class PyFlakesLinter(linter.Linter):
 
         errors.sort(key=linter.cmp_to_key(lambda a, b: a.lineno < b.lineno))
         for error in errors:
-            error_level = 'W' if not hasattr(errpr, 'level') else error.level
+            error_level = 'W' if not hasattr(error, 'level') else error.level
             message = error.message.capitalize()
 
             error_data = {
                 'level': error_level,
                 'lineno': error.lineno,
-                'message': message.
+                'message': message,
                 'raw_error': str(error)
             }
 
@@ -93,7 +92,7 @@ class PyFlakesLinter(linter.Linter):
                     pyflakes.messages.UndefinedExport,
                     pyflakes.messages.UndefinedLocal,
                     pyflakes.messages.Redefined,
-                    pyflakes.messages.UnusedVariable)) and
+                    pyflakes.messages.UnusedVariable) and
                     error.__class__.__name__ not in explicit_ignore):
 
                 error_data['len'] = len(error.message_args[0])
@@ -126,14 +125,14 @@ class PyFlakesLinter(linter.Linter):
                 )
                 error_data['regex'] = r
                 error_data['linematch'] = linematch
-                errors_list.append(error_data)
+                error_list.append(error_data)
             elif (isinstance(error, pyflakes.messages.DuplicateArgument) and
                     error.__class__.__name__ not in explicit_ignore):
                 regex = 'def [\w_]+\(.*?(?P<underline>[\w]*{0}[\w]*)'.format(
                     re.escape(error.message_args[0])
                 )
                 error_data['regex'] = regex
-                errors_list.append(error_data)
+                error_list.append(error_data)
             elif isinstance(error, pyflakes.messages.LateFutureImport):
                 pass
             elif isinstance(error, linter.PythonError):

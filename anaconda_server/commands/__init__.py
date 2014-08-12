@@ -5,10 +5,12 @@
 from .doc import Doc
 from .lint import Lint
 from .goto import Goto
+from .pep8 import PEP8
 from .pep257 import PEP257
 from .mccabe import McCabe
 from .rename import Rename
 from .pylint import PyLint
+from .pyflakes import PyFlakes
 from .autoformat import AutoPep8
 from .find_usages import FindUsages
 from .autocomplete import AutoComplete
@@ -19,10 +21,12 @@ __all__ = [
     'Doc',
     'Lint',
     'Goto',
+    'PEP8',
     'PEP257',
     'McCabe',
     'Rename',
     'PyLint',
+    'PyFlakes',
     'AutoPep8',
     'FindUsages',
     'AutoComplete',

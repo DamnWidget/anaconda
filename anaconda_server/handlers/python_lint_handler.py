@@ -60,7 +60,7 @@ class PythonLintHandler(AnacondaHandler):
 
         self._callback({
             'success': True,
-               'errors': [e['errors'] for e in self._errors],
+            'errors': [e['errors'] for e in self._errors],
             'uid': self.uid,
             'vid': self.vid
         })
