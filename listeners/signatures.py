@@ -30,7 +30,7 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
             if view.substr(view.sel()[0].begin()) in ['(', ')']:
                 location = (location[0], location[1] - 1)
 
-            data = prepare_send_data(location, 'doc')
+            data = prepare_send_data(location, 'doc', 'jedi')
             Worker().execute(partial(self.prepare_data, view), **data)
         except Exception as error:
             print(error)
