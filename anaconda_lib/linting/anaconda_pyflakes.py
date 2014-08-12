@@ -31,7 +31,7 @@ class PyFlakesLinter(linter.Linter):
     """Linter for PyFlakes Linter
     """
 
-    def run(self, settings, code, filename):
+    def lint(self, settings, code, filename):
         """Run the pyflakes code checker with the given options
         """
 

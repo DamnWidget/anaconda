@@ -37,7 +37,7 @@ class Pep8Linter(linter.Linter):
     """Linter for pep8 Linter
     """
 
-    def run(self, settings, code, filename):
+    def lint(self, settings, code, filename):
         """Run the pep8 code checker with the given options
         """
 

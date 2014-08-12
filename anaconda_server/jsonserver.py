@@ -29,7 +29,7 @@ from contexts import json_decode
 from handlers import ANACONDA_HANDLERS
 
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 logger = logging.getLogger('')
 PY3 = True if sys.version_info >= (3,) else False
 
@@ -70,25 +70,26 @@ class JSONHandler(asynchat.async_chat):
         self.rbuffer = []
 
         with json_decode(message) as data:
-            if not self.data:
+            if not data:
                 logging.info('No data received in the handler')
                 return
 
-            if self.data['method'] == 'check':
-                self.return_back(message='Ok', uid=self.data['uid'])
+            if data['method'] == 'check':
+                self.return_back(message='Ok', uid=data['uid'])
                 return
 
             self.server.last_call = time.time()
 
-        if type(self.data) is dict:
+        if type(data) is dict:
             logging.info(
-                'client requests: {0}'.format(self.data['method'])
+                'client requests: {0}'.format(data['method'])
             )
 
-            method = self.data.pop('method')
-            uid = self.data.pop('uid')
-            vid = self.data.pop('vid', None)
-            self.handle_command(method, uid, vid, data)
+            method = data.pop('method')
+            uid = data.pop('uid')
+            vid = data.pop('vid', None)
+	    handler_type = data.pop('handler')
+            self.handle_command(handler_type, method, uid, vid, data)
         else:
             logging.error(
                 'client sent somethinf that I don\'t understand: {0}'.format(
@@ -101,7 +102,7 @@ class JSONHandler(asynchat.async_chat):
         """
 
         handler = ANACONDA_HANDLERS[handler_type]
-        handler(method, uid, vid, self.return_back, data, DEBUG_MODE)
+        handler(method, data, uid, vid, self.return_back, DEBUG_MODE).run()
 
 
 class JSONServer(asyncore.dispatcher):

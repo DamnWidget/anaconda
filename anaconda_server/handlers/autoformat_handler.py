@@ -16,7 +16,7 @@ class AutoFormatHandler(AnacondaHandler):
     """Handle request to execute auto format commands form the JsonServer
     """
 
-    def pep8(self, code, settings):
+    def pep8(self, code, settings=None):
         """Run PEP8 auto format command
         """
 

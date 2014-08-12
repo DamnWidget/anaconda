@@ -32,27 +32,27 @@ class PythonLintHandler(AnacondaHandler):
         self.debug = debug
         self._callback = callback
         self.callback = self._merge_results
-        self._register_command(command)
+        self.command = command
         self._linters = {
             'pyflakes': False, 'pylint': False, 'pep8': False, 'pep257': False
         }
         self._errors = []
         self._failures = []
 
-    def lint(self, settings, code, filename):
+    def lint(self, settings, code=None, filename=None):
         """This is called from the JsonServer
         """
-
+	
         self._configure_linters(settings)
         for linter_name, expected in self._linters.items():
             if expected is True:
                 func = getattr(self, linter_name)
                 func(settings, code, filename)
 
-        if len(self._errors) == 0:
+        if len(self._errors) == 0:	    
             self._callback({
                 'success': False,
-                'errors': '. '.join([e['error'] for e in self._failures]),
+                'errors': '. '.join([str(e['error']) for e in self._failures]),
                 'uid': self.uid,
                 'vid': self.vid
             })
@@ -65,7 +65,7 @@ class PythonLintHandler(AnacondaHandler):
             'vid': self.vid
         })
 
-    def pyflakes(self, settings, code, filename):
+    def pyflakes(self, settings, code=None, filename=None):
         """Run the PyFlakes linter
         """
 
@@ -73,14 +73,14 @@ class PythonLintHandler(AnacondaHandler):
         PyFlakes(
             self.callback, self.uid, self.vid, lint, settings, code, filename)
 
-    def pep8(self, settings, code, filename):
+    def pep8(self, settings, code=None, filename=None):
         """Run the pep8 linter
         """
 
         lint = Pep8Linter
         PEP8(self.callback, self.uid, self.vid, lint, settings, code, filename)
 
-    def pep257(self, settings, code, filename):
+    def pep257(self, settings, code=None, filename=None):
         """Run the pep257 linter
         """
 
@@ -88,7 +88,7 @@ class PythonLintHandler(AnacondaHandler):
         ignore = settings.get('pep257_ignore')
         PEP257(self.callback, self.uid, self.vid, lint, ignore, code, filename)
 
-    def pylint(self, settings, code, filename):
+    def pylint(self, settings, code=None, filename=None):
         """Run the pyling linter
         """
 
@@ -117,8 +117,8 @@ class PythonLintHandler(AnacondaHandler):
     def _merge_results(self, lint_result):
         """Merge the given linter results
         """
-
+	
         if lint_result['success'] is True:
-            self._errors.extend(lint_result)
-        else:
-            self._failures.extend(lint_result)
+            self._errors.append(lint_result)
+        else:	    
+            self._failures.append(lint_result)
