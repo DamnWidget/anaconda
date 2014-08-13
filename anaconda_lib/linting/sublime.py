@@ -314,6 +314,7 @@ def run_linter(view=None):
         'pep8_ignore': get_settings(view, 'pep8_ignore', []),
         'pep8_max_line_length': get_settings(
             view, 'pep8_max_line_length', pep8.MAX_LINE_LENGTH),
+        'pep8_error_levels': get_settings(view, 'pep8_error_levels', None),
         'pyflakes_ignore': get_settings(view, 'pyflakes_ignore', []),
         'pyflakes_disabled': get_settings(
             view, 'pyflakes_disabled', False),

@@ -266,6 +266,20 @@
     // Maximum line length for pep8
     "pep8_max_line_length": 79,
 
+    /*
+        You can override the level of PEP8 errors altering this mapping.
+        WARNING: Be careful with this option, the only valid error level values
+        are:
+
+            * E for errors (reduced to Warning by default)
+            * W for warnings (reduced to Violation by default)
+            * V for convention violations
+
+        If you set a value that is not listed here, anaconda will ignore your
+        setting
+    */
+    "pep8_error_levels": {"E": "W", "W": "V", "V": "V"},
+
     // Set this to true to turn pep257 checking on
     "pep257": false,
 

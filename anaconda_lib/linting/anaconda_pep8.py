@@ -13,7 +13,7 @@ class Pep8Error(linter.LintError):
     """PEP-8 linting error class
     """
 
-    def __init__(self, filename, loc, offset, code, text, level='W'):
+    def __init__(self, filename, loc, offset, code, text, level='E'):
         ct_tuple = (code, text)
         err_str = '[{0}] PEP 8 (%s): %s'.format(level)
         super(Pep8Error, self).__init__(
@@ -25,7 +25,7 @@ class Pep8Warning(linter.LintError):
     """PEP-8 lintng warning class
     """
 
-    def __init__(self, filename, loc, offset, code, text, level='V'):
+    def __init__(self, filename, loc, offset, code, text, level='W'):
         ct_tuple = (code, text)
         err_str = '[{0}] PEP 8 (%s): %s'.format(level)
         super(Pep8Warning, self).__init__(
@@ -48,7 +48,7 @@ class Pep8Linter(linter.Linter):
                 'pep8_max_line_length', pep8.MAX_LINE_LENGTH
             ),
             'levels': settings.get('pep8_error_levels', {
-                'errors': 'W', 'warnings': 'V'
+                'E': 'W', 'W': 'V', 'V': 'V'
             })
 
         }
@@ -93,10 +93,11 @@ class Pep8Linter(linter.Linter):
                     self.file_errors += 1
                     self.total_errors += 1
 
+                    print(code)
                     pep8_error = code.startswith('E')
                     klass = Pep8Error if pep8_error else Pep8Warning
                     messages.append(klass(
-                        filename, col, offset, code, message
+                        filename, col, offset, code, message, levels[code[0]]
                     ))
 
                     return code
