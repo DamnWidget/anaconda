@@ -49,7 +49,7 @@ class PythonLintHandler(AnacondaHandler):
                 func = getattr(self, linter_name)
                 func(settings, code, filename)
 
-        if len(self._errors) == 0:
+        if len(self._errors) == 0 and len(self._failures) > 0:
             return {
                 'success': False,
                 'errors': '. '.join([str(e) for e in self._failures]),
@@ -124,17 +124,16 @@ class PythonLintHandler(AnacondaHandler):
                 normalized_error = {
                     'underline_range': True,
                     'level': error_level,
-                    'message': error_data['message'],
-                    'offset': error_data.get('offset', 0),
-                    'lineno': error_data['line']
+                    'message': error['message'],
+                    'offset': int(error.get('offset', 0)),
+                    'lineno': int(error['line'])
                 }
-                errors.append(normalized_error)
+                normalized_errors.append(normalized_error)
 
         if data.get('errors') is not None:
             data['errors'] = normalized_errors
 
         self._merge(data)
-
 
     def _configure_linters(self, settings):
         """Enable or disable linters

@@ -6,6 +6,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.callback import Callback
 from ..anaconda_lib.helpers import get_settings, active_view
 
 
@@ -24,7 +25,7 @@ class AnacondaMcCabe(sublime_plugin.WindowCommand):
             'method': 'mccabe',
             'handler': 'qa'
         }
-        Worker().execute(self.prepare_data, **data)
+        Worker().execute(Callback(on_success=self.prepare_data), **data)
 
     def is_enabled(self):
         """Determine if this command is enabled or not

@@ -10,8 +10,11 @@ import sublime
 
 from . import pep8
 from ..worker import Worker
+from ..callback import Callback
 from ..persistent_list import PersistentList
-from ..helpers import get_settings, is_python, get_view, check_linting, LINTING_ENABLED
+from ..helpers import (
+    get_settings, is_python, get_view, check_linting, LINTING_ENABLED
+)
 
 
 sublime_api = sublime.sublime_api
@@ -135,6 +138,8 @@ class Linter:
             error_level = error.get('level', 'W')
             messages = errors_level[error_level]['messages']
             underlines = errors_level[error_level]['underlines']
+            if 'raw_error' not in error:
+                error['raw_error'] = error['message']
 
             if 'import *' in error['raw_error'] and ignore_star:
                 continue
@@ -156,52 +161,6 @@ class Linter:
                 self.underline_regex(
                     lines=lines, underlines=underlines, **error
                 )
-
-        return {'lines': lines, 'results': errors_level}
-
-    def parse_errors_pylint(self, errors):
-        """Parse errores returned from the PyLint application
-        """
-
-        vid = self.view.id()
-
-        errors_level = {
-            'E': {'messages': ANACONDA.get('ERRORS')[vid], 'underlines': []},
-            'W': {'messages': ANACONDA.get('WARNINGS')[vid], 'underlines': []},
-            'V': {
-                'messages': ANACONDA.get('VIOLATIONS')[vid], 'underlines': []
-            }
-        }
-
-        lines = set()
-        if errors is None:
-            return {'lines': lines, 'results': errors_level}
-
-        for error_level, error_data in errors.items():
-            messages = errors_level[error_level]['messages']
-            # pylint does not return back offset for versions pre 1.0.0
-            underlines = errors_level[error_level]['underlines']
-
-            pylint_ignores = get_settings(self.view, 'pylint_ignore', [])
-            for error in error_data:
-
-                pylint_rcfile = get_settings(self.view, 'pylint_rcfile')
-                try:
-                    if error['code'] in pylint_ignores and not pylint_rcfile:
-                        continue
-                except TypeError:
-                    print(
-                        'Anaconda: pylint_ignore option must be a list of '
-                        'strings but we got a {} '.format(type(pylint_ignores))
-                    )
-
-                self.add_message(
-                    error['line'], lines, error['message'], messages
-                )
-                if error['offset'] is not None:
-                    self.underline_range(
-                        error['line'], int(error['offset']), underlines
-                    )
 
         return {'lines': lines, 'results': errors_level}
 
@@ -378,7 +337,7 @@ def run_linter(view=None):
         'handler': 'python_linter'
     }
 
-    Worker().execute(parse_results, **data)
+    Worker().execute(Callback(on_success=parse_results), **data)
 
 
 def parse_results(data, is_code=is_python):
@@ -403,17 +362,7 @@ def parse_results(data, is_code=is_python):
     ANACONDA['WARNINGS'][vid] = {}
     ANACONDA['VIOLATIONS'][vid] = {}
 
-    if get_settings(view, 'use_pylint', False) is False:
-        results = Linter(view).parse_errors(data['errors'])
-    else:
-        results = Linter(view).parse_errors_pylint(data['errors'])
-        if data['pep8_errors']:
-            pep8_results = Linter(view).parse_errors(data['pep8_errors'])
-            results['lines'].update(pep8_results['lines'])
-            for level in pep8_results['results']:
-                for underline in pep8_results['results'][level]['underlines']:
-                    results['results'][level]['underlines'].append(underline)
-
+    results = Linter(view).parse_errors(data['errors'])
     errors = results['results']
     lines = results['lines']
 

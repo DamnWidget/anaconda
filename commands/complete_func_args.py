@@ -6,6 +6,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.callback import Callback
 from ..anaconda_lib.helpers import (
     get_settings, active_view, prepare_send_data, is_python
 )
@@ -34,7 +35,8 @@ class AnacondaCompleteFuncargs(sublime_plugin.TextCommand):
                 self.view, 'complete_all_parameters', False
             )
         }
-        Worker().execute(self.insert_snippet, **data)
+        callback = Callback(on_success=self.insert_snippet)
+        Worker().execute(callback, **data)
 
     def is_enabled(self):
         """Determine if this command is enabled or not

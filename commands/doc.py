@@ -6,6 +6,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.callback import Callback
 from ..anaconda_lib.helpers import prepare_send_data, is_python
 
 
@@ -23,7 +24,9 @@ class AnacondaDoc(sublime_plugin.TextCommand):
                     location = (location[0], location[1] - 1)
 
                 data = prepare_send_data(location, 'doc', 'jedi')
-                Worker().execute(self.prepare_data, **data)
+                Worker().execute(
+                    Callback(on_success=self.prepare_data), **data
+                )
             except Exception as error:
                 print(error)
         else:

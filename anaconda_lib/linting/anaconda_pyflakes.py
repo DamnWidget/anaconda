@@ -77,7 +77,6 @@ class PyFlakesLinter(linter.Linter):
         for error in errors:
             error_level = 'W' if not hasattr(error, 'level') else error.level
             message = error.message.capitalize()
-            a = 10
 
             error_data = {
                 'underline_range': False,

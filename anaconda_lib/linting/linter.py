@@ -85,24 +85,11 @@ class LintError(object):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
+    def __str__(self):
+        """String represetation of the error
+        """
 
-class LintErrorOld(pyflakes.messages.Message):
-    """Lint error base class
-    """
-
-    def __init__(self, filename, loc, level, message, message_args, **kwargs):
-        super(LintError, self).__init__(filename, loc)
-
-        self.level = level
-        self.message = message
-        self.message_args = message_args
-        offset = kwargs.get('offset')
-        text = kwargs.get('text')
-
-        if offset is not None:
-            self.offset = offset
-        if text is not None:
-            self.text = text
+        return self.message % self.message_args
 
 
 class Pep8Error(LintError):
@@ -116,6 +103,8 @@ class Pep8Error(LintError):
             filename, loc, 'W', '[W] PEP 8 (%s): %s', (code, text),
             offset=offset, text=text
         )
+
+
 
 
 class Pep8Warning(LintError):

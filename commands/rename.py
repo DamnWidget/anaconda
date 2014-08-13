@@ -9,6 +9,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.callback import Callback
 from ..anaconda_lib.helpers import prepare_send_data, is_python
 
 
@@ -43,7 +44,7 @@ class AnacondaRename(sublime_plugin.TextCommand):
         data = prepare_send_data(location, 'rename', 'jedi')
         data['directories'] = sublime.active_window().folders()
         data['new_word'] = replacement
-        Worker().execute(self.store_data, **data)
+        Worker().execute(Callback(on_success=self.store_data), **data)
 
     def store_data(self, data):
         """Just store the data an call the command again

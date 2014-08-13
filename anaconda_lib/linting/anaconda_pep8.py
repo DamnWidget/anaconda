@@ -4,8 +4,6 @@
 # This program is Free Software see LICENSE file for details
 
 import os
-import re
-import sys
 
 import pep8
 from linting import linter
@@ -17,7 +15,7 @@ class Pep8Error(linter.LintError):
 
     def __init__(self, filename, loc, offset, code, text, level='W'):
         ct_tuple = (code, text)
-        err_str = '[{0}] PEP 8 ({1}): {2}'.format(level, code, text)
+        err_str = '[{0}] PEP 8 (%s): %s'.format(level)
         super(Pep8Error, self).__init__(
             filename, loc, level, err_str, ct_tuple, offset=offset, text=text
         )
@@ -29,7 +27,7 @@ class Pep8Warning(linter.LintError):
 
     def __init__(self, filename, loc, offset, code, text, level='V'):
         ct_tuple = (code, text)
-        err_str = '[{0}] PEP 8 ({1}): {2}'.format(level, code, text)
+        err_str = '[{0}] PEP 8 (%s): %s'.format(level)
         super(Pep8Warning, self).__init__(
             filename, loc, level, err_str, ct_tuple, offset=offset, text=text
         )
