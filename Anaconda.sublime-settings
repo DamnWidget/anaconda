@@ -182,13 +182,19 @@
 
     /*
         The minimum delay in seconds (fractional seconds are okay) before
-        a linter is run when the "sublimelinter" setting is true. This allows
+        a linter is run when the "anaconda_linting" setting is true. This allows
         you to have background linting active, but defer the actual linting
         until you are idle. When this value is greater than the built in linting delay,
         errors are erased when the file is modified, since the assumption is
-        you don't want to see errors while you type.
+        you don't want to see errors while you type (unless the option
+        anaconda_linter_persistent is true).
     */
     "anaconda_linter_delay": 0.5,
+
+    /*
+        If true anaconda does not remove lint marks while you type
+    */
+    "anaconda_linter_persistent": false,
 
     // If true, anaconda draws gutter marks on line with errors
     "anaconda_gutter_marks": true,

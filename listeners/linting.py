@@ -57,7 +57,8 @@ class BackgroundLinter(sublime_plugin.EventListener):
             self.last_selected_line = -1
             ANACONDA['LAST_PULSE'] = time.time()
             ANACONDA['ALREADY_LINTED'] = False
-            erase_lint_marks(view)
+            if not get_settings(view, 'anaconda_linter_persistent', False):
+                erase_lint_marks(view)
             if self.check_auto_lint:
                 self.lint()
         else:
