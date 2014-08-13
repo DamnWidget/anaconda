@@ -77,22 +77,31 @@ class PyFlakesLinter(linter.Linter):
         for error in errors:
             error_level = 'W' if not hasattr(error, 'level') else error.level
             message = error.message.capitalize()
+            a = 10
 
             error_data = {
+                'underline_range': False,
                 'level': error_level,
                 'lineno': error.lineno,
                 'message': message,
                 'raw_error': str(error)
             }
+            if hasattr(error, 'offset'):
+                error_data['offset'] = error.offset
+            elif hasattr(error, 'col'):
+                error_data['offset'] = error.col
 
-            if isinstance(
+            if (isinstance(error, (linter.OffsetError))):
+                error_data['underline_range'] = True
+                error_list.append(error_data)
+            elif (isinstance(
                 error, (
                     pyflakes.messages.RedefinedWhileUnused,
                     pyflakes.messages.UndefinedName,
                     pyflakes.messages.UndefinedExport,
                     pyflakes.messages.UndefinedLocal,
                     pyflakes.messages.Redefined,
-                    pyflakes.messages.UnusedVariable) and
+                    pyflakes.messages.UnusedVariable)) and
                     error.__class__.__name__ not in explicit_ignore):
 
                 error_data['len'] = len(error.message_args[0])

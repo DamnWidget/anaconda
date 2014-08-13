@@ -363,6 +363,7 @@ def run_linter(view=None):
         'pep257_ignore': get_settings(view, 'pep257_ignore', []),
         'pep8_rcfile': get_settings(view, 'pep8_rcfile'),
         'pylint_rcfile': get_settings(view, 'pylint_rcfile'),
+        'pylint_ignores': get_settings(view, 'pylint_ignore'),
         'pyflakes_explicit_ignore': get_settings(
             view, 'pyflakes_explicit_ignore', [])
     }
@@ -387,8 +388,8 @@ def parse_results(data, is_code=is_python):
     view = get_view(sublime.active_window(), data['vid'])
     if data and data['success'] is False or not is_code(view, True):
         if get_settings(view, 'use_pylint', False) is True:
-            # print(data['errors'])
-            pass
+            for p in data['errors']:
+                print(p)
         return
 
     # Check if linting was disabled between now and when the request was sent

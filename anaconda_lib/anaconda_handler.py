@@ -33,10 +33,9 @@ class AnacondaHandler(object):
         """
 
         command = getattr(self, self.command)
-        kwargs = {}        
+        kwargs = {}
         for argument, value in self.data.items():
-	  if argument in inspect.getargs(command.func_code).args:
-	    kwargs[argument] = value
-	    
-        command(**kwargs)
-        
+            if argument in inspect.getargs(command.func_code).args:
+                kwargs[argument] = value
+
+        self.callback(command(**kwargs))

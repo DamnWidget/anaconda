@@ -25,6 +25,21 @@ class JediHandler(AnacondaHandler):
     to execute as it came from the Sublime Text 3 Anaconda plugin
     """
 
+    def run(self):
+        """Call the specific method (override base class)
+        """
+
+        self.real_callback = self.callback
+        self.callback = self.handle_result_and_purge_cache
+        super(JediHandler, self).run()
+
+    def handle_result_and_purge_cache(self, result):
+        """Handle the result from the call and purge in memory jedi cache
+        """
+
+        jedi.cache.clear_caches()
+        self.real_callback(result)
+
     @property
     def script(self):
         """Generates a new valid Jedi Script and return it back
@@ -36,13 +51,13 @@ class JediHandler(AnacondaHandler):
         """Generate an usable Jedi Script
         """
 
-        if self.debug is True:
-            logging.debug(
-                'jedi_script called with the following parameters '
-                'source: {0}\nline: {1} offset {2}, filename: {3}'.format(
-                    source, line, offset, filename
-                )
-            )
+        # if self.debug is True:
+        #     logging.debug(
+        #         'jedi_script called with the following parameters '
+        #         'source: {0}\nline: {1} offset {2}, filename: {3}'.format(
+        #             source, line, offset, filename
+        #         )
+        #     )
 
         return jedi.Script(source, int(line), int(offset), filename, encoding)
 

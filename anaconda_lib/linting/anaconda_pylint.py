@@ -109,6 +109,7 @@ class PyLinter(object):
                     )
                 })
 
+        print(errors)
         return errors
 
     def _map_code(self, code):

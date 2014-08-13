@@ -88,7 +88,7 @@ class JSONHandler(asynchat.async_chat):
             method = data.pop('method')
             uid = data.pop('uid')
             vid = data.pop('vid', None)
-	    handler_type = data.pop('handler')
+            handler_type = data.pop('handler')
             self.handle_command(handler_type, method, uid, vid, data)
         else:
             logging.error(

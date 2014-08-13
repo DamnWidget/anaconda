@@ -77,7 +77,7 @@ class LintError(object):
     """
 
     def __init__(self, filename, loc, level, message, message_args, **kwargs):
-        self.loc = loc
+        self.lineno = loc
         self.level = level
         self.message = message
         self.message_args = message_args
@@ -288,7 +288,6 @@ class Linter(object):
         """Parse errors returned from the PyFlakes and pep8 libraries
         """
 
-        print(explicit_ignore)
         errors_list = []
         if errors is None:
             return errors_list
@@ -380,7 +379,7 @@ class Linter(object):
         value = sys.exc_info()[1]
         msg = value.args[0]
 
-        (lineno, offset, text) = value.lineno, value.offset, value.text
+        lineno, offset, text = value.lineno, value.offset, value.text
 
         if text is None:    # encoding problems
             if msg.startswith('duplicate argument'):
@@ -401,5 +400,7 @@ class Linter(object):
                 error = OffsetError(filename, value, msg, offset)
             else:
                 error = PythonError(filename, value, msg)
+
+            error.lineno = lineno
 
         return [error]

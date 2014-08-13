@@ -80,8 +80,8 @@ class AsynClient(EventHandler):
 
         try:
             data = sublime.decode_value(message.decode('utf8'))
-        except NameError:
-            data = json.loads(message.decode('utf8'))
+        except (NameError, ValueError):
+            data = json.loads(message.replace('\t', ' ' * 8).decode('utf8'))
 
         callback = self.pop_callback(data.pop('uid'))
         if callback is None:
