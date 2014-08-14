@@ -88,9 +88,9 @@ def create_subprocess(args, **kwargs):
         return subprocess.Popen(args, **kwargs)
     except:
         logging.error(
-            'Your operating system denied the spawn of the anaconda jsonserver'
+            'Your operating system denied the spawn of {}'
             ' process. Make sure your configured interpreter is a valid python'
-            ' binary executable and is in the PATH'
+            ' binary executable and is in the PATH'.format(args[0])
         )
 
 
