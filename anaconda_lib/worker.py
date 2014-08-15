@@ -17,6 +17,7 @@ import sublime
 from .jsonclient import AsynClient
 from .decorators import auto_project_switch
 from .vagrant import VagrantStatus, VagrantIPAddress
+from .builder.python_builder import AnacondaSetPythonBuilder
 from .helpers import (
     get_settings, get_traceback, project_name, create_subprocess, active_view
 )
@@ -149,6 +150,15 @@ class LocalWorker(BaseWorker):
     def start(self):
         """Start this LocalWorker
         """
+
+        if (sublime.active_window().project_data() and not
+                sublime.active_window().project_data().get('buil_systems')):
+            python_interpreter = get_settings(
+                active_view(), 'python_interpreter'
+            )
+
+            print('ALABULIEEEEE')
+            AnacondaSetPythonBuilder(python_interpreter)
 
         if not self.available_port:
             self.available_port = self.port

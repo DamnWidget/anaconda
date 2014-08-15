@@ -5,10 +5,10 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.helpers import is_python
+from ..anaconda_lib.builder.python_builder import AnacondaSetPythonBuilder
 
 
 class AnacondaSetPythonInterpreter(sublime_plugin.TextCommand):
-
     """Sets or modifies the Venv of the current project"""
 
     def run(self, edit):
@@ -47,6 +47,9 @@ class AnacondaSetPythonInterpreter(sublime_plugin.TextCommand):
                 }
             )
             self.save_project_data(project_data)
+            AnacondaSetPythonBuilder().update_interpreter_build_system(
+                venv_path
+            )
 
     def save_project_data(self, data):
         """Saves the provided data to the project settings"""
