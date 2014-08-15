@@ -18,15 +18,15 @@ class AnacondaSetPythonBuilder(object):
 
         project = self._get_project()
         if project.get('build_systems', False):
-            if type(project['build_systems']) is dict:
-                project['build_systems'] = self._parse_tpl(cmd)
+            if type(project['build_systems']) is list:
+                project['build_systems'] = [self._parse_tpl(cmd)]
             else:
                 sublime.message_dialog(
                     'Your project build_systems is messed up'
                 )
         else:
             project.update({
-                'build_systems': self._parse_tpl(cmd)
+                'build_systems': [self._parse_tpl(cmd)]
             })
 
         self._save_project(project)
