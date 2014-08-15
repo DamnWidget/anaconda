@@ -17,7 +17,7 @@ class AnacondaSetPythonBuilder(object):
         """
 
         project = self._get_project()
-        if project.get('settings', False):
+        if project.get('build_systems', False):
             if type(project['build_systems']) is dict:
                 project['build_systems'] = self._parse_tpl(cmd)
             else:
@@ -42,7 +42,8 @@ class AnacondaSetPythonBuilder(object):
         """
 
         template_file = os.path.join(
-            os.path.dirname(__file__), '../', 'templates', 'python_build.tpl'
+            os.path.dirname(__file__),
+            '../../', 'templates', 'python_build.tpl'
         )
         with open(template_file, 'r', encoding='utf8') as tplfile:
             template = Template(tplfile.read())

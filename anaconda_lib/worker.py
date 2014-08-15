@@ -158,7 +158,9 @@ class LocalWorker(BaseWorker):
             )
 
             print('ALABULIEEEEE')
-            AnacondaSetPythonBuilder(python_interpreter)
+            AnacondaSetPythonBuilder().update_interpreter_build_system(
+                python_interpreter
+            )
 
         if not self.available_port:
             self.available_port = self.port
