@@ -157,7 +157,6 @@ class LocalWorker(BaseWorker):
                 active_view(), 'python_interpreter'
             )
 
-            print('ALABULIEEEEE')
             AnacondaSetPythonBuilder().update_interpreter_build_system(
                 python_interpreter
             )
