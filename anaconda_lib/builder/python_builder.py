@@ -16,6 +16,7 @@ class AnacondaSetPythonBuilder(object):
         """Updates the project and adds/modifies the build system
         """
 
+        return
         project = self._get_project()
         if project.get('build_systems', False):
             if type(project['build_systems']) is list:
