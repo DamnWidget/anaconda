@@ -1,0 +1,21 @@
+Changes in 1.2.5
+================
+
+ - Complete refactor of JsonServer and Linters
+ - Decoupled JsonServer logic to provide pluggable architecture
+ - Updated all client asynchronous calls to new Callbacks mechanism
+ - Added new per-project python interpreter builder system
+
+Fixes
+=====
+
+ - Fixed error when trying to decode json values, resolves #192
+
+Resolves
+========
+
+  - now pep8 severity is adjustable, resolves #109
+  - added anaconda python auto builder, resolves #179
+  - added option to don't remove linting marks while the user is typing (disabled by default), resolves #184
+
+For more detailed information about those changes run git v1.1.4..v1.1.5 on git repository
