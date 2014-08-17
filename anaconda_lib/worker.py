@@ -151,6 +151,18 @@ class LocalWorker(BaseWorker):
         """Start this LocalWorker
         """
 
+        if sublime.active_window().project_data():
+            for build_system in sublime.active_window().project_data().get(
+                    'build_systems'):
+                if build_system['name'] == 'Anaconda Python Builder':
+                    break
+
+            python_interpreter = get_settings(
+                active_view(), 'python_interpreter')
+
+            AnacondaSetPythonBuilder().update_interpreter_build_system(
+                python_interpreter
+            )
         if (sublime.active_window().project_data() and not
                 sublime.active_window().project_data().get('build_systems')):
             python_interpreter = get_settings(
@@ -171,7 +183,7 @@ class LocalWorker(BaseWorker):
             self.start_json_server()
 
             timeout = 0  # Wait for max 1 second.
-            while timeout < 100 and not self.server_is_active() and self.green_light:
+            while timeout < 100 and not self.server_is_active() and self.green_light:  # noqa
                 time.sleep(0.01)
                 timeout += 1
 

@@ -7,6 +7,8 @@ from string import Template
 
 import sublime
 
+from ..helpers import get_settings, active_view
+
 
 class AnacondaSetPythonBuilder(object):
     """Sets or modifies the builder of the current project
@@ -16,19 +18,24 @@ class AnacondaSetPythonBuilder(object):
         """Updates the project and adds/modifies the build system
         """
 
-        return
+        if get_settings(
+                active_view(), 'auto_python_builder_enabled', True) is False:
+            return
+
         project = self._get_project()
-        if project.get('build_systems', False):
+        if project.get('build_systems', False) is not False:
             if type(project['build_systems']) is list:
+                done = False
                 current_list = project['build_systems']
-                for build in current_list[:]:
+                for i in range(len(current_list)):
+                    build = current_list[i]
                     if build['name'] == 'Anaconda Python Builder':
-                        current_list[current_list.index(build)] = (
-                            self._parse_tpl(cmd)
-                        )
+                        current_list[i] = self._parse_tpl(cmd)
+                        done = True
                         break
 
-                project['build_systems'] = [self._parse_tpl(cmd)]
+                if not done:
+                    project['build_systems'].append(self._parse_tpl(cmd))
             else:
                 sublime.message_dialog(
                     'Your project build_systems is messed up'

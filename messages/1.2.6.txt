@@ -1,0 +1,12 @@
+Changes in 1.2.6
+================
+
+ - Added configuration options to enable or disable the Python's Anaconda Builder
+
+Fixes
+=====
+
+ - Fixed several errors in the python auto buider that resolves #197, #196 and #199
+ - Fixed incompatible API for handlers in JsonServer with Python3, resolves #196
+
+For more detailed information about those changes run git v1.1.5..v1.1.6 on git repository

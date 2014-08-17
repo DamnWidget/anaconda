@@ -12,6 +12,18 @@
     "auto_project_switch": true,
 
     /*
+        Python Builder Options
+
+        If enabled, anaconda will add your configured interpreter (if any)
+        into your per-project `builder_systems` list if any, or create a
+        new one in case that you don't define one yourself.
+
+        This is enabled by default, disable it if you experience slowdowns
+        when you switch between projects, and fill an issue in GitHub
+    */
+    "auto_python_builder_enabled": true,
+
+    /*
         Debug Mode:
 
         If you need to debug the jsonserver.py service for any reason, you
