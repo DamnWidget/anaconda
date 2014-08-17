@@ -152,7 +152,7 @@ class LocalWorker(BaseWorker):
         """
 
         if (sublime.active_window().project_data() and not
-                sublime.active_window().project_data().get('buil_systems')):
+                sublime.active_window().project_data().get('build_systems')):
             python_interpreter = get_settings(
                 active_view(), 'python_interpreter'
             )
@@ -169,8 +169,11 @@ class LocalWorker(BaseWorker):
                 self.available_port = self.port
 
             self.start_json_server()
-            while not self.server_is_active() and self.green_light:
+
+            timeout = 0  # Wait for max 1 second.
+            while timeout < 100 and not self.server_is_active() and self.green_light:
                 time.sleep(0.01)
+                timeout += 1
 
             if self.green_light:
                 self.client = AsynClient(self.available_port)

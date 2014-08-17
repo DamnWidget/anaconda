@@ -20,6 +20,14 @@ class AnacondaSetPythonBuilder(object):
         project = self._get_project()
         if project.get('build_systems', False):
             if type(project['build_systems']) is list:
+                current_list = project['build_systems']
+                for build in current_list[:]:
+                    if build['name'] == 'Anaconda Python Builder':
+                        current_list[current_list.index(build)] = (
+                            self._parse_tpl(cmd)
+                        )
+                        break
+
                 project['build_systems'] = [self._parse_tpl(cmd)]
             else:
                 sublime.message_dialog(

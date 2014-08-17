@@ -33,9 +33,15 @@ class AnacondaHandler(object):
         """
 
         command = getattr(self, self.command)
+        try:
+            func_code = command.func_code
+        except AttributeError:
+            # Renamed in Python 3
+            func_code = command.__code__
+
         kwargs = {}
         for argument, value in self.data.items():
-            if argument in inspect.getargs(command.func_code).args:
+            if argument in inspect.getargs(func_code).args:
                 kwargs[argument] = value
 
         self.callback(command(**kwargs))
