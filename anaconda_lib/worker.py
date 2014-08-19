@@ -153,7 +153,7 @@ class LocalWorker(BaseWorker):
 
         if sublime.active_window().project_data():
             for build_system in sublime.active_window().project_data().get(
-                    'build_systems'):
+                    'build_systems', []):
                 if build_system['name'] == 'Anaconda Python Builder':
                     break
 
