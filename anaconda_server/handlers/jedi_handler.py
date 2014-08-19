@@ -47,7 +47,8 @@ class JediHandler(AnacondaHandler):
 
         return self.jedi_script(**self.data)
 
-    def jedi_script(self, source, line, offset, filename='', encoding='utf8'):
+    def jedi_script(
+            self, source, line, offset, filename='', encoding='utf8', **kw):
         """Generate an usable Jedi Script
         """
 
