@@ -64,6 +64,7 @@ class AnacondaSetPythonBuilder(object):
         with open(template_file, 'r', encoding='utf8') as tplfile:
             template = Template(tplfile.read())
 
+        cmd = cmd.replace('\\', '\\\\')
         return sublime.decode_value(
             template.safe_substitute({'python_interpreter': cmd})
         )
