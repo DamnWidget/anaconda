@@ -1,0 +1,9 @@
+Changes in 1.2.8
+================
+
+Fixes
+======
+
+ - Fixed wrong escape character parsing in json decoding, resolves #205
+
+For more detailed information about those changes run git v1.2.7..v1.2.8 on git repository
