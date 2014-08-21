@@ -1,0 +1,9 @@
+Changes in 1.2.7
+================
+
+ Fixes
+=====
+
+ - Fixed wrong number of arguments being passed to `jedi_script` method in JsonServer Jedi Handler, resolves #203
+
+For more detailed information about those changes run git v1.2.6..v1.2.7 on git repository
