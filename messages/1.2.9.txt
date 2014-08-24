@@ -1,0 +1,15 @@
+Changes in 1.2.9
+================
+
+Unfortunately, when Package Control auto-upgrades anaconda in Windows platform and there are active sockets from the JsonClient to the JsonServer, the Winsocks become inconsistent and make anaconda try to restart the asynchronous poll in an infinite loop that makes Sublime Text 3 unresponsive.
+
+This behaviour occurs in Windows only so I suspect is related with the Windows sockets implementation itself. The added workaround doesn't solve the problem, it just terminate the asynchronous poll loop and show an error message to the user with some instructions to follow.
+
+I am more than open to merge solutions from developers that have more experience than me with Winsocks as Windows is my third platform (I only use it to play games really) and I've been unable to solve the problem.
+
+Workarounds
+===========
+
+ - Added workaround to try to mitigate the unresponsiveness of ST3 after automatic anaconda updates (Package Control) on Windows platform.
+
+For more detailed information about those changes run git v1.2.8..v1.2.9 on git repository
