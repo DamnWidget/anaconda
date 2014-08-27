@@ -16,34 +16,34 @@ import subprocess
 import sublime
 
 NONE = 0x00
-ONLY_PYTHON = 0x01
+ONLY_CODE = 0x01
 NOT_SCRATCH = 0x02
 LINTING_ENABLED = 0x04
 
 
-def check_linting(view, mask):
-    """Check common linting constraints
+def is_code(view, lang='python', ignore_comments=False, ignore_repl=False):
+    """Determine if the given view location is `lang` code
     """
 
-    if mask & ONLY_PYTHON and not is_python(view, ignore_comments=True):
+    if view is None:
         return False
 
-    if mask & NOT_SCRATCH and view.is_scratch():
+    # diable in SublimeREPL
+    if view.settings().get('repl', False):
+        if not ignore_repl:
+            return False
+
+    try:
+        location = view.sel()[0].begin()
+    except IndexError:
         return False
 
-    if (mask & LINTING_ENABLED
-            and not get_settings(view, 'anaconda_linting', False)):
-        return False
+    if ignore_comments is True:
+        matcher = 'source.{}'.format(lang)
+    else:
+        matcher = 'source.{} - string - comment'.format(lang)
 
-    return True
-
-
-def check_linting_behaviour(view, behaviours):
-    """Make sure the correct behaviours are applied
-    """
-
-    b = get_settings(view, 'anaconda_linting_behaviour', 'always')
-    return b in behaviours
+    return view.match_selector(location, matcher)
 
 
 def is_python(view, ignore_comments=False, autocomplete_ignore_repl=False):
@@ -69,6 +69,31 @@ def is_python(view, ignore_comments=False, autocomplete_ignore_repl=False):
         matcher = 'source.python - string - comment'
 
     return view.match_selector(location, matcher)
+
+
+def check_linting(view, mask, code='python'):
+    """Check common linting constraints
+    """
+
+    if mask & ONLY_CODE and not is_code(view, lang=code, ignore_comments=True):
+        return False
+
+    if mask & NOT_SCRATCH and view.is_scratch():
+        return False
+
+    if (mask & LINTING_ENABLED
+            and not get_settings(view, 'anaconda_linting', False)):
+        return False
+
+    return True
+
+
+def check_linting_behaviour(view, behaviours):
+    """Make sure the correct behaviours are applied
+    """
+
+    b = get_settings(view, 'anaconda_linting_behaviour', 'always')
+    return b in behaviours
 
 
 def create_subprocess(args, **kwargs):

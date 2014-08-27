@@ -5,11 +5,9 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../anaconda_lib'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 
 from commands import McCabe
-from anaconda_handler import AnacondaHandler
+from lib.anaconda_handler import AnacondaHandler
 from linting.anaconda_mccabe import AnacondaMcCabe
 
 

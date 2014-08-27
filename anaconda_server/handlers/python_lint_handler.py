@@ -9,7 +9,7 @@ from functools import partial
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../anaconda_lib'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 
-from anaconda_handler import AnacondaHandler
+from lib.anaconda_handler import AnacondaHandler
 from linting.anaconda_pep8 import Pep8Linter
 from commands import PyFlakes, PEP257, PEP8, PyLint
 from linting.anaconda_pyflakes import PyFlakesLinter

@@ -6,11 +6,9 @@
 import os
 import sys
 import logging
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../anaconda_lib'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 
 import jedi
-from anaconda_handler import AnacondaHandler
+from lib.anaconda_handler import AnacondaHandler
 from jedi import refactoring as jedi_refactor
 from commands import Doc, Goto, Rename, FindUsages
 from commands import CompleteParameters, AutoComplete

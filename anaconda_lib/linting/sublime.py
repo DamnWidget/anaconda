@@ -13,7 +13,7 @@ from ..worker import Worker
 from ..callback import Callback
 from ..persistent_list import PersistentList
 from ..helpers import (
-    get_settings, is_python, get_view, check_linting, LINTING_ENABLED
+    get_settings, is_code, get_view, check_linting, LINTING_ENABLED
 )
 
 
@@ -341,12 +341,12 @@ def run_linter(view=None):
     Worker().execute(Callback(on_success=parse_results), **data)
 
 
-def parse_results(data, is_code=is_python):
+def parse_results(data, code='python'):
     """Parse the results from the server
     """
 
     view = get_view(sublime.active_window(), data['vid'])
-    if data and data['success'] is False or not is_code(view, True):
+    if data and data['success'] is False or not is_code(view, code, True):
         if get_settings(view, 'use_pylint', False) is True:
             for p in data['errors']:
                 print(p)

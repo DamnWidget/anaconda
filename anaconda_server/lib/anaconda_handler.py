@@ -1,12 +1,13 @@
-# -*- coding: utf8 -*-
 
 # Copyright (C) 2014 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
 import inspect
 
+from .compat import AnacondaHandlerProvider
 
-class AnacondaHandler(object):
+
+class AnacondaHandler(AnacondaHandlerProvider):
     """All anaconda handlers should inherit from this class
 
     The constructor method pass a command (that is a string representation
@@ -45,3 +46,9 @@ class AnacondaHandler(object):
                 kwargs[argument] = value
 
         self.callback(command(**kwargs))
+
+    @classmethod
+    def get_handler(cls, handler_type):
+        """Return the given handler type if registered
+        """
+        return cls._registry.get(handler_type)

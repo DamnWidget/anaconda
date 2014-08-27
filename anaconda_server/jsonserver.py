@@ -22,11 +22,13 @@ try:
 except ImportError:
     import json
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../anaconda_lib'))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(__file__), '../anaconda_lib/jedi'))
 
-import jedi
-from contexts import json_decode
+import settings as jedi_settings
+from lib.contexts import json_decode
 from handlers import ANACONDA_HANDLERS
+from lib.anaconda_handler import AnacondaHandler
 
 
 DEBUG_MODE = True
@@ -54,6 +56,7 @@ class JSONHandler(asynchat.async_chat):
 
             if DEBUG_MODE is True:
                 print('About push back to ST3: {0}'.format(data))
+                logging.info('About push back to ST3: {0}'.format(data))
             self.push(data)
 
     def collect_incoming_data(self, data):
@@ -101,7 +104,12 @@ class JSONHandler(asynchat.async_chat):
         """Call the right commands handler
         """
 
-        handler = ANACONDA_HANDLERS[handler_type]
+        # lazy initialization of anaconda plugins
+        if not AnacondaHandler._registry.initialized:
+            AnacondaHandler._registry.initialize()
+
+        handler = ANACONDA_HANDLERS.get(
+            handler_type, AnacondaHandler.get_handler(handler_type))
         handler(method, data, uid, vid, self.return_back, DEBUG_MODE).run()
 
 
@@ -269,26 +277,26 @@ if __name__ == "__main__":
     port = int(args[0])
     PID = args[1]
     if options.project is not None:
-        jedi.settings.cache_directory = os.path.join(
-            jedi.settings.cache_directory, options.project
+        jedi_settings.cache_directory = os.path.join(
+            jedi_settings.cache_directory, options.project
         )
 
-    if not os.path.exists(jedi.settings.cache_directory):
-        os.makedirs(jedi.settings.cache_directory)
+    if not os.path.exists(jedi_settings.cache_directory):
+        os.makedirs(jedi_settings.cache_directory)
 
     if options.extra_paths is not None:
         for path in options.extra_paths.split(','):
             if path not in sys.path:
                 sys.path.insert(0, path)
 
-    logger = get_logger(jedi.settings.cache_directory)
+    logger = get_logger(jedi_settings.cache_directory)
 
     try:
         server = JSONServer(('localhost', port))
         logger.info(
             'Anaconda Server started in port {0} for '
             'PID {1} with cache dir {2}{3}'.format(
-                port, PID, jedi.settings.cache_directory,
+                port, PID, jedi_settings.cache_directory,
                 ' and extra paths {0}'.format(
                     options.extra_paths
                 ) if options.extra_paths is not None else ''
