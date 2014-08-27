@@ -1,0 +1,8 @@
+Changes in 1.3.0
+================
+
+- JsonServer has been decoupled from the Sublime Text 3 specific code so it can now be easy extended
+- A handlers register metaclass has been added to the AnacondaHandler (two really, one for Python3 and another one for Python2)
+- Linting listener has been modified to support plugable architecture
+
+For more detailed information about those changes run git v1.2.9..v1.3.0 on git repository
