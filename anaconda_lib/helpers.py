@@ -10,6 +10,7 @@ Anaconda helpers
 import os
 import json
 import logging
+import functools
 import traceback
 import subprocess
 
@@ -232,3 +233,42 @@ def get_window_view(vid):
         view = get_view(window, vid)
         if view is not None:
             return view
+
+
+def cache(func):
+    """
+    Stupid and simplistic cache system that caches results from functions
+    decorated with it unless the invalidate flag is passed in its args.
+
+    note::
+        this is not intend to be used as a general cache solution
+    """
+
+    cache = {}
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if 'invalidate' in kwargs:
+            cache.pop(func.__name__)
+
+        result = cache.get(
+            func.__name__,
+            cache.setdefault(func.__name__, func(*args, **kwargs))
+        )
+        return result
+
+    return wrapper
+
+
+@cache
+def valid_languages(**kwargs):
+    """Return back valid languages for anaconda plugins
+    """
+
+    path = os.path.join(os.path.dirname(__file__), '../../')
+    languages = [
+        f.rsplit('_', 1)[1].lower() for f in os.listdir(path)
+        if f.startswith('anaconda_') and 'vagrant' not in f
+    ]
+
+    return ['python'] + languages
