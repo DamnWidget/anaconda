@@ -39,7 +39,7 @@ Those profiles are really helpful for us to fix bugs and solve performance probl
 Anaconda Plugins
 ----------------
 
-Anaconda now support a plugable interface so other language lintin/completion is possible using the non blocking architecture built into anaconda.
+Anaconda now support a pluggable interface so other language lintin/completion is possible using the non blocking architecture built into anaconda.
 
 A list of available anaconda plugins below:
 
