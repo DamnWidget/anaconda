@@ -4,6 +4,7 @@
 
 import os
 import sys
+import logging
 
 
 class HandlerRegistry(object):
@@ -54,4 +55,6 @@ class HandlerRegistry(object):
             sys.path.append('{}/plugin'.format(package))
             mod_name = 'handlers_{}'.format(lang)
             mod = __import__(mod_name, globals(), locals())
-            print('[anaconda_plugins] imported handlers for {}'.format(mod))
+            logging.info(
+                '[anaconda_plugins] imported handlers for {}'.format(mod)
+            )
