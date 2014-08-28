@@ -36,6 +36,15 @@ You can run the plugin in profiling mode on Windows (Sublime Text doesn't suppor
 
 Those profiles are really helpful for us to fix bugs and solve performance problems on Windows, add it to your issues reports always that you can.
 
+Anaconda Plugins
+----------------
+
+Anaconda now support a plugable interface so other language lintin/completion is possible using the non blocking architecture built into anaconda.
+
+A list of available anaconda plugins below:
+
+* [AnacondaPHP](https://github.com/DamnWidget/anaconda_php) PHP linter, code standard checker and mess detector
+
 Project and Python Interpreter Switching
 ----------------------------------------
 
