@@ -5,6 +5,7 @@
 import sublime_plugin
 
 from ..anaconda_lib.helpers import get_settings
+from ..anaconda_lib.helpers import valid_languages
 from ..anaconda_lib.linting.sublime import ANACONDA, erase_lint_marks
 
 
@@ -28,5 +29,9 @@ class AnacondaDisableLinting(sublime_plugin.WindowCommand):
             return False
 
         location = view.sel()[0].begin()
-        matcher = 'source.python'
-        return view.match_selector(location, matcher)
+        for lang in valid_languages():
+            matcher = 'source.{}'.format(lang)
+            if view.match_selector(location, matcher) is True:
+                return True
+
+        return False

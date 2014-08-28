@@ -6,6 +6,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.helpers import get_settings
+from ..anaconda_lib.helpers import valid_languages
 from ..anaconda_lib.linting.sublime import ANACONDA, update_statusbar
 
 
@@ -27,8 +28,12 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
             return False
 
         location = view.sel()[0].begin()
-        matcher = 'source.python'
-        return view.match_selector(location, matcher)
+        for lang in valid_languages():
+            matcher = 'source.{}'.format(lang)
+            if view.match_selector(location, matcher) is True:
+                return True
+
+        return False
 
     def jump(self, lineno=None):
         """Jump to a line in the view buffer
