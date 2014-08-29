@@ -1,0 +1,6 @@
+Changes in 1.3.1
+================
+
+- Fixed Python3 support that was broken in the compat module
+
+For more detailed information about those changes run git v1.3.0..v1.3.1 on git repository

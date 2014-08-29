@@ -5,6 +5,6 @@
 from ..meta_handler import AnacondaHandlerMeta
 
 
-class AnacondaHandlerBase(metaclass=AnacondaHandlerMeta):
+class AnacondaHandlerProvider(metaclass=AnacondaHandlerMeta):
     """Just a convenience wrapper
     """
