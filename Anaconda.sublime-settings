@@ -49,12 +49,12 @@
     /*
         Default python interpreter.
 
-        This can (an should) be overriden by project settings
+        This can (and should) be overridden by project settings
     */
     "python_interpreter": "python",
 
     /*
-        Set those aas true if you don't want Sublime Text regular completions
+        Set those as true if you don't want Sublime Text regular completions
     */
     "suppress_word_completions": false,
     "suppress_explicit_completions": false,
@@ -71,7 +71,7 @@
 
     /*
         If you set the following option as true, anaconda will display the
-        signatures of the methods you are using while typying
+        signatures of the methods you are using while typing
     */
     "display_signatures": false,
 
@@ -147,7 +147,7 @@
     /*
         TImeout for the autoformatting tool before fail
         Note: Take into account that depending on the size of the file you
-        want to autoformate, this can take a while
+        want to autoformat, this can take a while
     */
     "auto_formatting_timeout": 1,  // seconds
 
@@ -174,7 +174,7 @@
     ],
 
     /*
-        Set the thresshold limit for McCabe complexity checker
+        Set the threshold limit for McCabe complexity checker
     */
     "mccabe_threshold": 7,
 
@@ -186,7 +186,7 @@
     /*
         Sets the linting behaviour for anaconda:
 
-        "always" - Linting works always even while you are writting (in the background)
+        "always" - Linting works always even while you are writing (in the background)
         "load-save" - Linting works in file load and save only
         "save-only" - Linting works in file save only
     */
@@ -224,7 +224,7 @@
 
     /*
         If 'outline' (default) anaconda will outline error lines
-        If 'fill' anconda will fill the lines
+        If 'fill' anaconda will fill the lines
         If 'none' anaconda will not draw anything on error lines
     */
     "anaconda_linter_mark_style": "outline",
@@ -371,15 +371,15 @@
     /*
         Debug and development options
 
-        Use those options only for debugging and devleopment purposes, them can
+        Use those options only for debugging and development purposes, they can
         and will slowdown your Sublime Text
 
         anconda_debug can be set as: false or profiler
 
-        If this is set as profiler, Aanconda will run a profiler on autocompelte
-        and print it results in the Sublime Text console.
+        If this is set as profiler, Anaconda will run a profiler on autocomplete
+        and print its results in the Sublime Text console.
 
-        NOTE: cProfile can't be imported in all the platforms, at least no in
+        NOTE: cProfile can't be imported in all the platforms, at least not in
         Linux, this is an already reported bug:
 
             http://www.sublimetext.com/forum/viewtopic.php?f=3&t=13698
