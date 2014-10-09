@@ -376,6 +376,7 @@ You can control the way that anaconda mark the error lines in your files adjusti
 
 If you don't want to show the red underline under the errors on the lines, you can set the `anaconda_linter_underlines` as false. Note that this option only takes effect when the `anaconda_linter_mark_style` is set to `none`.
 
+#### [Run Tests using Anaconda](https://github.com/DamnWidget/anaconda/wiki/Using-test-runner)
 
 #### [Linting theme customization](https://github.com/DamnWidget/anaconda/wiki/Linting-theme-customization)
 

@@ -14,6 +14,10 @@ from .next_lint_error import AnacondaNextLintError
 from .disable_linting import AnacondaDisableLinting
 from .complete_func_args import AnacondaCompleteFuncargs
 from .set_python_interpreter import AnacondaSetPythonInterpreter
+from .test_runner import (
+    AnacondaRunCurrentFileTests, AnacondaRunProjectTests,
+    AnacondaRunCurrentTest, AnacondaRunLastTest
+)
 from .vagrant import (
     AnacondaVagrantEnable, AnacondaVagrantInit, AnacondaVagrantStatus,
     AnacondaVagrantUp, AnacondaVagrantReload, AnacondaVagrantSsh
@@ -31,12 +35,16 @@ __all__ = [
     'AnacondaAutoFormat',
     'AnacondaFindUsages',
     'AnacondaVagrantInit',
+    'AnacondaRunLastTest',
     'AnacondaEnableLinting',
     'AnacondaNextLintError',
     'AnacondaVagrantEnable',
     'AnacondaVagrantStatus',
     'AnacondaVagrantReload',
+    'AnacondaRunCurrentTest',
     'AnacondaDisableLinting',
+    'AnacondaRunProjectTests',
     'AnacondaCompleteFuncargs',
-    'AnacondaSetPythonInterpreter'
+    'AnacondaSetPythonInterpreter',
+    'AnacondaRunCurrentFileTests',
 ]
