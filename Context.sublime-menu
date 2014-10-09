@@ -40,6 +40,22 @@
                 "command": "anaconda_auto_import",
                 "caption": "Auto import undefined word under cursor"
             },
+            {
+                "command": "anaconda_run_current_file_tests",
+                "caption": "Run tests on current file"
+            },
+            {
+                "command": "anaconda_run_project_tests",
+                "caption": "Run full project tests= suite",
+            },
+            {
+                "command": "anaconda_run_current_test",
+                "caption": "Run test under the cursor",
+            },
+            {
+                "command": "anaconda_run_last_test",
+                "caption": "Repeat last test run"
+            }
         ]
     }
 ]

@@ -386,5 +386,63 @@
             https://github.com/SublimeText/Issues/issues/127
 
     */
-    "anaconda_debug": false
+    "anaconda_debug": false,
+
+    /*
+        Anaconda test runner related configuration.
+
+        The anaconda's test runner is originally a contribution by NorthIsUp
+            https://github.com/NorthIsUp
+
+        Run Twisted's trial based test suite under a virtualenv project:
+
+            // this is your <ProjectName>.sublime-project file
+            "settings": {
+                "python_interpreter": "~/.virtualenvs/project_name",
+                "test_command": "trial",
+                "test_virtualenv": "~/.virtualenvs/project_name",
+                "test_project_path": "project_src"
+            }
+
+        Run Django project tests using nose2 with a virtualenv:
+
+            // this is your <ProjectName>.sublime-project file
+            "settings": {
+                "python_interpreter": "~/.virtualenvs/django_project_name",
+                "test_command": "./manage.py test --settings=tests.settings --noinput"
+            }
+    */
+
+    /*
+        Uncomment the line below to execute any command before try to execute
+        your test suite. (if you need to run more than one command, just use a
+        list of commands ["cmd1", "cmd2", ...])
+
+    */
+    // "test_before_command": "",
+
+    /*
+        Command to execute tests with. nosetests by default
+    */
+    "test_command": "nosetests",
+
+    /*
+        Uncomment the line below to execute any command after execute
+        your test suite.
+    */
+    //"test_after_command": "",
+
+    /* This is the delimiter between the module and the class */
+    "test_delimeter": ":",
+
+    /* Uncomment the line below to use a virtualenv for your tests */
+    //"test_virtualenv": ""
+
+    /*
+        Uncomment the line below to add a top level path when you ask
+        anaconda to run all your project tests.
+
+        Note: this is need for example to can run tests with `twisted's trial`
+    */
+    // "test_project_path": "./"
 }
