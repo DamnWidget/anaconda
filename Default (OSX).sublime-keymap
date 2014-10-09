@@ -10,5 +10,7 @@
             { "key": "setting.command_mode", "operand": true },
             { "key": "setting.is_widget", "operand": false }
         ]
-    }
+    },
+    {"command": "anaconda_run_current_file_tests", "keys": ["ctrl+alt+t"]},
+    {"command": "anaconda_run_current_test", "keys": ["ctrl+alt+shift+t"]}
 ]

@@ -18,6 +18,12 @@ from .vagrant import (
     AnacondaVagrantEnable, AnacondaVagrantInit, AnacondaVagrantStatus,
     AnacondaVagrantUp, AnacondaVagrantReload, AnacondaVagrantSsh
 )
+from .test_runner import (
+    AnacondaRunCurrentFileTests,
+    AnacondaRunProjectTests,
+    AnacondaRunCurrentTest,
+    AnacondaRunLastTest
+)
 
 __all__ = [
     'AnacondaDoc',
@@ -38,5 +44,9 @@ __all__ = [
     'AnacondaVagrantReload',
     'AnacondaDisableLinting',
     'AnacondaCompleteFuncargs',
-    'AnacondaSetPythonInterpreter'
+    'AnacondaSetPythonInterpreter',
+    'AnacondaRunCurrentFileTests',
+    'AnacondaRunProjectTests',
+    'AnacondaRunCurrentTest',
+    'AnacondaRunLastTest',
 ]

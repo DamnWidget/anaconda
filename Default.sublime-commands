@@ -58,5 +58,21 @@
     {
         "caption": "Anaconda: Display object docs",
         "command": "anaconda_doc"
+    },
+    {
+        "caption": "Anaconda: Run Current Test",
+        "command": "anaconda_run_current_test"
+    },
+    {
+        "caption": "Anaconda: Run Current File Tests",
+        "command": "anaconda_run_current_file_tests"
+    },
+    {
+        "caption": "Anaconda: Run Project Tests",
+        "command": "anaconda_run_project_tests"
+    },
+    {
+        "caption": "Anaconda: Run Last Test",
+        "command": "anaconda_run_last_test"
     }
 ]
