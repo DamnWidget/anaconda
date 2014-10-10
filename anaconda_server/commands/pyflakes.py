@@ -8,16 +8,17 @@ import traceback
 from .base import Command
 
 
-class PyLint(Command):
-    """Run PyLint and return back results
+class PyFlakes(Command):
+    """Run PyFlakes linter and return back results
     """
 
-    def __init__(self, callback, uid, vid, linter, rcfile, filename):
+    def __init__(self, callback, uid, vid, linter, settings, code, filename):
         self.vid = vid
-        self.filename = filename
+        self.code = code
         self.linter = linter
-        self.rcfile = rcfile
-        super(PyLint, self).__init__(callback, uid)
+        self.settings = settings
+        self.filename = filename
+        super(PyFlakes, self).__init__(callback, uid)
 
     def run(self):
         """Run the command
@@ -26,8 +27,8 @@ class PyLint(Command):
         try:
             self.callback({
                 'success': True,
-                'errors': self.linter(
-                    self.filename, self.rcfile).parse_errors(),
+                'errors': self.linter().lint(
+                    self.settings, self.code, self.filename),
                 'uid': self.uid,
                 'vid': self.vid
             })
