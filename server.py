@@ -40,7 +40,7 @@ try:
         sys.exit(0)
     else:
         print('[Fail]')
-        print(proc.communicate()[1])
+        print(proc.communicate())
         sys.exit(-1)
 except Exception as error:
     print('[Fail]')
