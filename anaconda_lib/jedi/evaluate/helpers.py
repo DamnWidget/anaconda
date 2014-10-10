@@ -161,6 +161,9 @@ def scan_statement_for_calls(stmt, search_name, assignment_details=False):
                 if s_new.execution is not None:
                     result += scan_array(s_new.execution, search_name)
                 s_new = s_new.next
+        elif isinstance(c, pr.ListComprehension):
+            for s in c.stmt, c.middle, c.input:
+                result += scan_statement_for_calls(s, search_name)
 
     return result
 
@@ -170,20 +173,44 @@ class FakeSubModule():
 
 
 class FakeArray(pr.Array):
-    def __init__(self, values, parent, arr_type=pr.Array.LIST):
+    def __init__(self, values, parent=None, arr_type=pr.Array.LIST):
         p = (0, 0)
         super(FakeArray, self).__init__(FakeSubModule, p, arr_type, parent)
         self.values = values
 
 
 class FakeStatement(pr.Statement):
-    def __init__(self, expression_list, start_pos=(0, 0)):
+    def __init__(self, expression_list, start_pos=(0, 0), parent=None):
         p = start_pos
         super(FakeStatement, self).__init__(FakeSubModule, expression_list, p, p)
         self.set_expression_list(expression_list)
+        self.parent = parent
+
+
+class FakeImport(pr.Import):
+    def __init__(self, name, parent, level=0):
+        p = 0, 0
+        super(FakeImport, self).__init__(FakeSubModule, p, p, name,
+                                         relative_count=level)
+        self.parent = parent
 
 
 class FakeName(pr.Name):
-    def __init__(self, name, parent=None):
+    def __init__(self, name_or_names, parent=None):
         p = 0, 0
-        super(FakeName, self).__init__(FakeSubModule, [(name, p)], p, p, parent)
+        if isinstance(name_or_names, list):
+            names = [(n, p) for n in name_or_names]
+        else:
+            names = [(name_or_names, p)]
+        super(FakeName, self).__init__(FakeSubModule, names, p, p, parent)
+
+
+def stmts_to_stmt(statements):
+    """
+    Sometimes we want to have something like a result_set and unite some
+    statements in one.
+    """
+    if len(statements) == 1:
+        return statements[0]
+    array = FakeArray(statements, arr_type=pr.Array.NOARRAY)
+    return FakeStatement([array])

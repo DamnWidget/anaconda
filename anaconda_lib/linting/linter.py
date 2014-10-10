@@ -72,23 +72,24 @@ pyflakes.messages.Message.__str__ = (
 )
 
 
-class LintError(pyflakes.messages.Message):
+class LintError(object):
     """Lint error base class
     """
 
     def __init__(self, filename, loc, level, message, message_args, **kwargs):
-        super(LintError, self).__init__(filename, loc)
-
+        self.lineno = loc
         self.level = level
         self.message = message
         self.message_args = message_args
-        offset = kwargs.get('offset')
-        text = kwargs.get('text')
 
-        if offset is not None:
-            self.offset = offset
-        if text is not None:
-            self.text = text
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+    def __str__(self):
+        """String represetation of the error
+        """
+
+        return self.message % self.message_args
 
 
 class Pep8Error(LintError):
@@ -102,6 +103,8 @@ class Pep8Error(LintError):
             filename, loc, 'W', '[W] PEP 8 (%s): %s', (code, text),
             offset=offset, text=text
         )
+
+
 
 
 class Pep8Warning(LintError):
@@ -260,11 +263,20 @@ class Linter(object):
 
         return self.parse_errors(errors, explicit_ignore)
 
+    def sort_errors(self, errors):
+        """Sort errors by line number
+        """
+        errors.sort(key=cmp_to_key(lambda a, b: a.lineno < b.lineno))
+
+    def prepare_error_level(self, error):
+        """Prepare a common error level in case that the error does't define
+        """
+        return 'W' if not hasattr(error, 'level') else error.level
+
     def parse_errors(self, errors, explicit_ignore):
         """Parse errors returned from the PyFlakes and pep8 libraries
         """
 
-        print(explicit_ignore)
         errors_list = []
         if errors is None:
             return errors_list
@@ -356,7 +368,7 @@ class Linter(object):
         value = sys.exc_info()[1]
         msg = value.args[0]
 
-        (lineno, offset, text) = value.lineno, value.offset, value.text
+        lineno, offset, text = value.lineno, value.offset, value.text
 
         if text is None:    # encoding problems
             if msg.startswith('duplicate argument'):
@@ -377,5 +389,7 @@ class Linter(object):
                 error = OffsetError(filename, value, msg, offset)
             else:
                 error = PythonError(filename, value, msg)
+
+            error.lineno = lineno
 
         return [error]

@@ -27,8 +27,14 @@ def defined_names(evaluator, scope):
     :type scope: Scope
     :rtype: list of Definition
     """
-    pair = next(get_names_of_scope(evaluator, scope, star_search=False,
-                                   include_builtin=False), None)
+    # Calling get_names_of_scope doesn't make sense always. It might include
+    # star imports or inherited stuff. Wanted?
+    # TODO discuss!
+    if isinstance(scope, pr.Module):
+        pair = scope, scope.get_defined_names()
+    else:
+        pair = next(get_names_of_scope(evaluator, scope, star_search=False,
+                                       include_builtin=False), None)
     names = pair[1] if pair else []
     names = [n for n in names if isinstance(n, pr.Import) or (len(n) == 1)]
     return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
@@ -142,7 +148,7 @@ class BaseDefinition(object):
             stripped = stripped.parent
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
-        return type(stripped).__name__.lower()
+        return type(stripped).__name__.lower().replace('wrapper', '')
 
     def _path(self):
         """The module path."""
@@ -245,7 +251,7 @@ class BaseDefinition(object):
            Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use documentation() instead.", DeprecationWarning)
+        warnings.warn("Use docstring() instead.", DeprecationWarning)
         return self.docstring()
 
     @property
@@ -255,7 +261,7 @@ class BaseDefinition(object):
            Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use documentation() instead.", DeprecationWarning)
+        warnings.warn("Use docstring() instead.", DeprecationWarning)
         return self.docstring(raw=True)
 
     @property
@@ -307,16 +313,17 @@ class BaseDefinition(object):
         stripped = self._definition
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
-            # We should probably work in `Finder._names_to_types` here.
-            if isinstance(stripped, pr.Function):
-                stripped = er.Function(self._evaluator, stripped)
-            elif isinstance(stripped, pr.Class):
-                stripped = er.Class(self._evaluator, stripped)
+
+        # We should probably work in `Finder._names_to_types` here.
+        if isinstance(stripped, pr.Function):
+            stripped = er.Function(self._evaluator, stripped)
+        elif isinstance(stripped, pr.Class):
+            stripped = er.Class(self._evaluator, stripped)
 
         if stripped.isinstance(pr.Statement):
             return self._evaluator.eval_statement(stripped)
         elif stripped.isinstance(pr.Import):
-            return imports.strip_imports(self._evaluator, [stripped])
+            return imports.follow_imports(self._evaluator, [stripped])
         else:
             return [stripped]
 
@@ -463,7 +470,7 @@ class Completion(BaseDefinition):
         :param fast: Don't follow imports that are only one level deep like
             ``import foo``, but follow ``from foo import bar``. This makes
             sense for speed reasons. Completing `import a` is slow if you use
-            the ``foo.documentation(fast=False)`` on every object, because it
+            the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
         definition = self._definition
@@ -565,18 +572,13 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
                 name = d.get_defined_names()[0].names[-1]
             except (AttributeError, IndexError):
                 return None
+        elif isinstance(d, pr.Param):
+            name = d.get_name()
         elif isinstance(d, pr.Statement):
             try:
                 expression_list = d.assignment_details[0][0]
                 name = expression_list[0].name.names[-1]
             except IndexError:
-                if isinstance(d, pr.Param):
-                    try:
-                        return unicode(d.expression_list()[0].name)
-                    except (IndexError, AttributeError):
-                        # IndexError for syntax error params
-                        # AttributeError for *args/**kwargs
-                        pass
                 return None
         elif isinstance(d, iterable.Generator):
             return None

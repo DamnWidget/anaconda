@@ -11,6 +11,8 @@ So, why is there also a ``Class`` class here? Well, there are decorators and
 they change classes in Python 3.
 """
 import copy
+import os
+import pkgutil
 
 from jedi._compatibility import use_metaclass, unicode
 from jedi.parser import representation as pr
@@ -137,19 +139,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         args = [obj, obj.base] if isinstance(obj, Instance) else [None, obj]
         return self.execute_subscope_by_name('__get__', args)
 
-    @memoize_default([])
-    def get_defined_names(self):
-        """
-        Get the instance vars of a class. This includes the vars of all
-        classes
-        """
-        names = self.get_self_attributes()
-
-        for var in self.base.instance_names():
-            names.append(InstanceElement(self._evaluator, self, var, True))
-        return names
-
-    def scope_generator(self):
+    def scope_names_generator(self, position=None):
         """
         An Instance has two scopes: The scope with self names and the class
         scope. Instance variables have priority over the class scope.
@@ -168,15 +158,18 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         except KeyError:
             return False
 
-    def get_index_types(self, indexes=[]):
+    def get_index_types(self, index_array):
+
+        indexes = iterable.create_indexes_or_slices(self._evaluator, index_array)
         if any([isinstance(i, iterable.Slice) for i in indexes]):
             # Slice support in Jedi is very marginal, at the moment, so just
             # ignore them in case of __getitem__.
             # TODO support slices in a more general way.
             indexes = []
 
+        index = helpers.FakeStatement(indexes, parent=compiled.builtin)
         try:
-            return self.execute_subscope_by_name('__getitem__', indexes)
+            return self.execute_subscope_by_name('__getitem__', [index])
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
             return []
@@ -231,13 +224,18 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
 
     def expression_list(self):
         # Copy and modify the array.
-        return [InstanceElement(self.instance._evaluator, self.instance, command, self.is_class_var)
+        return [InstanceElement(self._evaluator, self.instance, command, self.is_class_var)
                 if not isinstance(command, (pr.Operator, Token)) else command
                 for command in self.var.expression_list()]
 
     def __iter__(self):
         for el in self.var.__iter__():
-            yield InstanceElement(self.instance._evaluator, self.instance, el, self.is_class_var)
+            yield InstanceElement(self.instance._evaluator, self.instance, el,
+                                  self.is_class_var)
+
+    def __getitem__(self, index):
+        return InstanceElement(self._evaluator, self.instance, self.var[index],
+                               self.is_class_var)
 
     def __getattr__(self, name):
         return getattr(self.var, name)
@@ -293,25 +291,21 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         # TODO mro!
         for cls in self.get_super_classes():
             # Get the inherited names.
-            if isinstance(cls, compiled.CompiledObject):
-                super_result += cls.get_defined_names()
-            else:
-                for i in cls.instance_names():
-                    if not in_iterable(i, result):
-                        super_result.append(i)
+            for i in cls.instance_names():
+                if not in_iterable(i, result):
+                    super_result.append(i)
         result += super_result
         return result
 
-    @memoize_default(default=())
-    def get_defined_names(self):
-        result = self.instance_names()
-        type_cls = self._evaluator.find_types(compiled.builtin, 'type')[0]
-        return result + list(type_cls.get_defined_names())
+    def scope_names_generator(self, position=None):
+        yield self, self.instance_names()
+        yield self, compiled.type_names
 
     def get_subscope_by_name(self, name):
-        for sub in reversed(self.subscopes):
-            if sub.name.get_code() == name:
-                return sub
+        for s in [self] + self.get_super_classes():
+            for sub in reversed(s.subscopes):
+                if sub.name.get_code() == name:
+                    return sub
         raise KeyError("Couldn't find subscope.")
 
     def is_callable(self):
@@ -405,10 +399,10 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         return getattr(self.base_func, name)
 
     def __repr__(self):
-        decorated_func = self._decorated_func()
+        dec_func = self._decorated_func()
         dec = ''
-        if decorated_func is not None and decorated_func != self:
-            dec = " is " + repr(decorated_func)
+        if not self.is_decorated and self.base_func.decorators:
+            dec = " is " + repr(dec_func)
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
@@ -428,10 +422,16 @@ class FunctionExecution(Executable):
         # Feed the listeners, with the params.
         for listener in func.listeners:
             listener.execute(self._get_params())
+        if func.listeners:
+            # If we do have listeners, that means that there's not a regular
+            # execution ongoing. In this case Jedi is interested in the
+            # inserted params, not in the actual execution of the function.
+            return []
+
         if func.is_generator and not evaluate_generator:
             return [iterable.Generator(self._evaluator, func, self.var_args)]
         else:
-            stmts = docstrings.find_return_types(self._evaluator, func)
+            stmts = list(docstrings.find_return_types(self._evaluator, func))
             for r in self.returns:
                 if r is not None:
                     stmts += self._evaluator.eval_statement(r)
@@ -453,6 +453,10 @@ class FunctionExecution(Executable):
         the necessary functions). Add also the params.
         """
         return self._get_params() + pr.Scope.get_defined_names(self)
+
+    def scope_names_generator(self, position=None):
+        names = pr.filter_after_position(pr.Scope.get_defined_names(self), position)
+        yield self, self._get_params() + names
 
     def _copy_properties(self, prop):
         """
@@ -519,3 +523,47 @@ class FunctionExecution(Executable):
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.base)
+
+
+class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module)):
+    def __init__(self, evaluator, module):
+        self._evaluator = evaluator
+        self._module = module
+
+    def scope_names_generator(self, position=None):
+        yield self, pr.filter_after_position(self._module.get_defined_names(), position)
+        yield self, self._module_attributes()
+        sub_modules = self._sub_modules()
+        if sub_modules:
+            yield self, self._sub_modules()
+
+    @memoize_default()
+    def _module_attributes(self):
+        names = ['__file__', '__package__', '__doc__', '__name__', '__version__']
+        # All the additional module attributes are strings.
+        parent = Instance(self._evaluator, compiled.create(self._evaluator, str))
+        return [helpers.FakeName(n, parent) for n in names]
+
+    @memoize_default()
+    def _sub_modules(self):
+        """
+        Lists modules in the directory of this module (if this module is a
+        package).
+        """
+        path = self._module.path
+        names = []
+        if path is not None and path.endswith(os.path.sep + '__init__.py'):
+            mods = pkgutil.iter_modules([os.path.dirname(path)])
+            for module_loader, name, is_pkg in mods:
+                name = helpers.FakeName(name)
+                # It's obviously a relative import to the current module.
+                imp = helpers.FakeImport(name, self, level=1)
+                name.parent = imp
+                names.append(name)
+        return names
+
+    def __getattr__(self, name):
+        return getattr(self._module, name)
+
+    def __repr__(self):
+        return "<%s: %s>" % (type(self).__name__, self._module)

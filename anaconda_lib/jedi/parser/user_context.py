@@ -2,6 +2,7 @@ import re
 import os
 
 from jedi import cache
+from jedi import common
 from jedi.parser import tokenize
 from jedi._compatibility import u
 from jedi.parser.fast import FastParser
@@ -91,9 +92,12 @@ class UserContext(object):
             elif tok_str == '.':
                 force_point = False
             elif force_point:
-                # it is reversed, therefore a number is getting recognized
-                # as a floating point number
-                if tok_type == tokenize.NUMBER and tok_str[0] == '.':
+                # Reversed tokenizing, therefore a number is recognized as a
+                # floating point number.
+                # The same is true for string prefixes -> represented as a
+                # combination of string and name.
+                if tok_type == tokenize.NUMBER and tok_str[0] == '.' \
+                        or tok_type == tokenize.NAME and last_type == tokenize.STRING:
                     force_point = False
                 else:
                     break
@@ -175,12 +179,7 @@ class UserContext(object):
 
     def get_line(self, line_nr):
         if not self._line_cache:
-            self._line_cache = self.source.splitlines()
-            if self.source:
-                if self.source[-1] == '\n':
-                    self._line_cache.append(u(''))
-            else:  # ''.splitlines() == []
-                self._line_cache = [u('')]
+            self._line_cache = common.splitlines(self.source)
 
         if line_nr == 0:
             # This is a fix for the zeroth line. We need a newline there, for

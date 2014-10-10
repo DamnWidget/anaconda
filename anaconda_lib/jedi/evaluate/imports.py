@@ -22,16 +22,19 @@ from jedi import debug
 from jedi import cache
 from jedi.parser import fast
 from jedi.parser import representation as pr
-from jedi.evaluate import sys_path
+from jedi.evaluate.sys_path import get_sys_path, sys_path_with_modifications
 from jedi.evaluate import helpers
 from jedi import settings
 from jedi.common import source_to_unicode
 from jedi.evaluate import compiled
+from jedi.evaluate import analysis
 from jedi.evaluate.cache import memoize_default, NO_DEFAULT
 
 
 class ModuleNotFound(Exception):
-    pass
+    def __init__(self, name_part):
+        super(ModuleNotFound, self).__init__()
+        self.name_part = name_part
 
 
 class ImportWrapper(pr.Base):
@@ -45,11 +48,18 @@ class ImportWrapper(pr.Base):
     GlobalNamespace = GlobalNamespace()
 
     def __init__(self, evaluator, import_stmt, is_like_search=False, kill_count=0,
-                 direct_resolve=False, is_just_from=False):
+                 nested_resolve=False, is_just_from=False):
+        """
+        :param is_like_search: If the wrapper is used for autocompletion.
+        :param kill_count: Placement of the import, sometimes we only want to
+            resole a part of the import.
+        :param nested_resolve: Resolves nested imports fully.
+        :param is_just_from: Bool if the second part is missing.
+        """
         self._evaluator = evaluator
         self.import_stmt = import_stmt
         self.is_like_search = is_like_search
-        self.direct_resolve = direct_resolve
+        self.nested_resolve = nested_resolve
         self.is_just_from = is_just_from
 
         self.is_partial_import = bool(max(0, kill_count))
@@ -59,11 +69,10 @@ class ImportWrapper(pr.Base):
         if import_stmt.from_ns:
             import_path += import_stmt.from_ns.names
         if import_stmt.namespace:
-            if self._is_nested_import() and not direct_resolve:
+            if self.import_stmt.is_nested() and not nested_resolve:
                 import_path.append(import_stmt.namespace.names[0])
             else:
                 import_path += import_stmt.namespace.names
-        import_path = [str(name_part) for name_part in import_path]
 
         for i in range(kill_count + int(is_like_search)):
             if import_path:
@@ -78,7 +87,7 @@ class ImportWrapper(pr.Base):
 
     @property
     def import_path(self):
-        return self._importer.import_path
+        return self._importer.str_import_path()
 
     def get_defined_names(self, on_import_stmt=False):
         names = []
@@ -94,15 +103,17 @@ class ImportWrapper(pr.Base):
                     names += self._get_module_names([path])
 
                     if self._is_relative_import():
-                        rel_path = self._importer.get_relative_path() + '/__init__.py'
+                        rel_path = os.path.join(self._importer.get_relative_path(),
+                                                '__init__.py')
                         if os.path.exists(rel_path):
-                            m = load_module(rel_path)
+                            m = _load_module(rel_path)
                             names += m.get_defined_names()
             else:
                 if on_import_stmt and isinstance(scope, pr.Module) \
                         and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
-                    paths = self._importer.namespace_packages(pkg_path, self.import_path)
+                    paths = self._importer.namespace_packages(pkg_path,
+                                                              self.import_path)
                     names += self._get_module_names([pkg_path] + paths)
                 if self.is_just_from:
                     # In the case of an import like `from x.` we don't need to
@@ -147,34 +158,6 @@ class ImportWrapper(pr.Base):
             names.append(self._generate_name(name))
         return names
 
-    def _is_nested_import(self):
-        """
-        This checks for the special case of nested imports, without aliases and
-        from statement::
-
-            import foo.bar
-        """
-        return not self.import_stmt.alias and not self.import_stmt.from_ns \
-            and len(self.import_stmt.namespace.names) > 1 \
-            and not self.direct_resolve
-
-    def _get_nested_import(self, parent):
-        """
-        See documentation of `self._is_nested_import`.
-        Generates an Import statement, that can be used to fake nested imports.
-        """
-        i = self.import_stmt
-        # This is not an existing Import statement. Therefore, set position to
-        # 0 (0 is not a valid line number).
-        zero = (0, 0)
-        names = [(unicode(name_part), name_part.start_pos)
-                 for name_part in i.namespace.names[1:]]
-        n = pr.Name(i._sub_module, names, zero, zero, self.import_stmt)
-        new = pr.Import(i._sub_module, zero, zero, n)
-        new.parent = parent
-        debug.dbg('Generated a nested import: %s', new)
-        return new
-
     def _is_relative_import(self):
         return bool(self.import_stmt.relative_count)
 
@@ -185,13 +168,19 @@ class ImportWrapper(pr.Base):
 
         if self.import_path:
             try:
-                scope, rest = self._importer.follow_file_system()
-            except ModuleNotFound:
-                debug.warning('Module not found: %s', self.import_stmt)
+                module, rest = self._importer.follow_file_system()
+            except ModuleNotFound as e:
+                analysis.add(self._evaluator, 'import-error', e.name_part)
                 return []
 
-            scopes = [scope]
-            scopes += remove_star_imports(self._evaluator, scope)
+            if self.import_stmt.is_nested() and not self.nested_resolve:
+                scopes = [NestedImportModule(module, self.import_stmt)]
+            else:
+                scopes = [module]
+
+            star_imports = remove_star_imports(self._evaluator, module)
+            if star_imports:
+                scopes = [StarImportModule(scopes[0], star_imports)]
 
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
@@ -202,7 +191,7 @@ class ImportWrapper(pr.Base):
                     # ``os.path``, because it's a very important one in Python
                     # that is being achieved by messing with ``sys.modules`` in
                     # ``os``.
-                    scopes = self._evaluator.follow_path(iter(rest), [scope], scope)
+                    scopes = self._evaluator.follow_path(iter(rest), [module], module)
             elif rest:
                 if is_goto:
                     scopes = list(chain.from_iterable(
@@ -212,14 +201,72 @@ class ImportWrapper(pr.Base):
                     scopes = list(chain.from_iterable(
                         self._evaluator.follow_path(iter(rest), [s], s)
                         for s in scopes))
-
-            if self._is_nested_import():
-                scopes.append(self._get_nested_import(scope))
         else:
             scopes = [ImportWrapper.GlobalNamespace]
         debug.dbg('after import: %s', scopes)
+        if not scopes:
+            analysis.add(self._evaluator, 'import-error',
+                         self._importer.import_path[-1])
         self._evaluator.recursion_detector.pop_stmt()
         return scopes
+
+
+class NestedImportModule(pr.Module):
+    def __init__(self, module, nested_import):
+        self._module = module
+        self._nested_import = nested_import
+
+    def _get_nested_import_name(self):
+        """
+        Generates an Import statement, that can be used to fake nested imports.
+        """
+        i = self._nested_import
+        # This is not an existing Import statement. Therefore, set position to
+        # 0 (0 is not a valid line number).
+        zero = (0, 0)
+        names = [unicode(name_part) for name_part in i.namespace.names[1:]]
+        name = helpers.FakeName(names, self._nested_import)
+        new = pr.Import(i._sub_module, zero, zero, name)
+        new.parent = self._module
+        debug.dbg('Generated a nested import: %s', new)
+        return helpers.FakeName(str(i.namespace.names[1]), new)
+
+    def _get_defined_names(self):
+        """
+        NesteImportModule don't seem to be actively used, right now.
+        However, they might in the future. If we do more sophisticated static
+        analysis checks.
+        """
+        nested = self._get_nested_import_name()
+        return self._module.get_defined_names() + [nested]
+
+    def __getattr__(self, name):
+        return getattr(self._module, name)
+
+    def __repr__(self):
+        return "<%s: %s of %s>" % (self.__class__.__name__, self._module,
+                                   self._nested_import)
+
+
+class StarImportModule(pr.Module):
+    """
+    Used if a module contains star imports.
+    """
+    def __init__(self, module, star_import_modules):
+        self._module = module
+        self.star_import_modules = star_import_modules
+
+    def scope_names_generator(self, position=None):
+        for module, names in self._module.scope_names_generator(position):
+            yield module, names
+        for s in self.star_import_modules:
+            yield s, s.get_defined_names()
+
+    def __getattr__(self, name):
+        return getattr(self._module, name)
+
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__, self._module)
 
 
 def get_importer(evaluator, import_path, module, level=0):
@@ -262,6 +309,10 @@ class _Importer(object):
         # TODO abspath
         self.file_path = os.path.dirname(path) if path is not None else None
 
+    def str_import_path(self):
+        """Returns the import path as pure strings instead of NameParts."""
+        return tuple(str(name_part) for name_part in self.import_path)
+
     def get_relative_path(self):
         path = self.file_path
         for i in range(self.level - 1):
@@ -277,11 +328,11 @@ class _Importer(object):
         if self.import_path:
             parts = self.file_path.split(os.path.sep)
             for i, p in enumerate(parts):
-                if p == self.import_path[0]:
+                if p == unicode(self.import_path[0]):
                     new = os.path.sep.join(parts[:i])
                     in_path.append(new)
 
-        return in_path + sys_path.sys_path_with_modifications(self.module)
+        return in_path + sys_path_with_modifications(self._evaluator, self.module)
 
     def follow(self, evaluator):
         scope, rest = self.follow_file_system()
@@ -308,9 +359,13 @@ class _Importer(object):
                 sys_path_mod.append(temp_path)
                 old_path, temp_path = temp_path, os.path.dirname(temp_path)
         else:
-            sys_path_mod = list(sys_path.get_sys_path())
+            sys_path_mod = list(get_sys_path())
 
-        return self._follow_sys_path(sys_path_mod)
+        from jedi.evaluate.representation import ModuleWrapper
+        module, rest = self._follow_sys_path(sys_path_mod)
+        if isinstance(module, pr.Module):
+            return ModuleWrapper(self._evaluator, module), rest
+        return module, rest
 
     def namespace_packages(self, found_path, import_path):
         """
@@ -372,7 +427,7 @@ class _Importer(object):
         rest = []
         for i, s in enumerate(self.import_path):
             try:
-                current_namespace = follow_str(current_namespace[1], s)
+                current_namespace = follow_str(current_namespace[1], unicode(s))
             except ImportError:
                 _continue = False
                 if self.level >= 1 and len(self.import_path) == 1:
@@ -381,10 +436,10 @@ class _Importer(object):
                     with common.ignored(ImportError):
                         current_namespace = follow_str(rel_path, '__init__')
                 elif current_namespace[2]:  # is a package
-                    for n in self.namespace_packages(current_namespace[1],
-                                                     self.import_path[:i]):
+                    path = self.str_import_path()[:i]
+                    for n in self.namespace_packages(current_namespace[1], path):
                         try:
-                            current_namespace = follow_str(n, s)
+                            current_namespace = follow_str(n, unicode(s))
                             if current_namespace[1]:
                                 _continue = True
                                 break
@@ -393,10 +448,10 @@ class _Importer(object):
 
                 if not _continue:
                     if current_namespace[1]:
-                        rest = self.import_path[i:]
+                        rest = self.str_import_path()[i:]
                         break
                     else:
-                        raise ModuleNotFound('The module you searched has not been found')
+                        raise ModuleNotFound(s)
 
         path = current_namespace[1]
         is_package_directory = current_namespace[2]
@@ -405,18 +460,18 @@ class _Importer(object):
         if is_package_directory or current_namespace[0]:
             # is a directory module
             if is_package_directory:
-                path += '/__init__.py'
+                path = os.path.join(path, '__init__.py')
                 with open(path, 'rb') as f:
                     source = f.read()
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()
-            return load_module(path, source), rest
+            return _load_module(path, source, sys_path=sys_path), rest
         else:
-            return load_module(name=path), rest
+            return _load_module(name=path, sys_path=sys_path), rest
 
 
-def strip_imports(evaluator, scopes):
+def follow_imports(evaluator, scopes):
     """
     Here we strip the imports - they don't get resolved necessarily.
     Really used anymore? Merge with remove_star_imports?
@@ -424,7 +479,8 @@ def strip_imports(evaluator, scopes):
     result = []
     for s in scopes:
         if isinstance(s, pr.Import):
-            result += ImportWrapper(evaluator, s).follow()
+            for r in ImportWrapper(evaluator, s).follow():
+                result.append(r)
         else:
             result.append(s)
     return result
@@ -439,7 +495,9 @@ def remove_star_imports(evaluator, scope, ignored_modules=()):
 
     and follow these modules.
     """
-    modules = strip_imports(evaluator, (i for i in scope.get_imports() if i.star))
+    if isinstance(scope, StarImportModule):
+        return scope.star_import_modules
+    modules = follow_imports(evaluator, (i for i in scope.get_imports() if i.star))
     new = []
     for m in modules:
         if m not in ignored_modules:
@@ -450,9 +508,11 @@ def remove_star_imports(evaluator, scope, ignored_modules=()):
     return set(modules)
 
 
-def load_module(path=None, source=None, name=None):
+def _load_module(path=None, source=None, name=None, sys_path=None):
     def load(source):
-        if path is not None and path.endswith('.py'):
+        dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
+        if path is not None and path.endswith('.py') \
+                and not dotted_path in settings.auto_import_modules:
             if source is None:
                 with open(path, 'rb') as f:
                     source = f.read()
@@ -484,7 +544,7 @@ def get_modules_containing_name(mods, name):
         with open(path, 'rb') as f:
             source = source_to_unicode(f.read())
             if name in source:
-                return load_module(path, source)
+                return _load_module(path, source)
 
     # skip non python modules
     mods = set(m for m in mods if not isinstance(m, compiled.CompiledObject))

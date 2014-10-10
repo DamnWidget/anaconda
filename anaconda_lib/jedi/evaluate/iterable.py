@@ -32,6 +32,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate import precedence
 from jedi.evaluate.cache import CachedMetaClass, memoize_default, NO_DEFAULT
 from jedi.cache import underscore_memoization
+from jedi.evaluate import analysis
 
 
 class Generator(use_metaclass(CachedMetaClass, pr.Base)):
@@ -43,7 +44,7 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         self.var_args = var_args
 
     @underscore_memoization
-    def get_defined_names(self):
+    def _get_defined_names(self):
         """
         Returns a list of names that define a generator, which can return the
         content of a generator.
@@ -56,13 +57,24 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
             else:
                 yield name
 
+    def scope_names_generator(self, position=None):
+        yield self, self._get_defined_names()
+
     def iter_content(self):
         """ returns the content of __iter__ """
         return self._evaluator.execute(self.func, self.var_args, True)
 
-    def get_index_types(self, index=None):
-        debug.warning('Tried to get array access on a generator: %s', self)
+    def get_index_types(self, index_array):
+        #debug.warning('Tried to get array access on a generator: %s', self)
+        analysis.add(self._evaluator, 'type-error-generator', index_array)
         return []
+
+    def get_exact_index_types(self, index):
+        """
+        Exact lookups are used for tuple lookups, which are perfectly fine if
+        used with generators.
+        """
+        return [self.iter_content()[index]]
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
@@ -89,6 +101,15 @@ class GeneratorMethod(object):
         return getattr(self._builtin_func, name)
 
 
+class GeneratorComprehension(Generator):
+    def __init__(self, evaluator, comprehension):
+        super(GeneratorComprehension, self).__init__(evaluator, comprehension, None)
+        self.comprehension = comprehension
+
+    def iter_content(self):
+        return self._evaluator.eval_statement_element(self.comprehension)
+
+
 class Array(use_metaclass(CachedMetaClass, pr.Base)):
     """
     Used as a mirror to pr.Array, if needed. It defines some getter
@@ -99,25 +120,29 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         self._array = array
 
     @memoize_default(NO_DEFAULT)
-    def get_index_types(self, indexes=()):
+    def get_index_types(self, index_array=()):
         """
         Get the types of a specific index or all, if not given.
 
         :param indexes: The index input types.
         """
-        result = []
+        indexes = create_indexes_or_slices(self._evaluator, index_array)
         if [index for index in indexes if isinstance(index, Slice)]:
             return [self]
 
-        if len(indexes) == 1:
-            # This is indexing only one element, with a fixed index number,
-            # otherwise it just ignores the index (e.g. [1+1]).
-            index = indexes[0]
+        lookup_done = False
+        types = []
+        for index in indexes:
             if isinstance(index, compiled.CompiledObject) \
                     and isinstance(index.obj, (int, str, unicode)):
                 with common.ignored(KeyError, IndexError, TypeError):
-                    return self.get_exact_index_types(index.obj)
+                    types += self.get_exact_index_types(index.obj)
+                    lookup_done = True
 
+        return types if lookup_done else self.values()
+
+    @memoize_default(NO_DEFAULT)
+    def values(self):
         result = list(_follow_values(self._evaluator, self._array.values))
         result += check_array_additions(self._evaluator, self)
         return result
@@ -150,7 +175,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         values = [self._array.values[index]]
         return _follow_values(self._evaluator, values)
 
-    def get_defined_names(self):
+    def scope_names_generator(self, position=None):
         """
         This method generates all `ArrayMethod` for one pr.Array.
         It returns e.g. for a list: append, pop, ...
@@ -158,8 +183,8 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         # `array.type` is a string with the type, e.g. 'list'.
         scope = self._evaluator.find_types(compiled.builtin, self._array.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
-        names = scope.get_defined_names()
-        return [ArrayMethod(n) for n in names]
+        for _, names in scope.scope_names_generator():
+            yield self, [ArrayMethod(n) for n in names]
 
     @common.safe_property
     def parent(self):
@@ -174,14 +199,11 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self._array, name)
 
-    def __getitem__(self):
-        return self._array.__getitem__()
-
     def __iter__(self):
-        return self._array.__iter__()
+        return iter(self._array)
 
     def __len__(self):
-        return self._array.__len__()
+        return len(self._array)
 
     def __repr__(self):
         return "<e%s of %s>" % (type(self).__name__, self._array)
@@ -209,6 +231,26 @@ class ArrayMethod(object):
         return "<%s of %s>" % (type(self).__name__, self.name)
 
 
+class MergedArray(Array):
+    def __init__(self, evaluator, arrays):
+        super(MergedArray, self).__init__(evaluator, arrays[-1]._array)
+        self._arrays = arrays
+
+    def get_index_types(self, mixed_index):
+        return list(chain(*(a.values() for a in self._arrays)))
+
+    def get_exact_index_types(self, mixed_index):
+        raise IndexError
+
+    def __iter__(self):
+        for array in self._arrays:
+            for a in array:
+                yield a
+
+    def __len__(self):
+        return sum(len(a) for a in self._arrays)
+
+
 def get_iterator_types(inputs):
     """Returns the types of any iterator (arrays, yields, __iter__, etc)."""
     iterators = []
@@ -228,22 +270,22 @@ def get_iterator_types(inputs):
 
     result = []
     from jedi.evaluate.representation import Instance
-    for gen in iterators:
-        if isinstance(gen, Array):
+    for it in iterators:
+        if isinstance(it, Array):
             # Array is a little bit special, since this is an internal
             # array, but there's also the list builtin, which is
             # another thing.
-            result += gen.get_index_types()
-        elif isinstance(gen, Instance):
+            result += it.values()
+        elif isinstance(it, Instance):
             # __iter__ returned an instance.
             name = '__next__' if is_py3 else 'next'
             try:
-                result += gen.execute_subscope_by_name(name)
+                result += it.execute_subscope_by_name(name)
             except KeyError:
-                debug.warning('Instance has no __next__ function in %s.', gen)
+                debug.warning('Instance has no __next__ function in %s.', it)
         else:
-            # is a generator
-            result += gen.iter_content()
+            # Is a generator.
+            result += it.iter_content()
     return result
 
 

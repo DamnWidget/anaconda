@@ -11,6 +11,7 @@ import pep257
 
 
 class PEP257(object):
+
     """PEP-257 class for Anaconda
     """
 
@@ -51,5 +52,5 @@ class PEP257(object):
                 error.code, error.message.split(': ', 1)[1]
             ),
             'message': '[V] PEP 257 (%s): %s',
-            'pep8': True
+            'underline_range': True
         }
