@@ -105,8 +105,6 @@ class Pep8Error(LintError):
         )
 
 
-
-
 class Pep8Warning(LintError):
     """
     Lint error clss for PEP-8 warnings

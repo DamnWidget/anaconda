@@ -1,0 +1,13 @@
+Changes in 1.3.3
+================
+
+- Vagrant Support Fixed
+- Added imports validation mechanism, resolves https://github.com/DamnWidget/anaconda/issues/216
+- Added imports validation to Vagrant Server
+
+**notes**: Some times, the imports validation mechanism doesn't work too well
+with relative imports, because that, you can add `# noqa` at the end of an
+import that is mark as invalid if you are sure that anaconda is not handling
+well relative paths
+
+For more detailed information about those changes run git v1.3.2..v1.3.3 on git repository

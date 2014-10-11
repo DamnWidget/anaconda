@@ -362,11 +362,20 @@
     ],
 
     /*
-        Ordinarily pyflakes will issue a warning when 'from foo import *' is used,
-        but it is ignored since the warning is not that helpful. If you want to see this warning,
-        set this option to false.
+        Ordinarily pyflakes will issue a warning when 'from foo import *'
+        is used, but it is ignored since the warning is not that helpful.
+        If you want to see this warning, set this option to false.
     */
     "pyflakes_ignore_import_*": true,
+
+    /*
+        Set the following option to true if you want that anaconda check
+        the validity of your imports when the linting process is fired.
+
+        WARNING: take into account that anaconda compiles and import the
+        modules in the JsonServer memory segment in order to check this
+    */
+    "validate_imports": false,
 
     /*
         Debug and development options

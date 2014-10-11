@@ -260,6 +260,18 @@ Please, take a look at the configuration file to get a list of available options
 
 Anaconda will add an `import <undefined_name>` at the end of your imports block if you use the context menu Autoimport anaconda option using the right mouse click over an undefined name in your buffer. Note that anaconda will NOT check if that is a valid import or not.
 
+#### Validating Imports
+
+Anaconda can validate the imports in your files if the configuration option `validate_imports`
+is set to `true`.
+
+This feature is disabled by default.
+
+**Note**: Some times, the imports validation mechanism doesn't work too well
+with relative imports, because that, you can add `# noqa` at the end of an
+import that is mark as invalid if you are sure that anaconda is not handling
+well relative paths
+
 Anaconda linting
 ----------------
 

@@ -3,9 +3,6 @@
 # Copyright (C) 2014 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
-import os
-import sys
-
 from commands import McCabe
 from lib.anaconda_handler import AnacondaHandler
 from linting.anaconda_mccabe import AnacondaMcCabe
