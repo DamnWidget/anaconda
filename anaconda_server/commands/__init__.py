@@ -14,6 +14,7 @@ from .pyflakes import PyFlakes
 from .autoformat import AutoPep8
 from .find_usages import FindUsages
 from .autocomplete import AutoComplete
+from .import_validator import ImportValidator
 from .complete_parameters import CompleteParameters
 
 
@@ -30,5 +31,6 @@ __all__ = [
     'AutoPep8',
     'FindUsages',
     'AutoComplete',
+    'ImportValidator'
     'CompleteParameters'
 ]

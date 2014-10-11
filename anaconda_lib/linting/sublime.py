@@ -320,6 +320,7 @@ def run_linter(view=None):
             view, 'pyflakes_disabled', False),
         'use_pylint': get_settings(view, 'use_pylint', False),
         'use_pep257': get_settings(view, 'pep257', False),
+        'validate_imports': get_settings(view, 'validate_imports', False),
         'pep257_ignore': get_settings(view, 'pep257_ignore', []),
         'pep8_rcfile': get_settings(view, 'pep8_rcfile'),
         'pylint_rcfile': get_settings(view, 'pylint_rcfile'),

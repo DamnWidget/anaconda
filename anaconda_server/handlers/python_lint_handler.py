@@ -9,11 +9,12 @@ from functools import partial
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../anaconda_lib'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 
-from lib.anaconda_handler import AnacondaHandler
+from import_validator import Validator
 from linting.anaconda_pep8 import Pep8Linter
-from commands import PyFlakes, PEP257, PEP8, PyLint
+from lib.anaconda_handler import AnacondaHandler
 from linting.anaconda_pyflakes import PyFlakesLinter
 from linting.anaconda_pep257 import PEP257 as AnacondaPep257
+from commands import PyFlakes, PEP257, PEP8, PyLint, ImportValidator
 
 try:
     from linting.anaconda_pylint import PyLinter
@@ -34,7 +35,8 @@ class PythonLintHandler(AnacondaHandler):
         self.callback = callback
         self.command = command
         self._linters = {
-            'pyflakes': False, 'pylint': False, 'pep8': False, 'pep257': False
+            'pyflakes': False, 'pylint': False, 'pep8': False, 'pep257': False,
+            'import_validator': False
         }
         self._errors = []
         self._failures = []
@@ -103,6 +105,13 @@ class PythonLintHandler(AnacondaHandler):
             self.uid, self.vid, PyLinter, rcfile, filename
         )
 
+    def import_validator(self, settings, code, filename=None):
+        """Run the import validator linter
+        """
+
+        lint = Validator
+        ImportValidator(self._merge, self.uid, self.vid, lint, code, filename)
+
     def _normalize(self, settings, data):
         """Normalize pylint data before to merge
         """
@@ -143,6 +152,9 @@ class PythonLintHandler(AnacondaHandler):
         self._linters['pylint'] = settings.get('use_pylint', False)
         self._linters['pep257'] = settings.get('use_pep257', False)
         self._linters['pep8'] = settings.get('pep8', True)
+        self._linters['import_validator'] = settings.get(
+            'validate_imports', False
+        )
 
         # disable pyflakes if pylint is in use
         if self._linters['pylint'] is True:
