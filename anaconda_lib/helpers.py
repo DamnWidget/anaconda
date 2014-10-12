@@ -133,7 +133,7 @@ def get_settings(view, name, default=None):
     """
 
     if view is None:
-        return None
+        return default
 
     plugin_settings = sublime.load_settings('Anaconda.sublime-settings')
 
