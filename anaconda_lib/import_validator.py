@@ -7,24 +7,10 @@
 Anaconda imports validator
 """
 
-import os
-import sys
-import logging
-import functools
+from jedi import Script
+
 
 DEBUG = True
-
-
-def sys_append(func):
-
-    @functools.wraps(func)
-    def wrapper(self, module_line):
-        sys.path.append(self.filepath)
-        result = func(self, module_line)
-        sys.path.remove(sys.path[len(sys.path)-1])
-        return result
-
-    return wrapper
 
 
 class Validator:
@@ -34,69 +20,40 @@ class Validator:
     def __init__(self, source, filename):
         self.source = source
         self.errors = []
-        self.filepath = '.'
-        if filename is not None:
-            self.filepath = os.path.dirname(filename)
+        self.filename = filename
 
     def is_valid(self):
         """Determine if the source imports are valid or not
         """
 
         for line, lineno in self._extract_imports():
-            if not self._validate_import(line):
-                self.errors.append((line, lineno))
+            error, valid = self._validate_import(line)
+            if not valid:
+                self.errors.append((error, lineno))
 
         return not self.errors
 
-    @sys_append
     def _validate_import(self, module_line):
-        """Try to validate the given import line
+        """Try to validate the given iport line
         """
 
-        # we don't want to mess with sublime text runtime interpreter
-        if 'sublime' in module_line:
-            return True
-
-        # maybe we don't want to do QA there
         if 'noqa' in module_line:
             return True
 
-        # relative imports doesn't works so lets do a trick
-        line = []
-        parent_append = False
+        error = []
+        error_string = 'can\'t import {}'
+        valid = True
         for word in module_line.split():
-            if word.startswith('..'):
-                parent_append = True
-                line.append(word[2:])
-            elif word.startswith('.'):
-                line.append(word[1:])
-            else:
-                line.append(word)
+            if word in ('from', 'import', 'as'):
+                continue
 
-        line = ' '.join(line)
-        if 'from  import' in line:  # this happens after strip: from . import ?
-            line = line.replace('from  ', '').strip()
+            offset = module_line.find(word) + len(word) / 2
+            if not Script(module_line, 1, offset, self.filename).goto():
+                if valid is True:
+                    valid = False
+                error.append(word)
 
-        if parent_append is True:
-            path = self.filepath.rsplit('/', 1)[0]
-            if path not in sys.path:
-                sys.path.append(path)
-
-        success = True
-        c = compile(line, '<string>', 'single')
-        try:
-            exec(c)
-        except (ImportError, ValueError, SystemError) as error:
-            if 'sublime' in error:  # don't fuck up ST3 plugins development :)
-                success = True
-            else:
-                if DEBUG:
-                    logging.debug(error)
-                success = False
-
-        if parent_append is True:
-            sys.path.remove(sys.path[len(sys.path)-1])
-        return success
+        return '' if valid else error_string.format(' '.join(error)), valid
 
     def _extract_imports(self):
         """Extract imports from the source
