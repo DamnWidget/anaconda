@@ -1,1 +1,13 @@
-1.3.4.txt
+Changes in 1.3.4
+================
+
+- Vagrant Branch Updated
+- Improved support for imports validation
+- Fixd bug that was spotted in another project (https://github.com/randy3k/UnitTesting/pull/16/files#r18746892) that also affects anaconda
+
+**notes**: If your imports depends of paths appended to the sys.path in tuntime
+they are going to be mark as non valid for anaconda, because that, you can add
+`# noqa` at the end of an import that is mark as invalid if you are sure that
+anaconda is not handling well the import
+
+For more detailed information about those changes run git v1.3.3..v1.3.4 on git repository
