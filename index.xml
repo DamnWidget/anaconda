@@ -3,7 +3,7 @@
   <channel>
       <title>Recent Content on Anaconda, the Python IDE for Sublime Text 3 </title>
       <generator uri="https://gohugo.io">Hugo</generator>
-    <link>http://idamnwidget.github.io/anaconda/index.xml</link>
+    <link>http://damnwidget.github.io/anaconda/index.xml</link>
     <language>en-us</language>
     <author>Oscar Campos</author>
     <copyright>Copyright (c) 2014, Oscar Campos, all rights reserved</copyright>
@@ -11,10 +11,10 @@
     
     <item>
       <title>Vagrant Integration</title>
-      <link>http://idamnwidget.github.io/anaconda/vagrant/</link>
+      <link>http://damnwidget.github.io/anaconda/vagrant/</link>
       <pubDate>Fri, 24 Oct 2014 14:40:35 IST</pubDate>
       <author>Oscar Campos</author>
-      <guid>http://idamnwidget.github.io/anaconda/vagrant/</guid>
+      <guid>http://damnwidget.github.io/anaconda/vagrant/</guid>
       <description>
 
 &lt;p&gt;Anaconda supports five basic vagrant commands that can be used through the
@@ -208,10 +208,10 @@ local machine.
     
     <item>
       <title>Anaconda&#39;s Test Runner</title>
-      <link>http://idamnwidget.github.io/anaconda/tests_runner/</link>
+      <link>http://damnwidget.github.io/anaconda/tests_runner/</link>
       <pubDate>Fri, 24 Oct 2014 13:45:09 IST</pubDate>
       <author>Oscar Campos</author>
-      <guid>http://idamnwidget.github.io/anaconda/tests_runner/</guid>
+      <guid>http://damnwidget.github.io/anaconda/tests_runner/</guid>
       <description>
 
 &lt;p&gt;The anaconda&amp;rsquo;s test runner is an original contribution by &lt;a href=&#34;https://github.com/NorthIsUp&#34;&gt;@NorthisUp&lt;/a&gt;
@@ -397,10 +397,10 @@ previous one.&lt;/p&gt;
     
     <item>
       <title>Configure Anaconda the Right Way</title>
-      <link>http://idamnwidget.github.io/anaconda/anaconda_settings/</link>
+      <link>http://damnwidget.github.io/anaconda/anaconda_settings/</link>
       <pubDate>Wed, 22 Oct 2014 21:20:53 IST</pubDate>
       <author>Oscar Campos</author>
-      <guid>http://idamnwidget.github.io/anaconda/anaconda_settings/</guid>
+      <guid>http://damnwidget.github.io/anaconda/anaconda_settings/</guid>
       <description>
 
 &lt;p&gt;Anaconda works fine out of the box (always that there is a Python interpreter
@@ -718,10 +718,10 @@ the anaconda&amp;rsquo;s custom asynchronous IOLoop.&lt;/p&gt;
     
     <item>
       <title>A Powerful IDE</title>
-      <link>http://idamnwidget.github.io/anaconda/IDE/</link>
+      <link>http://damnwidget.github.io/anaconda/IDE/</link>
       <pubDate>Tue, 21 Oct 2014 20:03:59 IST</pubDate>
       <author>Oscar Campos</author>
-      <guid>http://idamnwidget.github.io/anaconda/IDE/</guid>
+      <guid>http://damnwidget.github.io/anaconda/IDE/</guid>
       <description>
 
 &lt;p&gt;Anaconda re-implement some Sublime Text 3 features and implements another ones
@@ -1501,10 +1501,10 @@ rules to their SublimeText theme:&lt;/p&gt;
     
     <item>
       <title>About Anaconda</title>
-      <link>http://idamnwidget.github.io/anaconda/about/</link>
+      <link>http://damnwidget.github.io/anaconda/about/</link>
       <pubDate>Sun, 12 Oct 2014 18:47:22 IST</pubDate>
       <author>Oscar Campos</author>
-      <guid>http://idamnwidget.github.io/anaconda/about/</guid>
+      <guid>http://damnwidget.github.io/anaconda/about/</guid>
       <description>
 
 &lt;p&gt;Anaconda is a plugin that turns your Sublime Text 3 into a full featured Python
