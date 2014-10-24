@@ -1,15 +1,17 @@
 # Anaconda
 
-Anaconda turns your Sublime Text 3 into a full featured Python IDE.
+Anaconda turns your Sublime Text 3 into a full featured Python IDE. Read the plugin documentation on [http://damnwidget.github.io/anaconda](http://damnwidget.github.io/anaconda).
 
-Read the plugin documentation on [http://damnwidget.github.io/anaconda](http://damnwidget.github.io/anaconda)
+# Getting Started 
 
-### [Autocompletion on dot](http://damnwidget.github.io/anaconda/IDE/#toc_3)
-### [Powerful IDE](http://damnwidget.github.io/anaconda/IDE/)
-### [Advanced Configuration](http://damnwidget.github.io/anaconda/anaconda_settings/)
-### [Run Tests using Anaconda](http://damnwidget.github.io/anaconda/tests_runner/)
-### [Linting theme customization](http://damnwidget.github.io/anaconda/IDE/#toc_50)
-### [Using Vagrant Environments](http://damnwidget.github.io/anaconda/vagrant/)
+Anaconda works out of the box but there are multitude of options and features that you can tune and adapt to your own style or needs.
+
+* [Autocompletion on dot](http://damnwidget.github.io/anaconda/IDE/#toc_3)
+* [Powerful IDE](http://damnwidget.github.io/anaconda/IDE/)
+* [Advanced Configuration](http://damnwidget.github.io/anaconda/anaconda_settings/)
+* [Run Tests using Anaconda](http://damnwidget.github.io/anaconda/tests_runner/)
+* [Linting theme customization](http://damnwidget.github.io/anaconda/IDE/#toc_50)
+* [Using Vagrant Environments](http://damnwidget.github.io/anaconda/vagrant/)
 
 # License
 
