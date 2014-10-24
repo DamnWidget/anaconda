@@ -1,0 +1,1083 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en-US" prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb#">
+<head>
+    <meta charset="utf-8">
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="description" content="Anaconda is an autocompletion, liniting, code analyzer and IDE for SublimeText 3">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+<meta name="keywords" content="">
+
+ 
+<meta property="og:type" content="article"/>
+<meta property="og:description" content=""/>
+<meta property="og:title" content="A Powerful IDE : spf13.com"/>
+<meta property="og:site_name" content="spf13 is Steve Francia"/>
+<meta property="og:image" content="" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="" />
+<meta property="og:image:height" content="" />
+<meta property="og:url" content="http://idamnwidget.github.io/anaconda/IDE/">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2014-10-21"/>
+<meta property="article:modified_time" content="2014-10-21"/>
+
+
+
+
+
+<meta name="twitter:card" content="summary">
+
+<meta name="twitter:site" content="@damnwidget">
+<meta name="twitter:title" content="A Powerful IDE : damnwidget.github.io/anaconda">
+<meta name="twitter:creator" content="@spf13">
+<meta name="twitter:description" content="">
+<meta name="twitter:image:src" content="">
+<meta name="twitter:domain" content="damnwidget.github.io">
+
+
+
+    <base href="http://idamnwidget.github.io/anaconda">
+    <title>Anaconda, the Python IDE for Sublime Text 3</title>
+    <link rel="canonical" href="http://idamnwidget.github.io/anaconda/IDE/">
+    <link href="" rel="alternate" type="application/rss+xml" title="Anaconda, the Python IDE for Sublime Text 3" />
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="/anaconda/css/anaconda.css">
+<link rel="stylesheet" href="/anaconda/css/prettify.css">
+
+
+
+
+</head>
+<body>
+
+<header class="navbar navbar-inverse navbar-fixed-top docs-nav" role="banner">
+
+    <div class="container">
+        <div class="navbar-header">
+            <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">AnacondaST3</a>
+
+        </div>
+        <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+
+            <ul class="nav navbar-nav">
+                <li><a href="anaconda/IDE/">Powerful IDE</a></li>
+                <li><a href="anaconda/anaconda_settings">Configure Anaconda</a></li>
+                <li><a href="anaconda/tests_runner/">Tests Runner</a></li>
+                <li><a href="anaconda/vagrant/">Vagrant Integration</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+
+                <li><a href="anaconda/about/">About</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        Github <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="https://github.com/DamnWidget/anaconda">Anaconda Repo</a></li>
+                        <li><a href="https://github.com/DamnWidget/anaconda/issues">Anaconda Issues</a></li>
+                        <li><a href="https://github.com/DamnWidget/anaconda/wiki">Anaconda Wiki</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+</header>
+
+<div class="modal fade" id="package-control">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title">Installation using Package Control</h4>
+      </div>
+      <div class="modal-body">
+        <p>To install anaconda trough Package Control show the <code>Command Palette</code> (Tools -> Command Palette) and write <code>install package</code></p>
+<p><img src="/anaconda/img/screenshots/command_palette.png"></img></p>
+<p>then write <code>anaconda</code> in the input window popup that just appeared (that is the SublimeText 3 Command Palette) and press <code>enter</code></p>
+<p><img src="/anaconda/img/screenshots/install_anaconda.png"></img></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="anaconda-header" id="content">
+  <div class="container">
+    <h1><span class="anaconda">Anaconda</span> <span class="ide">Python IDE</span></h1>
+    <p>Anaconda turns your Sublime Text 3 into a full featured Python development IDE</p>
+    <a role="button" class="btn btn-primary btn-large btn-download" href="https://github.com/DamnWidget/anaconda/archive/v1.3.4.tar.gz"><span class="glyphicon glyphicon-download-alt"></span> Download Anaconda v1.3.4</a>
+    <button type="button" class="btn btn-primary btn-large btn-pc" data-toggle="modal" data-target="#package-control"><span class="glyphicon glyphicon-cloud"></span> Use Package Control</button>
+  </div>
+</section>
+
+
+<section class="banner">
+  <div class="container">
+    <div class="anaconda-social">
+        <ul class="anaconda-social-buttons">
+            <li>
+                <iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=DamnWidget&amp;repo=anaconda&amp;type=watch&amp;count=true" width="100" height="20" title="Star on GitHub"
+                ></iframe>
+            </li>
+            <li>
+                <iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=DamnWidget&amp;repo=anaconda&amp;type=fork&amp;count=true" width="96" height="20" title="Fork on GitHub"></iframe>
+            </li>
+            <li class="follow-btn">
+                <iframe
+                    src="//platform.twitter.com/widgets/follow_button.html?screen_name=damnwidget&amp;show_screen_name=true&amp;show_count=true"
+                    class="twitter-follow-button twitter-follow-button"
+                    style="width: 226px; height: 20px;"
+                    allowtransparency="true"
+                    frameborder="0"
+                    scrolling="no">
+                </iframe>
+            </li>
+            <li class="tweet-btn">
+                <iframe
+                    src="https://platform.twitter.com/widgets/tweet_button.html?size=m&amp;count=horizontal&amp;lanf=en&amp;url=https%3A%2F%2Fdamnwidget.github.io%2Fanaconda&amp;via=damnwidget&amp;related=damnwidget&amp;text=Anaconda%20plugin%20turns%20your%20SublimeText%203%20into%20a%20full%20featured%20Python%20IDE&amp;hashtags=ST3"
+                    class="twitter-share-button twitter-tweet-button twitter-share-button twitter-count-horizontal"
+                    style="width: 109px; height: 20px;"
+                    allowtransparency="true"
+                    frameborder="0"
+                    scrolling="no">
+                </iframe>
+            </li>
+        </ul>
+    </div>
+  </div>
+</section>
+
+
+<div id="main" class="container anaconda-container">
+
+    <div class="about">
+
+        <div class="row">
+            <div class="col-md-3">
+                <div id="TableOfContents" class="sidebar hidden-print hidden-xs hidden-sm affix-top" role="complementary">
+<ul class="nav">
+<li><a href="#toc_0">Python Auto Completion</a>
+<ul class="nav">
+<li><a href="#toc_1">How it works?</a>
+<ul class="nav">
+<li><a href="#toc_2">AutoCompletion configuration</a>
+<ul class="nav">
+<li><a href="#toc_3">Autocompletion on dot [.]</a></li>
+<li><a href="#toc_4">Remove Python snippets from completions</a></li>
+<li><a href="#toc_5">Complete function and class parameters</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li><a href="#toc_6">Goto Definition</a>
+<ul class="nav">
+<li><a href="#toc_7">How it works?</a>
+<ul class="nav">
+<li><a href="#toc_8">How to use it?</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#toc_9">Find Usages</a>
+<ul class="nav">
+<li><a href="#toc_10">How it works?</a>
+<ul class="nav">
+<li><a href="#toc_11">How to use it?</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#toc_12">Get Documentation</a>
+<ul class="nav">
+<li><a href="#toc_13">How it works?</a>
+<ul class="nav">
+<li><a href="#toc_14">How to use it?</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#toc_15">Refactor Rename</a>
+<ul class="nav">
+<li>
+<ul class="nav">
+<li><a href="#toc_16">How to use it?</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#toc_17">McCabe code complxity checker</a>
+<ul class="nav">
+<li><a href="#toc_18">How it works?</a>
+<ul class="nav">
+<li><a href="#toc_19">How to use it?</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#toc_20">Autoimport undefined names</a>
+<ul class="nav">
+<li><a href="#toc_21">How it works?</a>
+<ul class="nav">
+<li><a href="#toc_22">How to use it?</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#toc_23">Imports Validator</a>
+<ul class="nav">
+<li><a href="#toc_24">How it works?</a></li>
+</ul></li>
+<li><a href="#toc_25">Anaconda&rsquo;s Build System</a></li>
+<li><a href="#toc_26">Anaconda Linting</a>
+<ul class="nav">
+<li><a href="#toc_27">How it works?</a></li>
+<li><a href="#toc_28">Linting behaviour</a></li>
+<li><a href="#toc_29">What can anaconda lint?</a></li>
+<li><a href="#toc_30">Disabling the linter</a></li>
+<li><a href="#toc_31">Disabling the linter in certain files</a></li>
+<li><a href="#toc_32">Enabling pep257</a></li>
+<li><a href="#toc_33">Disabling certain errors for pep257</a></li>
+<li><a href="#toc_34">Disabling pep8</a></li>
+<li><a href="#toc_35">Disabling certain pep8 errors</a></li>
+<li><a href="#toc_36">Disabling specific PyFlakes errors</a></li>
+<li><a href="#toc_37">Using PyLint as PyFlakes alternative</a></li>
+<li><a href="#toc_38">Showing linting error list</a></li>
+<li><a href="#toc_39">Jump to the next error</a></li>
+</ul></li>
+<li><a href="#toc_40">Autoformat PEP8 Errors</a>
+<ul class="nav">
+<li><a href="#toc_41">How it works?</a></li>
+<li><a href="#toc_42">What about the timeout?</a></li>
+<li><a href="#toc_43">Fire PEP8 autoformating on save</a></li>
+<li><a href="#toc_44">Supported PEP8 Autoformat errors list?</a></li>
+</ul></li>
+<li><a href="#toc_45">Look &amp; Feel</a>
+<ul class="nav">
+<li><a href="#toc_46">Gutter Marks</a></li>
+<li><a href="#toc_47">Error lint style</a></li>
+<li><a href="#toc_48">Error underlines</a></li>
+<li><a href="#toc_49">Persist linter marks while typing</a></li>
+<li><a href="#toc_50">Linting theme customization</a>
+<ul class="nav">
+<li><a href="#toc_51">XML File example</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+            </div>
+
+            <div class="col-md-9" role="main">
+                <div class="anaconda-content">
+                    <h1 id="title">A Powerful IDE</h1>
+                    <article id="content">
+                        
+
+<p>Anaconda re-implement some Sublime Text 3 features and implements another ones
+on it&rsquo;s own.</p>
+
+<h1 id="toc_0">Python Auto Completion</h1>
+
+<p>Anaconda uses the powerful <a href="https://github.com/davidhalter/jedi">jedi</a> library
+to offer advanced auto-completion capabilities to the end user.</p>
+
+<h2 id="toc_1">How it works?</h2>
+
+<p>When the user is writing, eventually, Sublime Text 3 shows a popup with possible
+code completions based on the open files buffers, if <code>tab</code> (if auto completion
+on tab is enabled in Sublime Text 3) or <code>ctrl+space</code> is pressed, the user can
+force the shown of this popup.</p>
+
+<p>Anaconda hooks the regular Sublime Text 3 call and add it&rsquo;s own completion
+results asking about available completions to the (included in the plugin) jedi
+library that return a list of the possible words to complete and which type
+of object is (class, function, parameter, import etc).</p>
+
+<p>This process is totally transparent for the user as it happens in totally
+asynchronous way so the user is never aware that the auto-completion engine
+is running under the hood.</p>
+
+<p>When anaconda has a result, it sends it back to the Sublime Text 3 that will
+shown the popup that we already spoke to the user that can then select whatever
+word she want to use.</p>
+
+<h3 id="toc_2">AutoCompletion configuration</h3>
+
+<p>The auto-completion will work out of the box (if your configured Python
+interpeter is valid and is in the PATH) but it can be tunned with several
+options.</p>
+
+<h4 id="toc_3">Autocompletion on dot [.]</h4>
+
+<p>If the user want to trigger the autocompletion when she write down the dot
+character it can be configured easily editing the <code>Python.sublime-settings</code>
+configuration file in the  <code>Packages/User</code> directory (Preferences -&gt; Browse
+Packages) and add the following:</p>
+
+<pre class="prettyprint"><code class="language-json">{
+    &quot;auto_complete_triggers&quot;: [{&quot;selector&quot;: &quot;source.python - string - comment
+    - constant.numeric&quot;, &quot;characters&quot;: &quot;.&quot;}]
+}
+</code></pre>
+
+<p><strong>note</strong>: it&rsquo;s possible that the user have to create this file if it doesn&rsquo;t
+exists yet</p>
+
+<h4 id="toc_4">Remove Python snippets from completions</h4>
+
+<p>The user can also choose to don&rsquo;t show Python snippets in their autocompletion
+results setting the option <code>hide_snippers_on_completion</code> as <code>true</code> in the
+plugin or project configuration.</p>
+
+<h4 id="toc_5">Complete function and class parameters</h4>
+
+<p>If the option <code>complete_parameters</code> is set as <code>true</code>, anaconda will add class
+and method/function parameters to its completions when you type <code>(</code> after a
+completion has been done.</p>
+
+<p>If <code>complete_all_parameters</code> is set as <code>true</code>, it will add all the possible
+parameters, is it&rsquo;s set as <code>false</code>, only mandatory parameters will be placed.</p>
+
+<p>No key binding is needed to use this feature so it doesn&rsquo;t interfere in any
+way with your Sublime Text 3 normal operations.<br><br><br></p>
+
+<h1 id="toc_6">Goto Definition</h1>
+
+<p>Sublime Text 3 already implement <code>goto</code> functions but it requires that you
+have the file opened in one of your active buffers. Anaconda is able to go to
+a file where a variable, function, method, class or module is defined whatever
+is located on (always that is not a built-in symbol).</p>
+
+<h2 id="toc_7">How it works?</h2>
+
+<p>Anaconda just asks the underlying jedi engine where the symbol under the
+cursor is defined and jumps there.</p>
+
+<h3 id="toc_8">How to use it?</h3>
+
+<p>This feature can be triggered in several ways:</p>
+
+<ul>
+<li>Linux: <code>super+g</code></li>
+<li>OS X and Windows: <code>ctrl+alt+g</code></li>
+<li>Vintage Mode (Command Mode): <code>gd</code></li>
+<li>Context Menu: <code>Anaconda &gt; Goto Definition</code></li>
+<li>Command Palette: <code>Command Palette &gt; Anaconda: Goto</code>
+<br><br><br></li>
+</ul>
+
+<h1 id="toc_9">Find Usages</h1>
+
+<p>With this command, the user can find all the locations where a symbol (
+variable, function, method, class or module) is being used.</p>
+
+<h2 id="toc_10">How it works?</h2>
+
+<p>Again, anaconda asks the underlying jedi engine where the symbol under the
+cursor is being used and present a list of possible locations, if the user
+select one, the file listed is opened (if it wasn&rsquo;t already, and the cursor
+is located on it&rsquo;s line). An white blinking gutter arrow appears for some
+seconds to indicate the user where the cursor is located at.</p>
+
+<h3 id="toc_11">How to use it?</h3>
+
+<p>The find usages command can be triggered in the following ways:</p>
+
+<ul>
+<li>Linux: <code>super+f</code></li>
+<li>OS X and Windows: <code>ctrl+alt+f</code></li>
+<li>Context Menu: <code>Anaconda &gt; Find Usages</code></li>
+<li>Command Palette : <code>Command Palette &gt; Anaconda: Find</code>
+<br><br><br></li>
+</ul>
+
+<h1 id="toc_12">Get Documentation</h1>
+
+<p>Anaconda can look for and show the user the docstring of whatever function,
+method, class, module or package. The user just have to put the cursor over the
+symbol that want to get the docstring from (or after a parenthesis, for example
+after write <code>sys.exit(</code>) and then trigger the command to get the function
+signature and docstring in a bottom panel without lose focus form the buffer.</p>
+
+<h2 id="toc_13">How it works?</h2>
+
+<p>As usual, anaconda asks the underlying jedi engine about the symbol under the
+cursor signature and docstring (if any) and then show it to the user using
+an additional panel.</p>
+
+<h3 id="toc_14">How to use it?</h3>
+
+<p>The command can be triggered with:</p>
+
+<ul>
+<li>Linux: <code>super+d</code></li>
+<li>OS X and Windows: <code>ctrl+alt+d</code></li>
+<li>Context Menu: <code>Anaconda &gt; Show Documentation</code></li>
+<li>Command Palette: <code>Command Palatte &gt; Anaconda: Show</code></li>
+</ul>
+
+<h1 id="toc_15">Refactor Rename</h1>
+
+<p>With this command, the user can (try to) rename the object under the cursor
+in a project basis scope in a safe way.</p>
+
+<h3 id="toc_16">How to use it?</h3>
+
+<p>The command can be trigger using the context menu <code>Anaconda &gt; Rename object
+under the cursor</code><br><br><br></p>
+
+<h1 id="toc_17">McCabe code complxity checker</h1>
+
+<p>The users can run the
+<a href="http://en.wikipedia.org/wiki/Cyclomatic_complexity">McCabe complexity checker</a>
+tool in whatever python file that they want. It&rsquo;s threshold can be adjusted
+configuring the option <code>mccabe_threshold</code> in the configuration file on in
+the project configuration file.</p>
+
+<h2 id="toc_18">How it works?</h2>
+
+<p>Anaconda includes part of the <a href="https://github.com/flintwork/mccabe">McCabe</a>
+Python tool and can execute it in any open buffer, get the results and present
+a list of functions (and lines) that presents a complexity higher than the
+configured threshold. If no complexity is found, a descriptive message
+appears in the status bar.</p>
+
+<h3 id="toc_19">How to use it?</h3>
+
+<p>The McCabe complexity checker can be fired:</p>
+
+<ul>
+<li>Using the Context Menu: <code>Anaconda &gt; McCabe complexity check</code></li>
+<li>Using the Command Palette: <code>Command Palette &gt; Anaconda: McCabe</code>
+<br><br><br></li>
+</ul>
+
+<h1 id="toc_20">Autoimport undefined names</h1>
+
+<p>Anaconda can add an <code>import &lt;undefined_name&gt;</code> literal at the end of the imports
+block if the anaconda auto importer is used in an undefined name in the buffer.</p>
+
+<p><strong>note</strong>: Anaconda will <strong>NOT</strong> check if that import is valid or not before
+place it in the buffer.</p>
+
+<h2 id="toc_21">How it works?</h2>
+
+<p>Anaconda auto-import feature is really a dummy or toy feature and is under
+redesign to offer a better experience to the user.</p>
+
+<h3 id="toc_22">How to use it?</h3>
+
+<p>Just place the cursor over the undefined name in the buffer and use the
+context menu <code>Anaconda &gt; Autoimport undefined word under the cursor</code>
+<br><br><br></p>
+
+<h1 id="toc_23">Imports Validator</h1>
+
+<p>One of the latest additions to anaconda is the ability to validate the imports
+in the project files if the <code>validate_imports</code> option is set as <code>true</code>. Note
+that this option is set as <code>false</code> by default.</p>
+
+<h2 id="toc_24">How it works?</h2>
+
+<p>Anaconda asks the underlying jedi engine about the buffer/file/project imports
+to detect if the symbols are valid and the configured python interpreter is
+able to see them.</p>
+
+<p><strong>Note</strong>: Anaconda does not execute the imports or any other code related with
+them</p>
+
+<p><strong>Note 2</strong>: Anaconda is not able to detect as valid imports that depends on
+dynamic stuff like addition of specific paths to the <code>sys.paths</code> list, if
+the users project uses them, they have to take into account that anaconda
+is going to mark those imports as non valid even if they are valid in runtime.
+For this reason, the users can add the <code># noqa</code> magic comment on those ones
+to tell anaconda to don&rsquo;t mark them as invalid.</p>
+
+<p>(Yes, it will validate imports made with the auto import feature described
+above)<br><br><br></p>
+
+<h1 id="toc_25">Anaconda&rsquo;s Build System</h1>
+
+<p>As you already know, one of the weakness of Sublime Text 3 is that it uses
+it&rsquo;s embedded Python interpreter when you try to build the files that you
+are working on.</p>
+
+<p>Anaconda adds it&rsquo;s own build system that is based in your system Python
+interpreter instead (or in any python interpreter that you configure in
+your <code>python_interpreter</code> option).</p>
+
+<p>The name of the anaconda&rsquo;s python builder is <code>Anaconda Python Builder</code> and
+you should be able to find it under your Sublime Text&rsquo;s <code>Tools</code> menu as soon
+as you install anaconda in your Sublime Text if you are using projects.</p>
+
+<p><strong>note</strong>: if you change your <code>python_interpreter</code> in your configuration,
+anaconda will rewrite your project file to update the python interpreter
+used by the build system automatically.</p>
+
+<p><strong>note</strong>: If you want to know more about <code>python_interpreter</code> in anaconda,
+take a look at <a href="/anaconda/anaconda_settings/">Configure Anaconda the Right Way</a>
+<br><br></p>
+
+<h1 id="toc_26">Anaconda Linting</h1>
+
+<p>Anaconda was based/inspired/ported from the old Sublime Text 2 SublimeLinter
+plugin. Although anaconda linter was inspired by SublimeLinter, anaconda
+linting is much faster than SublimeLinter (for ST3) and SublimeLinter3 for
+several reasons:</p>
+
+<p>1.- Anaconda does not use delayed queues to perform the linting work, instead
+of that, anaconda fire a single call to the linter methods <code>n</code> seconds after
+the last key was pressed by the user whole typing. Those <code>n</code> seconds can be
+configured by the user (by default is <code>0.5s</code>)
+2 .- Anaconda is totally asynchronous so it never blocks the Sublime Text GUI,
+because that, anaconda&rsquo;s linting is smooth and flawless.</p>
+
+<p><strong>note</strong>: SublimeLinter 3 improved considerably their linting trigger
+mechanisms, they can still block the ST3 GUI but seems to be smoother than
+old Sublime Linter for Sublime Text 2</p>
+
+<h2 id="toc_27">How it works?</h2>
+
+<p>Anaconda listen for events that come from the Sublime Text GUI itself, in
+certain events, the linter can be fired, for example, after save or open a
+buffer. When the linting process is fired, anaconda send a request to the
+Anaconda&rsquo;s JsonServer (a standalone and isolated server where all the heavy
+processment takes place) to lint the related buffer and return back the
+control to Sublime Text 3 immediately, when the Anaconda&rsquo;s JsonServer has
+linted the buffer, it return it back to anaconda that proceed to lint the
+buffer. Anaconda linting is really smooth and fast.</p>
+
+<p>As anaconda can use whatever python interpeter that the user want to use (
+including virtual environments and remote interpreters), anaconda can lint
+the code for a Python version different than the version included with
+Sublime Text 3 (Python 3.3.3).</p>
+
+<h2 id="toc_28">Linting behaviour</h2>
+
+<ul>
+<li><strong>Always mode (defaut)</strong>: When <code>anaconda_linting_behaviour</code> is set as
+<code>always</code>, the linters are fired in the background as the user edit the
+file that is working on and in load/save events. The linting process is fired
+also when a buffer gains the application focus. It is performed in the
+background in an external application and is handled in another execution
+thread so it doesn&rsquo;t block the Sublime Text GUI ever. The process is fired
+when the plugin detects that the user stopped typing for a determined and
+configurable period of time that can be defined setting the value of the
+configuration variable <code>anaconda_linter_delay</code>, that is <code>0.5s</code> default.</li>
+<li><strong>Load and Save mode</strong>: When <code>anaconda_linting_bahaviour</code> is set as
+<code>load-save</code>, the linters are fired on load/save and focus gain only.</li>
+<li><strong>Save only mode</strong>: When <code>anaconda_linting_behaviour</code> is set as <code>save-only</code>
+the linters are fired on file saving only.</li>
+</ul>
+
+<h2 id="toc_29">What can anaconda lint?</h2>
+
+<p>Anaconda can lint:</p>
+
+<ul>
+<li>Syntax errors and inconsistencies (using PyFlakes or PyLint)</li>
+<li>PEP8 Violations</li>
+<li>PEP257 Violations</li>
+</ul>
+
+<p>PyFlakes, pep8 and pep257 libraries are included in the plugin, to use PyLint
+instead of PyFlakes, the PyLint utility has to be installed and be visible
+by the user&rsquo;s configured python interpreter.</p>
+
+<p><strong>note</strong>: PEP257 linter is disabled by default
+<strong>note</strong>: PyLint can&rsquo;t lint unsaved buffers</p>
+
+<h2 id="toc_30">Disabling the linter</h2>
+
+<p>There is people that doesn&rsquo;t care about linting or they just use another
+plugin to do it, they can completely deactivate this feature setting the
+<code>anaconda_linting</code> as <code>false</code> in the anaconda or project configuration.</p>
+
+<p><strong>note</strong>: imports validation depends of anaconda linting handler so it will
+not work if anaconda linting is disabled</p>
+
+<h2 id="toc_31">Disabling the linter in certain files</h2>
+
+<p>Sometimes, the users need to open or work on files that they don&rsquo;t maintain
+at all because they are part of a third party software, deprecated code or
+they have been written by developers that doesn&rsquo;t care about the PEP8. In
+those situations the users can completely disable the linting in just those
+files using the Command Palette <code>Anaconda: Disable linting
+on this file</code>.</p>
+
+<p>Disabled files will persist between Sublime Text 3 sessions, and they can
+be linted again using the Command Palette <code>Anaconda: Enable linting on this
+file</code>.</p>
+
+<h2 id="toc_32">Enabling pep257</h2>
+
+<p>Anaconda supports docstrings linting using <a href="http://legacy.python.org/dev/peps/pep-0257/">pep257</a>
+specification. This feature is disabled by default but can be enabled setting
+the <code>pep257</code> as <code>true</code> in the configuration file or the project file.</p>
+
+<h2 id="toc_33">Disabling certain errors for pep257</h2>
+
+<p>Specific errors can be disabled adding them (as string elements into a list) on
+the <code>pep257_ignore</code> user settings in the config file. The <code>D209</code> is disabled
+by default as it has been deprecated.</p>
+
+<h2 id="toc_34">Disabling pep8</h2>
+
+<p>Pep8 violations can be disabled setting the value of the <code>pep8</code> configuration
+variable as <code>false</code>.</p>
+
+<h2 id="toc_35">Disabling certain pep8 errors</h2>
+
+<p>Is also possible to disable just some errors like the infamous <code>line too long
+E501</code> error in pep8. It can be done adding them to the <code>pep8_ignore</code> list using
+the error code like:</p>
+
+<pre class="prettyprint"><code class="language-json">&quot;pep8_ignore&quot;:
+[
+    &quot;E501&quot;
+]
+</code></pre>
+
+<p>There is an equivalent for PyFlakes errors called <code>pyflakes_ignore</code>, look at
+the section below for details.</p>
+
+<h2 id="toc_36">Disabling specific PyFlakes errors</h2>
+
+<p>The user can also disable specific PyFlakes errors (unused import module for
+example) uncommenting them in the <code>pyflakes_explicit_ignore</code> list in the
+global anaconda configuration file or adding this list to any project
+configuration with the warning/errors that they wish to disable. For example,
+to disable the unused import warning:</p>
+
+<pre class="prettyprint"><code class="language-json">&quot;pyflakes_explicit_ignore&quot;:
+    [
+        &quot;UnusedImport&quot;
+    ],
+</code></pre>
+
+<p><strong>note</strong>: for specific information about the different mechanisms that can
+be used to configure anaconda, refer to the <a href="https://damnwidget.github.com/anaconda/configuration">Configuring Anaconda</a> section.</p>
+
+<h2 id="toc_37">Using PyLint as PyFlakes alternative</h2>
+
+<p>Anaconda has full support for PyLint as linter application but some
+considerations has to be taken before do it.</p>
+
+<p>Due 3rd party dependencies required for PyLint, Anaconda doesn&rsquo;t add it like do
+with pep8 and PyFlakes libraries, if users want to use PyLint as their linter
+they need to download and install it by themselves.</p>
+
+<p>Anaconda does not use a subprocess to call the PyLint linter like Pylinter
+plugin does. We just import some files from pylint and run the inter from the
+JsonServer process capturing the system stdout file descriptor. That means
+that anaconda <em>will</em> use your configured python interpreter (and environment)
+in order to lint your files with PyLint so it should be installed in your
+virtual environment if you are using virtualenv.</p>
+
+<p>PyLint <em>doesn&rsquo;t</em> support lint buffers that are not saved yet in the file
+system so it <em>can&rsquo;t</em> lint files until you save them.</p>
+
+<p>Anaconda uses E, W and V codes to maintain compability with PyFlakes and PEP8
+linters so the PyLint mapping is as follows:</p>
+
+<pre class="prettyprint"><code class="language-json">mapping = {
+    'C': 'V',
+    'E': 'E',
+    'F': 'E',
+    'I': 'V',
+    'R': 'W',
+    'W': 'W'
+}
+</code></pre>
+
+<p>PyLint errors can be ignored using the configuration option <code>pyling_ignore</code>.
+When PyLint is used, PyFlakes is totally turned off.</p>
+
+<p><strong>note</strong>: PyLint can be really annoying use it at your own risk</p>
+
+<h2 id="toc_38">Showing linting error list</h2>
+
+<p>Users can show a quick panel with all the errors in the file that they are
+working on using the command palette <code>Anaconda: Show error list</code> or in the
+contextual menu <code>Anaconda &gt; Show error list</code></p>
+
+<h2 id="toc_39">Jump to the next error</h2>
+
+<p>Users can use the <code>Anaconda: Next lint error</code> command from the Command Palette
+or from the context menu to navigate trough the lint errors on the file. This
+is useful for anyone fixing PEP8 violations in a file for example.
+<br><br><br></p>
+
+<h1 id="toc_40">Autoformat PEP8 Errors</h1>
+
+<p>Anaconda supports the <a href="https://github.com/hhatto/autopep8">AutoPEP8</a>
+tool and its integrated and distributed as part of the plugin itself. Users
+can reformat their files to follow PEP8 automatically using the Command
+Palette <code>Anaconda: Autoformat PEP8 Errors</code> or choosing the same option in the
+contextual menu.</p>
+
+<p>The autoformat operation is done asynchronous but as it&rsquo;s a heavy process, it
+can timeout before has any effect, take a look in the next sections to know
+a bit more about autoformat and it&rsquo;s options.</p>
+
+<h2 id="toc_41">How it works?</h2>
+
+<p>AutoPEP8 is not the fastest tool in the world as it perform several complex
+syntactic checks and parses. When the autoformat is fired, anaconda run it
+into a separate process and continue it&rsquo;s normal operations but the buffer
+that the user asked to autoformat is set as <code>read-only</code> while the autoformat
+operation returns back the new modified buffer or a timeout/error occurs.</p>
+
+<h2 id="toc_42">What about the timeout?</h2>
+
+<p>The timeout is one second long by default and can be configured setting the
+configuration option <code>auto_formatting_timeout</code> in your project settings or
+in the global anaconda configuration settings file.</p>
+
+<h2 id="toc_43">Fire PEP8 autoformating on save</h2>
+
+<p>The autoformating process can be fired automatically when the file is saved
+setting the configuration option <code>auto_formatting</code> as <code>true</code> in the options.</p>
+
+<h2 id="toc_44">Supported PEP8 Autoformat errors list?</h2>
+
+<p>Autoformat can handle the following list of errors:</p>
+
+<blockquote>
+<p>E101 - Reindent all lines.<br>
+E111 - Reindent all lines.<br>
+E121 - Fix indentation to be a multiple of four.<br>
+E122 - Add absent indentation for hanging indentation.<br>
+E123 - Align closing bracket to match opening bracket.<br>
+E124 - Align closing bracket to match visual indentation.<br>
+E125 - Indent to distinguish line from next logical line.<br>
+E126 - Fix over-indented hanging indentation.<br>
+E127 - Fix visual indentation.<br>
+E128 - Fix visual indentation.<br>
+E129 - Indent to distinguish line from next logical line.<br>
+E201 - Remove extraneous whitespace.<br>
+E202 - Remove extraneous whitespace.<br>
+E203 - Remove extraneous whitespace.<br>
+E211 - Remove extraneous whitespace.<br>
+E221 - Fix extraneous whitespace around keywords.<br>
+E222 - Fix extraneous whitespace around keywords.<br>
+E223 - Fix extraneous whitespace around keywords.<br>
+E224 - Remove extraneous whitespace around operator.<br>
+E225 - Fix missing whitespace around operator.<br>
+E226 - Fix missing whitespace around operator.<br>
+E227 - Fix missing whitespace around operator.<br>
+E228 - Fix missing whitespace around operator.<br>
+E231 - Add missing whitespace.<br>
+E241 - Fix extraneous whitespace around keywords.<br>
+E242 - Remove extraneous whitespace around operator.<br>
+E251 - Remove whitespace around parameter &lsquo;=&rsquo; sign.<br>
+E261 - Fix spacing after comment hash.<br>
+E262 - Fix spacing after comment hash.<br>
+E271 - Fix extraneous whitespace around keywords.<br>
+E272 - Fix extraneous whitespace around keywords.<br>
+E273 - Fix extraneous whitespace around keywords.<br>
+E274 - Fix extraneous whitespace around keywords.<br>
+E301 - Add missing blank line.<br>
+E302 - Add missing 2 blank lines.<br>
+E303 - Remove extra blank lines.<br>
+E304 - Remove blank line following function decorator.<br>
+E401 - Put imports on separate lines.<br>
+E501 - Try to make lines fit within &ndash;max-line-length characters.<br>
+E502 - Remove extraneous escape of newline.<br>
+E701 - Put colon-separated compound statement on separate lines.<br>
+E702 - Put semicolon-separated compound statement on separate lines.<br>
+E703 - Put semicolon-separated compound statement on separate lines.<br>
+E711 - Fix comparison with None.<br>
+E712 - Fix comparison with boolean.<br>
+W191 - Reindent all lines.<br>
+W291 - Remove trailing whitespace.<br>
+W293 - Remove trailing whitespace on blank line.<br>
+W391 - Remove trailing blank lines.<br>
+E26  - Format block comments.<br>
+W6   - Fix various deprecated code (via lib2to3).<br>
+W602 - Fix deprecated form of raising exception.<br></p>
+</blockquote>
+
+<p><br><br></p>
+
+<h1 id="toc_45">Look &amp; Feel</h1>
+
+<p>Anaconda look &amp; feel can be extensively customized.</p>
+
+<h2 id="toc_46">Gutter Marks</h2>
+
+<p>Gutter marks are enabled by default, they can be disabled setting the
+configuration option <code>anaconda_gutter_marks</code> as <code>false</code> in the plugin or
+project configuration files.</p>
+
+<p>By default, the <code>basic</code> gutter marks theme is used, this is, round marks
+are displayed in the left gutter bar of the Sublime Text 3 buffer. To display
+fancy icons, the users can set the <code>anaconda_gutter_theme</code> configuration
+option to any of the available themes:</p>
+
+<table class="table table-striped">
+<thead>
+<tr>
+<th>Gutter Theme</th>
+<th>Error</th>
+<th>Warning</th>
+<th>Violation</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Alpha</td>
+<td><img src="/anaconda/img/gutter_themes/alpha-illegal.png" alt="Error" />
+</td>
+<td><img src="/anaconda/img/gutter_themes/alpha-warning.png" alt="Warning" />
+</td>
+<td><img src="/anaconda/img/gutter_themes/alpha-violation.png" alt="Violation" />
+</td>
+</tr>
+
+<tr>
+<td>Bright</td>
+<td><img src="/anaconda/img/gutter_themes/bright-illegal.png" alt="Error" />
+</td>
+<td><img src="/anaconda/img/gutter_themes/bright-warning.png" alt="Warning" />
+</td>
+<td><img src="/anaconda/img/gutter_themes/bright-violation.png" alt="Violation" />
+</td>
+</tr>
+
+<tr>
+<td>Dark</td>
+<td><img src="/anaconda/img/gutter_themes/dark-illegal.png" alt="Error" />
+</td>
+<td><img src="/anaconda/img/gutter_themes/dark-warning.png" alt="Warning" />
+</td>
+<td><img src="/anaconda/img/gutter_themes/dark-violation.png" alt="Violation" />
+</td>
+</tr>
+
+<tr>
+<td>Simple</td>
+<td><img src="/anaconda/img/gutter_themes/simple-illegal.png" alt="Error" />
+</td>
+<td><img src="/anaconda/img/gutter_themes/simple-warning.png" alt="Warning" />
+</td>
+<td><img src="/anaconda/img/gutter_themes/simple-violation.png" alt="Violation" />
+</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="toc_47">Error lint style</h2>
+
+<p>Anaconda will draw boxes around the errors, warnings, and violations in the
+code that is being linted, this behaviour can be configured setting the value
+of the configuration option <code>anaconda_linter_mark_style</code>, the possible options
+are:</p>
+
+<ul>
+<li>outline (the defautlt) - it will draw a border line around the affected lines</li>
+<li>fill - it will draw a border and fill it with background color around the
+affected lines</li>
+<li>none - it will not draw anything</li>
+</ul>
+
+<table class="table table-striped">
+<thead>
+<tr>
+<th>Outline</th>
+<th>Fill</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><img src="/anaconda/img/mark_style/outline.png" alt="outline" />
+</td>
+<td><img src="/anaconda/img/mark_style/fill.png" alt="fill" />
+</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="toc_48">Error underlines</h2>
+
+<p>The characteristic red underline that appears under the errors on the lines,
+you can set the <code>anaconda_linter_underlines</code> as <code>false</code>.</p>
+
+<p><strong>note</strong>: that option takes effect only when the <code>anaconda_linter_mark_style</code>
+is set to <code>none</code>.</p>
+
+<h2 id="toc_49">Persist linter marks while typing</h2>
+
+<p>Anaconda will remove all the lint marks from the buffer while the user is
+typing by default, this behaviour can be also configured setting the option
+<code>anaconda_linter_persistent</code> as <code>true</code>.</p>
+
+<h2 id="toc_50">Linting theme customization</h2>
+
+<p>Users can customize anaconda linting marks as they like adding some custom
+rules to their SublimeText theme:</p>
+
+<table class="table table-striped">
+<thead>
+<tr>
+<th>Tag name</th>
+<th>Suggested background (dark)</th>
+<th>Suggested foregorund (dark)</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>anaconda.outline.illegal</td>
+<td>#ff4a52</td>
+<td>#ffffff</td>
+</tr>
+
+<tr>
+<td>anaconda.underline.illegal</td>
+<td>#ff0000</td>
+<td>N/A</td>
+</tr>
+
+<tr>
+<td>anaconda.outline.warning</td>
+<td>#df9400</td>
+<td>#ffffff</td>
+</tr>
+
+<tr>
+<td>anaconda.underline.warning</td>
+<td>#ff0000</td>
+<td>N/A</td>
+</tr>
+
+<tr>
+<td>anaconda.outline.violation</td>
+<td>#ffffff33</td>
+<td>#ffffff</td>
+</tr>
+
+<tr>
+<td>anaconda.underline.violation</td>
+<td>#ff0000</td>
+<td>N/A</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="toc_51">XML File example</h3>
+
+<p>You can of course copy this piece of XML and paste into your theme</p>
+
+<pre class="prettyprint"><code class="language-xml">&lt;!-- Anaconda --&gt;
+&lt;dict&gt;
+  &lt;key&gt;name&lt;/key&gt;
+  &lt;string&gt;anaconda Error Outline&lt;/string&gt;
+  &lt;key&gt;scope&lt;/key&gt;
+  &lt;string&gt;anaconda.outline.illegal&lt;/string&gt;
+  &lt;key&gt;settings&lt;/key&gt;
+  &lt;dict&gt;
+      &lt;key&gt;background&lt;/key&gt;
+      &lt;string&gt;#FF4A52&lt;/string&gt;
+      &lt;key&gt;foreground&lt;/key&gt;
+      &lt;string&gt;#FFFFFF&lt;/string&gt;
+  &lt;/dict&gt;
+&lt;/dict&gt;
+&lt;dict&gt;
+  &lt;key&gt;name&lt;/key&gt;
+  &lt;string&gt;anaconda Error Underline&lt;/string&gt;
+  &lt;key&gt;scope&lt;/key&gt;
+  &lt;string&gt;anaconda.underline.illegal&lt;/string&gt;
+  &lt;key&gt;settings&lt;/key&gt;
+  &lt;dict&gt;
+      &lt;key&gt;background&lt;/key&gt;
+      &lt;string&gt;#FF0000&lt;/string&gt;
+  &lt;/dict&gt;
+&lt;/dict&gt;
+&lt;dict&gt;
+  &lt;key&gt;name&lt;/key&gt;
+  &lt;string&gt;anaconda Warning Outline&lt;/string&gt;
+  &lt;key&gt;scope&lt;/key&gt;
+  &lt;string&gt;anaconda.outline.warning&lt;/string&gt;
+  &lt;key&gt;settings&lt;/key&gt;
+  &lt;dict&gt;
+      &lt;key&gt;background&lt;/key&gt;
+      &lt;string&gt;#DF9400&lt;/string&gt;
+      &lt;key&gt;foreground&lt;/key&gt;
+      &lt;string&gt;#FFFFFF&lt;/string&gt;
+  &lt;/dict&gt;
+&lt;/dict&gt;
+&lt;dict&gt;
+  &lt;key&gt;name&lt;/key&gt;
+  &lt;string&gt;anaconda Warning Underline&lt;/string&gt;
+  &lt;key&gt;scope&lt;/key&gt;
+  &lt;string&gt;anaconda.underline.warning&lt;/string&gt;
+  &lt;key&gt;settings&lt;/key&gt;
+  &lt;dict&gt;
+      &lt;key&gt;background&lt;/key&gt;
+      &lt;string&gt;#FF0000&lt;/string&gt;
+  &lt;/dict&gt;
+&lt;/dict&gt;
+&lt;dict&gt;
+  &lt;key&gt;name&lt;/key&gt;
+  &lt;string&gt;anaconda Violation Outline&lt;/string&gt;
+  &lt;key&gt;scope&lt;/key&gt;
+  &lt;string&gt;anaconda.outline.violation&lt;/string&gt;
+  &lt;key&gt;settings&lt;/key&gt;
+  &lt;dict&gt;
+      &lt;key&gt;background&lt;/key&gt;
+      &lt;string&gt;#ffffff33&lt;/string&gt;
+      &lt;key&gt;foreground&lt;/key&gt;
+      &lt;string&gt;#FFFFFF&lt;/string&gt;
+  &lt;/dict&gt;
+&lt;/dict&gt;
+&lt;dict&gt;
+  &lt;key&gt;name&lt;/key&gt;
+  &lt;string&gt;anaconda Violation Underline&lt;/string&gt;
+  &lt;key&gt;scope&lt;/key&gt;
+  &lt;string&gt;anaconda.underline.violation&lt;/string&gt;
+  &lt;key&gt;settings&lt;/key&gt;
+  &lt;dict&gt;
+      &lt;key&gt;background&lt;/key&gt;
+      &lt;string&gt;#FF0000&lt;/string&gt;
+  &lt;/dict&gt;
+&lt;/dict&gt;
+</code></pre>
+
+                    </article>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+<footer class="anaconda-footer" role="contentinfo">
+  <div class="container">
+    <p>This project is maintained by <a href="https://github.com/DamnWidget">@damnwidget</a> with the help of <a href="https://github.com/DamnWidget/anaconda/graphs/contributors">several contributors</a>.
+    <p>Code licensed under <a href="http://www.gnu.org/licenses/gpl.html">GPL</a>, documentation under <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons Attribution">CC BY 3.0</a></p>
+    <p>This page is hosted in <a href="https://pages.github.com/">GitHub Pages</a> and has been generated with <a href="https://github.com/spf13/hugo">Hugo</a></p>
+  </div>
+</footer>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/holder/2.2.0/holder.min.js"></script>
+<script src="/anaconda/javascript/anaconda.js"></script>
+<script src="/anaconda/javascript/prettify/prettify.js"></script>
+
+<script>
+  !function ($) {
+    $(function(){
+      window.prettyPrint && prettyPrint()
+    })
+  }(window.jQuery)
+</script>
+
+</body>
+</html>

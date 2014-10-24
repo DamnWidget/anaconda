@@ -1,0 +1,1667 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Recent Content on Anaconda, the Python IDE for Sublime Text 3 </title>
+      <generator uri="https://gohugo.io">Hugo</generator>
+    <link>http://idamnwidget.github.io/anaconda/index.xml</link>
+    <language>en-us</language>
+    <author>Oscar Campos</author>
+    <copyright>Copyright (c) 2014, Oscar Campos, all rights reserved</copyright>
+    <updated>Fri, 24 Oct 2014 14:40:35 IST</updated>
+    
+    <item>
+      <title>Vagrant Integration</title>
+      <link>http://idamnwidget.github.io/anaconda/vagrant/</link>
+      <pubDate>Fri, 24 Oct 2014 14:40:35 IST</pubDate>
+      <author>Oscar Campos</author>
+      <guid>http://idamnwidget.github.io/anaconda/vagrant/</guid>
+      <description>
+
+&lt;p&gt;Anaconda supports five basic vagrant commands that can be used through the
+Command Palette:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Vagrant Init&lt;/li&gt;
+&lt;li&gt;Vagrant Up&lt;/li&gt;
+&lt;li&gt;Vagrant Reload&lt;/li&gt;
+&lt;li&gt;Vagrant Status&lt;/li&gt;
+&lt;li&gt;Vagrant SSH&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;To be able to use those commands you have to add a minimum valid configuration
+file to use vagrant integration in your project.&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_0&#34;&gt;Vagrant Environments&lt;/h1&gt;
+
+&lt;p&gt;Anaconda knows how to use vagrant boxes environments to lint and complete
+your code. Some IDE utilities could not work (depending on the feature and
+how is your project hierarchy) when vagrant environments are in use. For
+example, the Goto IDE command will not work for third party libraries if
+you don&amp;rsquo;t have those libraries installed in your development machine but
+only in the vagrant box (as Sublime Text 3 will not be able to found it
+to open it).&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_1&#34;&gt;Vagrant guest machine preparation&lt;/h2&gt;
+
+&lt;p&gt;In order to use remote python interpreters living on guest vagrant machines
+with anaconda, the user has to prepare the guest environment first following
+the next steps.&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_2&#34;&gt;Clone anaconda in the guest machine&lt;/h3&gt;
+
+&lt;p&gt;Your guest machine is going to use a modified version of &lt;code&gt;anaconda_lib&lt;/code&gt; and
+anaconda&amp;rsquo;s &lt;code&gt;json_server&lt;/code&gt; which you can just checkout from the anaconda git
+repository.&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;(vagrant guest machine) $ git clone https://github.com/DamnWidget/anaconda
+(vagrant guest machine) $ cd anaconda
+(vagrant guest machine) $ git checkout vagrant_server
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The &lt;code&gt;vagrant_server&lt;/code&gt; branch is maintained separately from the main project
+but it should implement the same features.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: you are responsible of update your &lt;code&gt;vagrant_server&lt;/code&gt; branch when
+there is an anaconda update, you can do it just doing a &lt;code&gt;git pull&lt;/code&gt; in the
+directory inside your vagrant guest.&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_3&#34;&gt;Configure your vagrant_server&lt;/h3&gt;
+
+&lt;p&gt;Now tat you have a fresh copy of the vagrant server, the next step is to
+edit the configuration file to adapt it to your meeds.&lt;/p&gt;
+
+&lt;p&gt;There is three different ways to configure the vagrant support depending
+of what your specific needs are.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code&gt;vagrant_server&lt;/code&gt; configuration file is just a python script that defines
+the value or four variables&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-python&#34;&gt;python_interpeter = &amp;quot;python3&amp;quot;       # the python interpreter to use
+project = &amp;quot;MyAmazingProject&amp;quot;        # the name of the project (for logging
+purposes mainly )
+extra_paths = None                  # homologous to regular anaconda
+extra_paths (they must live in the guest machine)
+port = &#39;19360&#39;                      # the port to listen on (must be a string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;toc_4&#34;&gt;Starting the vagrant_server&lt;/h3&gt;
+
+&lt;p&gt;Next step is to start the server executing the file &lt;code&gt;server.py&lt;/code&gt; with any
+python interpreter that you want.&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;(vagrant guest machine) $ python server.py
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;toc_5&#34;&gt;Configure Sublime Text 3 project&lt;/h3&gt;
+
+&lt;p&gt;Next step is to configure your Sublime Text 3 project to use the new vagrant
+environment.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: vagrant environments works &lt;code&gt;per-project&lt;/code&gt; only, that means there is
+no a global anaconda vagrant configuration .Anaconda will try to use always a
+local python interpreter if not specific project configuration is provided so
+the user will always provide a valid project configuration file in order to use
+vagrant support with anaconda.&lt;/p&gt;
+
+&lt;p&gt;A vagrant configured anaconda project looks like this&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;build_systems&amp;quot;:
+    [
+        {
+            &amp;quot;name&amp;quot;: &amp;quot;Anaconda Python Builder&amp;quot;,
+            &amp;quot;selector&amp;quot;: &amp;quot;source.python&amp;quot;,
+            &amp;quot;shell_cmd&amp;quot;: &amp;quot;python -u \&amp;quot;$file\&amp;quot;&amp;quot;
+        }
+    ],
+    &amp;quot;folders&amp;quot;:
+    [
+        {
+            &amp;quot;follow_symlinks&amp;quot;: true,
+            &amp;quot;path&amp;quot;: &amp;quot;.&amp;quot;
+        }
+    ],
+    &amp;quot;settings&amp;quot;:
+    {
+        &amp;quot;vagrant_environment&amp;quot;: {
+            &amp;quot;directory&amp;quot;: &amp;quot;~/vagrant&amp;quot;,       // Directory where the Vagrantfile is located in your local machine
+            &amp;quot;machine&amp;quot;: &amp;quot;Ubuntu-14.04&amp;quot;,      // If no machine is provided, default will be used
+            &amp;quot;network&amp;quot;: {
+                &amp;quot;mode&amp;quot;: &amp;quot;private&amp;quot;,          // configured vagrant network mode
+                &amp;quot;address&amp;quot;: &amp;quot;192.168.5.10&amp;quot;,  // guest machine IP address
+                &amp;quot;port&amp;quot;: 19360               // guest machine anaconda vagrant_server port
+            }
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: anaconda can&amp;rsquo;t switch from regular to vagrant environment so you
+have to restart your Sublime Text 3 after this step
+&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_6&#34;&gt;Vagrant Network Configuration&lt;/h1&gt;
+
+&lt;p&gt;Vagrant support works only when vagrant network is properly configured, the
+possible valid configurations are shown below&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_7&#34;&gt;Forwarded Port&lt;/h2&gt;
+
+&lt;p&gt;Forwarded ports allow you to access a port on your host machine and have all
+data forwarded to a port on the guest machine, over either TCP or UDP.&lt;/p&gt;
+
+&lt;p&gt;Configure one is as easy as set the right configuration in your &lt;code&gt;Vagrantfile&lt;/code&gt;.&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-ruby&#34;&gt;    config.vm.network :forwarded_port, guest: 19360, host: 1936
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Then you can configure your anaconda to use this port in your local host to
+connect to the guest machine jsonserver.&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;    ...
+    &amp;quot;network&amp;quot;: {
+        &amp;quot;mode&amp;quot;: &amp;quot;forwarded&amp;quot;,
+        &amp;quot;port&amp;quot;: 1936
+    }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;toc_8&#34;&gt;Private Networks&lt;/h2&gt;
+
+&lt;p&gt;Private networks allow you to access your guest machine by some address that
+is not publicly accessible fro the global Internet. You can configure a private
+network for your guest machine setting up the &lt;code&gt;vm.network&lt;/code&gt; option in your
+&lt;code&gt;Vagrantfile&lt;/code&gt; like&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-ruby&#34;&gt;    config.vm.network &amp;quot;private_network&amp;quot;, ip: &amp;quot;192.168.5.10&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You have to specify a vagrant network configuration in your anaconda project
+configuration, for a private network with the previous settings it will be&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;    ...
+    &amp;quot;network&amp;quot;: {
+        &amp;quot;mode&amp;quot;: &amp;quot;private&amp;quot;,
+        &amp;quot;address&amp;quot;: &amp;quot;192.168.5.10&amp;quot;,
+        &amp;quot;port&amp;quot;: 19360
+    }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;toc_9&#34;&gt;Public Networks&lt;/h2&gt;
+
+&lt;p&gt;Public networks allow your guest machines to be allocated from other hosts in
+your local network (or even from the Internet). To configure a public network
+just set the &lt;code&gt;vm.network&lt;/code&gt; config option in your &lt;code&gt;Vagrantfile&lt;/code&gt; like&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-ruby&#34;&gt;    config.vm.network :public_network
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;In this case, we don&amp;rsquo;t have to specify the address of our guest machine in
+the anaconda configuration (mainly because we don&amp;rsquo;t know it)&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;When the vagrant network mode is set as public, anaconda will discover the
+guest IP address trough the `vagrant ssh` command in automatic way in the
+local machine.
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Anaconda&#39;s Test Runner</title>
+      <link>http://idamnwidget.github.io/anaconda/tests_runner/</link>
+      <pubDate>Fri, 24 Oct 2014 13:45:09 IST</pubDate>
+      <author>Oscar Campos</author>
+      <guid>http://idamnwidget.github.io/anaconda/tests_runner/</guid>
+      <description>
+
+&lt;p&gt;The anaconda&amp;rsquo;s test runner is an original contribution by &lt;a href=&#34;https://github.com/NorthIsUp&#34;&gt;@NorthisUp&lt;/a&gt;
+to the project.&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_0&#34;&gt;How to run tests?&lt;/h1&gt;
+
+&lt;p&gt;There is different ways to access the tests runner commands in Anaconda, the
+most common one is just click with the secondary mouse click in the file that
+you want to run tests from and select the option that you want from the
+anaconda&amp;rsquo;s contextual menu.&lt;/p&gt;
+
+&lt;p&gt;You can also use the Command Palette &lt;code&gt;Anaconda: test&lt;/code&gt; if you don&amp;rsquo;t want to
+remove your hand from the keyboard.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: Of course you can configure whatever shortcut that you want to run
+anaconda tests but they are not added by default&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_1&#34;&gt;Available options&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Run Last Tests&lt;/strong&gt;: It will repeat the last test that you ran&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Run Current Test&lt;/strong&gt;: It will run the test under the cursor&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Run Project Tests&lt;/strong&gt;: Run the project whole test suite&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Run Current File Tests&lt;/strong&gt;: Run all the tests defined in the current file&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;toc_2&#34;&gt;Configuration Options&lt;/h2&gt;
+
+&lt;p&gt;Anaconda&amp;rsquo;s test runner support several options to fine tune it&amp;rsquo;s behaviour,
+to run some kind of test runners (like twisted&amp;rsquo;s trial) you need to configure
+them in order to make it work&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: By default, anaconda&amp;rsquo;s test runner try to run &lt;code&gt;nosetests&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_3&#34;&gt;test_before_command&lt;/h3&gt;
+
+&lt;p&gt;If this options is set, anaconda will try to run the given command before run
+the test suite.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: If you need to run more than one command, just use a list of
+commands like:&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;test_before_command&amp;quot;: [&amp;quot;cmd1&amp;quot;, &amp;quot;cmd2&amp;quot;, &amp;quot;cmd3&amp;quot;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;toc_4&#34;&gt;test_after_command&lt;/h3&gt;
+
+&lt;p&gt;As before, if this option is set, anaconda will try to run the given command
+after run the test suite, this is useful to clean up&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: again you can pass a list of commands with the same format than for
+the &lt;code&gt;test_before_command&lt;/code&gt; option&lt;/p&gt;
+
+&lt;p&gt;### test_command&lt;/p&gt;
+
+&lt;p&gt;This is the command that anaconda is going to run in order to execute your
+test suite, this is &lt;code&gt;nosetests&lt;/code&gt; by default. An example of configuration is
+as follows:&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;test_command&amp;quot;: &amp;quot;python -m unittest discover&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;toc_5&#34;&gt;test_delimeter&lt;/h3&gt;
+
+&lt;p&gt;This option defines the test delimiter to use after your test module names,
+by default this is &lt;code&gt;:&lt;/code&gt;, for example, if you set this option to &lt;code&gt;.&lt;/code&gt; and your
+module nae is &lt;code&gt;&amp;quot;test_server.py&amp;quot;&lt;/code&gt; it will try &lt;code&gt;test_server.ServerTest&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_6&#34;&gt;test_virtualenv&lt;/h3&gt;
+
+&lt;p&gt;Unfortunately, anaconda&amp;rsquo;s test runner can&amp;rsquo;t use your defined
+&lt;code&gt;python_interpreter&lt;/code&gt;, this is why you have to configure this option to tell
+the tests runner that you want to use an specific virtual environment to run
+your test suite.&lt;/p&gt;
+
+&lt;p&gt;Anaconda will activate the virtual environment, run the suite and deactivate it.&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_7&#34;&gt;test_project_path&lt;/h3&gt;
+
+&lt;p&gt;If this option is set, anaconda will add whatever text is on it after the
+command that is going to be used to run the test suite, this is needed for
+example to run test suites that uses the &lt;code&gt;twisted&lt;/code&gt; library &lt;code&gt;trial&lt;/code&gt; command.&lt;/p&gt;
+
+&lt;p&gt;For example, if we have this configuration:&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;test_command&amp;quot;: &amp;quot;trial&amp;quot;,
+&amp;quot;test_project_path&amp;quot;: &amp;quot;mamba&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Anaconda will execute &lt;code&gt;trial mamba&lt;/code&gt; (where &lt;code&gt;mamba&lt;/code&gt; is a directory)
+&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_8&#34;&gt;Configuration Examples&lt;/h1&gt;
+
+&lt;p&gt;You can find here several configuration examples. All the configuration
+options on these examples are placed in the &lt;code&gt;.sublime-project&lt;/code&gt; file.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: If you don&amp;rsquo;t know what a &lt;code&gt;.sublime-project&lt;/code&gt; file is and why is
+so important, take a look at &lt;a href=&#34;/anaconda/anaconda_settings/&#34;&gt;Configuring Anaconda the Right Way&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_9&#34;&gt;Run Twisted&amp;rsquo;s Trial Suite&lt;/h2&gt;
+
+&lt;p&gt;Normally, to run a test suite build with Twisted&amp;rsquo;s trial you need to pass to
+trial a top level directory that contains your tests and is used by it&amp;rsquo;s auto
+test discovery facility. Here is an example about how to configure the
+anaconda&amp;rsquo;s tests runner to accomplish that.&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    ...
+    &amp;quot;setings&amp;quot;: {
+        &amp;quot;test_command&amp;quot;: &amp;quot;trial&amp;quot;,
+        &amp;quot;test_delimeter&amp;quot;: &amp;quot;.&amp;quot;,  // trial uses &amp;quot;.&amp;quot; as delimeter
+        &amp;quot;test_project_path&amp;quot;: &amp;quot;myprojct&amp;quot;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The configuration above will make anaconda to run &lt;code&gt;trial&lt;/code&gt; in &lt;code&gt;myproject&lt;/code&gt;
+directory&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_10&#34;&gt;Run Twisted&amp;rsquo;s Trial using before and after commands for virtualenv&lt;/h2&gt;
+
+&lt;p&gt;You don&amp;rsquo;t need to use the &lt;code&gt;test_virtualenv&lt;/code&gt; option at all if you don&amp;rsquo;t want
+to do it. This is useful for example when you have complex steps before and
+after activate or deactivate your virtual environment.&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    ...
+    &amp;quot;settings&amp;quot;: {
+        &amp;quot;test_command&amp;quot;: &amp;quot;trial&amp;quot;,
+        &amp;quot;test_delimeter&amp;quot;: &amp;quot;.&amp;quot;.  // trial uses &amp;quot;.&amp;quot; as delimeter
+        &amp;quot;test_project_path&amp;quot;: &amp;quot;myproject&amp;quot;,
+        &amp;quot;test_before_command&amp;quot;: &amp;quot;source $HOME/.virtualenvs/myproject/bin/python&amp;quot;,
+        &amp;quot;test_after_command&amp;quot;: &amp;quot;deactivate&amp;quot;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;toc_11&#34;&gt;Run Twisted&amp;rsquo;s Trial using test_virtualenv&lt;/h2&gt;
+
+&lt;p&gt;Obviously, is you just want to use a virtual environment is much easier to
+just use the &lt;code&gt;test_virtualenv&lt;/code&gt; option, this example es equivalent to the
+previous one.&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    ...
+    &amp;quot;settings&amp;quot;: {
+        &amp;quot;test_command&amp;quot;: &amp;quot;trial&amp;quot;,
+        &amp;quot;test_delimeter&amp;quot;: &amp;quot;.&amp;quot;.  // trial uses &amp;quot;.&amp;quot; as delimeter
+        &amp;quot;test_project_path&amp;quot;: &amp;quot;myproject&amp;quot;,
+        &amp;quot;test_virtualenv&amp;quot;: &amp;quot;~/.virtualenv/myproject&amp;quot;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;toc_12&#34;&gt;Run Django test suite wit nose2&lt;/h2&gt;
+
+&lt;p&gt;To run a Django project test suite with nose2 is not much more complex&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    ...
+    &amp;quot;settings&amp;quot;: {
+        &amp;quot;test_command&amp;quot;: &amp;quot;./manage.py test --settings=tests.settings --noinput&amp;quot;,
+        &amp;quot;test_delimeter&amp;quot;: &amp;quot;.&amp;quot;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;toc_13&#34;&gt;Common python code and standard library unittest&lt;/h2&gt;
+
+&lt;p&gt;Of course, you can also run the standard library unittest suite&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    ...
+    &amp;quot;settings&amp;quot;: {
+        &amp;quot;test_command&amp;quot;: &amp;quot;python -m unittest discover&amp;quot;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Configure Anaconda the Right Way</title>
+      <link>http://idamnwidget.github.io/anaconda/anaconda_settings/</link>
+      <pubDate>Wed, 22 Oct 2014 21:20:53 IST</pubDate>
+      <author>Oscar Campos</author>
+      <guid>http://idamnwidget.github.io/anaconda/anaconda_settings/</guid>
+      <description>
+
+&lt;p&gt;Anaconda works fine out of the box (always that there is a Python interpreter
+configured in your path and the binary is named &lt;code&gt;python&lt;/code&gt;) but if you want
+to get the max from it, you can configure multitude of options to tune it
+and adapt it to your needs.&lt;/p&gt;
+
+&lt;p&gt;To take a look at the common configuration of the Anaconda powerful IDE
+features, take a look at the &lt;a hreg=&#34;anaconda/IDE/&#34;&gt;Powerful IDE&lt;/a&gt; section,
+in this section we will speak about where and how to configure anaconda to use
+multiple &lt;strong&gt;virtual environments&lt;/strong&gt;, create hook config files and other anaconda
+specific options that can make your life way easier.&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s start from the beginning.&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_0&#34;&gt;Does Anaconda supports virtualenv?&lt;/h1&gt;
+
+&lt;p&gt;Yes, it does. Anaconda supports virtual environments out of the box, but you
+have to tell it where to find the python binary of your virtual environment.&lt;/p&gt;
+
+&lt;p&gt;This can be done configuring the &lt;code&gt;python_interpreter&lt;/code&gt; option in any of the
+several ways that anaconda allow you to fine tune your plugin installation.&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_1&#34;&gt;Where to place Anaconda settings options?&lt;/h1&gt;
+
+&lt;p&gt;You can place anaconda settings in three different places.&lt;/p&gt;
+
+&lt;table class=&#34;table table-striped&#34;&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;#&lt;/th&gt;
+&lt;th&gt;Description&lt;/th&gt;
+&lt;th&gt;File Name&lt;/th&gt;
+&lt;th&gt;File Location&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;Global Settings&lt;/td&gt;
+&lt;td&gt;Anaconda.sublime-settings&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;Packages/Anaconda/Anaconda.sublime-settings&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;2&lt;/td&gt;
+&lt;td&gt;User Settings&lt;/td&gt;
+&lt;td&gt;Anaconda.sublime-settings&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;Packages/User/Anaconda.sublime-settings&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;3&lt;/td&gt;
+&lt;td&gt;Project Configuration&lt;/td&gt;
+&lt;td&gt;&amp;lt;project&amp;gt;.sublime-project&lt;/td&gt;
+&lt;td&gt;Your project location&amp;hellip;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;If you choose the first and second options, take into account that you are
+effectively configuring Anaconda globally so the plugin will behave in the way
+that you configure it for any Python file that you edit if there is no a
+specific project configuration file that hides and override your global
+configurations (more about this later).&lt;/p&gt;
+
+&lt;p&gt;To configure the plugin using the global or user anaconda settings file, just
+go to &lt;code&gt;Preferences &amp;gt; Package Settings &amp;gt; Anaconda&lt;/code&gt;, there you will find two
+different entries, &lt;code&gt;Settings-Default&lt;/code&gt; and &lt;code&gt;Settings-User&lt;/code&gt; for options 1 and 2
+respectively. Any option in those files have to be placed in the global scope.&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;python_interpreter&amp;quot;: &amp;quot;stackless_python3&amp;quot;,
+    &amp;quot;auto_python_builder_enabled&amp;quot;: false,
+    ...
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: &lt;code&gt;Settings-Default&lt;/code&gt; should be pre-populated with all the available
+anaconda plugin options configured to it&amp;rsquo;s default behaviour.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: We &lt;strong&gt;strongly recommend&lt;/strong&gt; to use Project configurations always&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_2&#34;&gt;Overriding details per project&lt;/h2&gt;
+
+&lt;p&gt;Anaconda will always try to use any options that are found in the project file
+of the project that you are working on first. This is pretty useful as &lt;strong&gt;you
+can override and modify the behaviour of the plugin depending of your current
+environment&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;For example, if you are working in an &lt;strong&gt;Open Source&lt;/strong&gt; project that follows
+full PEP8 and strict coding standards, you can configure your anaconda linters
+in totally strict mode but relax them in other environments where such
+practices are (unfortunately) not being used.&lt;/p&gt;
+
+&lt;p&gt;To archive this desirable behaviour you can add whatever configuration option
+that you need in your project configuration file, including (and specially)
+the &lt;code&gt;python_interpreter&lt;/code&gt; one.&lt;/p&gt;
+
+&lt;p&gt;To edit your project configuration file just go to &lt;code&gt;Project &amp;gt; Edit Project&lt;/code&gt;.
+The options &lt;strong&gt;must be placed inside the &lt;code&gt;settings&lt;/code&gt; dictionary&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;build_systems&amp;quot;:
+    [
+        {
+            &amp;quot;name&amp;quot;: &amp;quot;Anaconda Python Builder&amp;quot;,
+            &amp;quot;selector&amp;quot;: &amp;quot;source.python&amp;quot;,
+            &amp;quot;shell_cmd&amp;quot;: &amp;quot;/home/damnwidget/.virtualenvs/anaconda/bin/python -u \&amp;quot;$file\&amp;quot;&amp;quot;
+        }
+    ],
+    &amp;quot;folders&amp;quot;:
+    [
+        {
+            &amp;quot;follow_symlinks&amp;quot;: true,
+            &amp;quot;path&amp;quot;: &amp;quot;.&amp;quot;
+        }
+    ],
+    &amp;quot;settings&amp;quot;:
+    {
+        &amp;quot;python_interpreter&amp;quot;: &amp;quot;/home/damnwidget/.virtualenvs/anaconda/bin/python&amp;quot;
+        ...
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h1 id=&#34;toc_3&#34;&gt;Python Interpreter settings&lt;/h1&gt;
+
+&lt;p&gt;Anaconda has the ability to use whatever python interpreter that you can
+compile and use in your platform, this includes:&lt;/p&gt;
+
+&lt;table class=&#34;table table-striped&#34;&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Python Interpreter&lt;/th&gt;
+&lt;th&gt;Python 2x&lt;/th&gt;
+&lt;th&gt;Python 3x&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;CPython&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/check.png&#34; alt=&#34;&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/check.png&#34; alt=&#34;&#34; /&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;PyPy&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/check.png&#34; alt=&#34;&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/check.png&#34; alt=&#34;&#34; /&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Jython&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/check.png&#34; alt=&#34;&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;N/A&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Stackless&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/check.png&#34; alt=&#34;&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/check.png&#34; alt=&#34;&#34; /&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;Anaconda allows you to complete, linting, analyze and use all the anaconda
+features with whatever python interpreter that you want, that of course
+includes &lt;strong&gt;python interpreters residing in virtual environments&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_4&#34;&gt;Configuring the Python Interpreter&lt;/h2&gt;
+
+&lt;p&gt;Anaconda will use your &lt;code&gt;PATH&lt;/code&gt; configured python interpreter by default out
+of the box. To use another interpreter just change the &lt;code&gt;python_interpreter&lt;/code&gt;
+configuration option globally or (more usually) in your project files as is
+shown in the examples below&lt;/p&gt;
+
+&lt;p&gt;Example of global user configuration (Packages/User/Anaconda.sublime-settings):&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;python_interpreter&amp;quot;: &amp;quot;/usr/bin/pypy-c2.4&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;folders&amp;quot;:
+    [
+        {
+            &amp;quot;follow_symlinks&amp;quot;: true,
+            &amp;quot;path&amp;quot;: &amp;quot;.&amp;quot;
+        }
+    ]
+    &amp;quot;python_interpreter&amp;quot;: &amp;quot;~/virtualenvs/my_project/bin/python&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;toc_5&#34;&gt;Extra Paths&lt;/h2&gt;
+
+&lt;p&gt;I know, you are used to add loads of extra paths to make your completions
+work in other plugins. In Anaconda, &lt;code&gt;extra&lt;/code&gt; means just that &lt;code&gt;extra&lt;/code&gt;, your
+Anaconda plugin will be able to lint, complete and analyze any package and
+module that your configured python interpreter is able to see.&lt;/p&gt;
+
+&lt;p&gt;That means that you should use this options &lt;strong&gt;only for real extra packages&lt;/strong&gt;
+that are not in your &lt;code&gt;site-packages&lt;/code&gt; (SublimeText python files in the
+sublime text installation directory for example). You can add as many extra
+paths as you need in a list separated by commas in both your global or
+project configuration files.&lt;/p&gt;
+
+&lt;p&gt;Example of global user configuration (Packages/User/Anaconda.sublime-settings):&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;extra_paths&amp;quot;:
+    [
+        &amp;quot;/opt/sublime_text_3&amp;quot;,
+        &amp;quot;/opt/maya/SundayPipeline2014/SundayPython&amp;quot;
+    ]
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    ...
+    &amp;quot;settings&amp;quot;: {
+        &amp;quot;extra_paths&amp;quot;:
+        [
+            &amp;quot;/opt/sublime_text_3&amp;quot;,
+            &amp;quot;/opt/maya/SundayPipeline2014/SundayPython&amp;quot;
+        ]
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;toc_6&#34;&gt;Virtualenv environment variables&lt;/h2&gt;
+
+&lt;p&gt;If you are using a &lt;code&gt;virtualenv&lt;/code&gt; for your &lt;code&gt;python_interpreter&lt;/code&gt; and you start
+your Sublime Text 3 from the command line (to inherit environment variables
+on OS X and Linux) you can use the variable &lt;code&gt;$VIRTUAL_ENV&lt;/code&gt; in your
+&lt;code&gt;python_interpreter&lt;/code&gt; configuration option.&lt;/p&gt;
+
+&lt;p&gt;Example of global user configuration (Packages/User/Anaconda.sublime-settings):&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;python_interpreter&amp;quot;: &amp;quot;$VIRTUAL_ENV/bin/python&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    ...
+    &amp;quot;settings&amp;quot;: {
+        &amp;quot;python_interpreter&amp;quot;: &amp;quot;$VIRTUAL_ENV/bin/python&amp;quot;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;toc_7&#34;&gt;Environment hook files&lt;/h2&gt;
+
+&lt;p&gt;There are high probabilities that the only configuration option that you
+ever change in your projects is just the &lt;code&gt;python_interpreter&lt;/code&gt; and the
+&lt;code&gt;extra_paths&lt;/code&gt;. If that is your case, maybe you want to use environment hook
+files instead of configure your projects directly.&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_8&#34;&gt;What is an environment hook file?&lt;/h3&gt;
+
+&lt;p&gt;An environment hook file is a JSON file named &lt;code&gt;.anaconda&lt;/code&gt; that resides in the
+root of your working directory or in any directory level up to drive root
+directory. If a valid hook file exists on that directory tree, it will be used
+instead of your project or general anaconda configuration. A valid &lt;code&gt;.anaconda&lt;/code&gt;
+hook file is as in the example below.&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;python_interpreter&amp;quot;: &amp;quot;~/.virtualenvs/stackless_python2.7/bin/python&amp;quot;,
+    &amp;quot;extra_paths&amp;quot;: [&amp;quot;/usr/local/lib/awesome_python_lib&amp;quot;]
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: take into account that only &lt;code&gt;python_interpreter&lt;/code&gt; and &lt;code&gt;extra_paths&lt;/code&gt;
+can be hooked, any other option will be ignored&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_9&#34;&gt;Project and Python Interpreter Switching&lt;/h2&gt;
+
+&lt;p&gt;If you change your configured python interpreter or you just switch your
+project, the plugin will detect it and reload a new completion/linting/IDE
+JsonServer killing the old one in a total transparent way so you don&amp;rsquo;t need
+to restart your Sublime Text 3.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: is for some strange reason you don&amp;rsquo;t want that your anaconda plugin
+behave in this way, you can always change the configuration option
+&lt;code&gt;auto_project_switch&lt;/code&gt; to &lt;code&gt;false&lt;/code&gt; and anaconda &lt;strong&gt;will not&lt;/strong&gt; auto switch the
+interpreter as described above.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;warning&lt;/strong&gt;: Windows users can experiment weird behaviour after a project or
+python interpreter switch due inconsistence in the WinSocket state, if this
+happens, Anaconda will complain and show an error window. The only solution
+if this happens is restart Sublime Text 3.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: The plan is to port Tulip from Python 3.4 into anaconda to replace
+the anaconda&amp;rsquo;s custom asynchronous IOLoop.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>A Powerful IDE</title>
+      <link>http://idamnwidget.github.io/anaconda/IDE/</link>
+      <pubDate>Tue, 21 Oct 2014 20:03:59 IST</pubDate>
+      <author>Oscar Campos</author>
+      <guid>http://idamnwidget.github.io/anaconda/IDE/</guid>
+      <description>
+
+&lt;p&gt;Anaconda re-implement some Sublime Text 3 features and implements another ones
+on it&amp;rsquo;s own.&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_0&#34;&gt;Python Auto Completion&lt;/h1&gt;
+
+&lt;p&gt;Anaconda uses the powerful &lt;a href=&#34;https://github.com/davidhalter/jedi&#34;&gt;jedi&lt;/a&gt; library
+to offer advanced auto-completion capabilities to the end user.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_1&#34;&gt;How it works?&lt;/h2&gt;
+
+&lt;p&gt;When the user is writing, eventually, Sublime Text 3 shows a popup with possible
+code completions based on the open files buffers, if &lt;code&gt;tab&lt;/code&gt; (if auto completion
+on tab is enabled in Sublime Text 3) or &lt;code&gt;ctrl+space&lt;/code&gt; is pressed, the user can
+force the shown of this popup.&lt;/p&gt;
+
+&lt;p&gt;Anaconda hooks the regular Sublime Text 3 call and add it&amp;rsquo;s own completion
+results asking about available completions to the (included in the plugin) jedi
+library that return a list of the possible words to complete and which type
+of object is (class, function, parameter, import etc).&lt;/p&gt;
+
+&lt;p&gt;This process is totally transparent for the user as it happens in totally
+asynchronous way so the user is never aware that the auto-completion engine
+is running under the hood.&lt;/p&gt;
+
+&lt;p&gt;When anaconda has a result, it sends it back to the Sublime Text 3 that will
+shown the popup that we already spoke to the user that can then select whatever
+word she want to use.&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_2&#34;&gt;AutoCompletion configuration&lt;/h3&gt;
+
+&lt;p&gt;The auto-completion will work out of the box (if your configured Python
+interpeter is valid and is in the PATH) but it can be tunned with several
+options.&lt;/p&gt;
+
+&lt;h4 id=&#34;toc_3&#34;&gt;Autocompletion on dot [.]&lt;/h4&gt;
+
+&lt;p&gt;If the user want to trigger the autocompletion when she write down the dot
+character it can be configured easily editing the &lt;code&gt;Python.sublime-settings&lt;/code&gt;
+configuration file in the  &lt;code&gt;Packages/User&lt;/code&gt; directory (Preferences -&amp;gt; Browse
+Packages) and add the following:&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;auto_complete_triggers&amp;quot;: [{&amp;quot;selector&amp;quot;: &amp;quot;source.python - string - comment
+    - constant.numeric&amp;quot;, &amp;quot;characters&amp;quot;: &amp;quot;.&amp;quot;}]
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: it&amp;rsquo;s possible that the user have to create this file if it doesn&amp;rsquo;t
+exists yet&lt;/p&gt;
+
+&lt;h4 id=&#34;toc_4&#34;&gt;Remove Python snippets from completions&lt;/h4&gt;
+
+&lt;p&gt;The user can also choose to don&amp;rsquo;t show Python snippets in their autocompletion
+results setting the option &lt;code&gt;hide_snippers_on_completion&lt;/code&gt; as &lt;code&gt;true&lt;/code&gt; in the
+plugin or project configuration.&lt;/p&gt;
+
+&lt;h4 id=&#34;toc_5&#34;&gt;Complete function and class parameters&lt;/h4&gt;
+
+&lt;p&gt;If the option &lt;code&gt;complete_parameters&lt;/code&gt; is set as &lt;code&gt;true&lt;/code&gt;, anaconda will add class
+and method/function parameters to its completions when you type &lt;code&gt;(&lt;/code&gt; after a
+completion has been done.&lt;/p&gt;
+
+&lt;p&gt;If &lt;code&gt;complete_all_parameters&lt;/code&gt; is set as &lt;code&gt;true&lt;/code&gt;, it will add all the possible
+parameters, is it&amp;rsquo;s set as &lt;code&gt;false&lt;/code&gt;, only mandatory parameters will be placed.&lt;/p&gt;
+
+&lt;p&gt;No key binding is needed to use this feature so it doesn&amp;rsquo;t interfere in any
+way with your Sublime Text 3 normal operations.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_6&#34;&gt;Goto Definition&lt;/h1&gt;
+
+&lt;p&gt;Sublime Text 3 already implement &lt;code&gt;goto&lt;/code&gt; functions but it requires that you
+have the file opened in one of your active buffers. Anaconda is able to go to
+a file where a variable, function, method, class or module is defined whatever
+is located on (always that is not a built-in symbol).&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_7&#34;&gt;How it works?&lt;/h2&gt;
+
+&lt;p&gt;Anaconda just asks the underlying jedi engine where the symbol under the
+cursor is defined and jumps there.&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_8&#34;&gt;How to use it?&lt;/h3&gt;
+
+&lt;p&gt;This feature can be triggered in several ways:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Linux: &lt;code&gt;super+g&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;OS X and Windows: &lt;code&gt;ctrl+alt+g&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Vintage Mode (Command Mode): &lt;code&gt;gd&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Context Menu: &lt;code&gt;Anaconda &amp;gt; Goto Definition&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Command Palette: &lt;code&gt;Command Palette &amp;gt; Anaconda: Goto&lt;/code&gt;
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&#34;toc_9&#34;&gt;Find Usages&lt;/h1&gt;
+
+&lt;p&gt;With this command, the user can find all the locations where a symbol (
+variable, function, method, class or module) is being used.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_10&#34;&gt;How it works?&lt;/h2&gt;
+
+&lt;p&gt;Again, anaconda asks the underlying jedi engine where the symbol under the
+cursor is being used and present a list of possible locations, if the user
+select one, the file listed is opened (if it wasn&amp;rsquo;t already, and the cursor
+is located on it&amp;rsquo;s line). An white blinking gutter arrow appears for some
+seconds to indicate the user where the cursor is located at.&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_11&#34;&gt;How to use it?&lt;/h3&gt;
+
+&lt;p&gt;The find usages command can be triggered in the following ways:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Linux: &lt;code&gt;super+f&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;OS X and Windows: &lt;code&gt;ctrl+alt+f&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Context Menu: &lt;code&gt;Anaconda &amp;gt; Find Usages&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Command Palette : &lt;code&gt;Command Palette &amp;gt; Anaconda: Find&lt;/code&gt;
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&#34;toc_12&#34;&gt;Get Documentation&lt;/h1&gt;
+
+&lt;p&gt;Anaconda can look for and show the user the docstring of whatever function,
+method, class, module or package. The user just have to put the cursor over the
+symbol that want to get the docstring from (or after a parenthesis, for example
+after write &lt;code&gt;sys.exit(&lt;/code&gt;) and then trigger the command to get the function
+signature and docstring in a bottom panel without lose focus form the buffer.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_13&#34;&gt;How it works?&lt;/h2&gt;
+
+&lt;p&gt;As usual, anaconda asks the underlying jedi engine about the symbol under the
+cursor signature and docstring (if any) and then show it to the user using
+an additional panel.&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_14&#34;&gt;How to use it?&lt;/h3&gt;
+
+&lt;p&gt;The command can be triggered with:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Linux: &lt;code&gt;super+d&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;OS X and Windows: &lt;code&gt;ctrl+alt+d&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Context Menu: &lt;code&gt;Anaconda &amp;gt; Show Documentation&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Command Palette: &lt;code&gt;Command Palatte &amp;gt; Anaconda: Show&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&#34;toc_15&#34;&gt;Refactor Rename&lt;/h1&gt;
+
+&lt;p&gt;With this command, the user can (try to) rename the object under the cursor
+in a project basis scope in a safe way.&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_16&#34;&gt;How to use it?&lt;/h3&gt;
+
+&lt;p&gt;The command can be trigger using the context menu &lt;code&gt;Anaconda &amp;gt; Rename object
+under the cursor&lt;/code&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_17&#34;&gt;McCabe code complxity checker&lt;/h1&gt;
+
+&lt;p&gt;The users can run the
+&lt;a href=&#34;http://en.wikipedia.org/wiki/Cyclomatic_complexity&#34;&gt;McCabe complexity checker&lt;/a&gt;
+tool in whatever python file that they want. It&amp;rsquo;s threshold can be adjusted
+configuring the option &lt;code&gt;mccabe_threshold&lt;/code&gt; in the configuration file on in
+the project configuration file.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_18&#34;&gt;How it works?&lt;/h2&gt;
+
+&lt;p&gt;Anaconda includes part of the &lt;a href=&#34;https://github.com/flintwork/mccabe&#34;&gt;McCabe&lt;/a&gt;
+Python tool and can execute it in any open buffer, get the results and present
+a list of functions (and lines) that presents a complexity higher than the
+configured threshold. If no complexity is found, a descriptive message
+appears in the status bar.&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_19&#34;&gt;How to use it?&lt;/h3&gt;
+
+&lt;p&gt;The McCabe complexity checker can be fired:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Using the Context Menu: &lt;code&gt;Anaconda &amp;gt; McCabe complexity check&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Using the Command Palette: &lt;code&gt;Command Palette &amp;gt; Anaconda: McCabe&lt;/code&gt;
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&#34;toc_20&#34;&gt;Autoimport undefined names&lt;/h1&gt;
+
+&lt;p&gt;Anaconda can add an &lt;code&gt;import &amp;lt;undefined_name&amp;gt;&lt;/code&gt; literal at the end of the imports
+block if the anaconda auto importer is used in an undefined name in the buffer.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: Anaconda will &lt;strong&gt;NOT&lt;/strong&gt; check if that import is valid or not before
+place it in the buffer.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_21&#34;&gt;How it works?&lt;/h2&gt;
+
+&lt;p&gt;Anaconda auto-import feature is really a dummy or toy feature and is under
+redesign to offer a better experience to the user.&lt;/p&gt;
+
+&lt;h3 id=&#34;toc_22&#34;&gt;How to use it?&lt;/h3&gt;
+
+&lt;p&gt;Just place the cursor over the undefined name in the buffer and use the
+context menu &lt;code&gt;Anaconda &amp;gt; Autoimport undefined word under the cursor&lt;/code&gt;
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_23&#34;&gt;Imports Validator&lt;/h1&gt;
+
+&lt;p&gt;One of the latest additions to anaconda is the ability to validate the imports
+in the project files if the &lt;code&gt;validate_imports&lt;/code&gt; option is set as &lt;code&gt;true&lt;/code&gt;. Note
+that this option is set as &lt;code&gt;false&lt;/code&gt; by default.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_24&#34;&gt;How it works?&lt;/h2&gt;
+
+&lt;p&gt;Anaconda asks the underlying jedi engine about the buffer/file/project imports
+to detect if the symbols are valid and the configured python interpreter is
+able to see them.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Note&lt;/strong&gt;: Anaconda does not execute the imports or any other code related with
+them&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Note 2&lt;/strong&gt;: Anaconda is not able to detect as valid imports that depends on
+dynamic stuff like addition of specific paths to the &lt;code&gt;sys.paths&lt;/code&gt; list, if
+the users project uses them, they have to take into account that anaconda
+is going to mark those imports as non valid even if they are valid in runtime.
+For this reason, the users can add the &lt;code&gt;# noqa&lt;/code&gt; magic comment on those ones
+to tell anaconda to don&amp;rsquo;t mark them as invalid.&lt;/p&gt;
+
+&lt;p&gt;(Yes, it will validate imports made with the auto import feature described
+above)&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_25&#34;&gt;Anaconda&amp;rsquo;s Build System&lt;/h1&gt;
+
+&lt;p&gt;As you already know, one of the weakness of Sublime Text 3 is that it uses
+it&amp;rsquo;s embedded Python interpreter when you try to build the files that you
+are working on.&lt;/p&gt;
+
+&lt;p&gt;Anaconda adds it&amp;rsquo;s own build system that is based in your system Python
+interpreter instead (or in any python interpreter that you configure in
+your &lt;code&gt;python_interpreter&lt;/code&gt; option).&lt;/p&gt;
+
+&lt;p&gt;The name of the anaconda&amp;rsquo;s python builder is &lt;code&gt;Anaconda Python Builder&lt;/code&gt; and
+you should be able to find it under your Sublime Text&amp;rsquo;s &lt;code&gt;Tools&lt;/code&gt; menu as soon
+as you install anaconda in your Sublime Text if you are using projects.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: if you change your &lt;code&gt;python_interpreter&lt;/code&gt; in your configuration,
+anaconda will rewrite your project file to update the python interpreter
+used by the build system automatically.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: If you want to know more about &lt;code&gt;python_interpreter&lt;/code&gt; in anaconda,
+take a look at &lt;a href=&#34;/anaconda/anaconda_settings/&#34;&gt;Configure Anaconda the Right Way&lt;/a&gt;
+&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_26&#34;&gt;Anaconda Linting&lt;/h1&gt;
+
+&lt;p&gt;Anaconda was based/inspired/ported from the old Sublime Text 2 SublimeLinter
+plugin. Although anaconda linter was inspired by SublimeLinter, anaconda
+linting is much faster than SublimeLinter (for ST3) and SublimeLinter3 for
+several reasons:&lt;/p&gt;
+
+&lt;p&gt;1.- Anaconda does not use delayed queues to perform the linting work, instead
+of that, anaconda fire a single call to the linter methods &lt;code&gt;n&lt;/code&gt; seconds after
+the last key was pressed by the user whole typing. Those &lt;code&gt;n&lt;/code&gt; seconds can be
+configured by the user (by default is &lt;code&gt;0.5s&lt;/code&gt;)
+2 .- Anaconda is totally asynchronous so it never blocks the Sublime Text GUI,
+because that, anaconda&amp;rsquo;s linting is smooth and flawless.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: SublimeLinter 3 improved considerably their linting trigger
+mechanisms, they can still block the ST3 GUI but seems to be smoother than
+old Sublime Linter for Sublime Text 2&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_27&#34;&gt;How it works?&lt;/h2&gt;
+
+&lt;p&gt;Anaconda listen for events that come from the Sublime Text GUI itself, in
+certain events, the linter can be fired, for example, after save or open a
+buffer. When the linting process is fired, anaconda send a request to the
+Anaconda&amp;rsquo;s JsonServer (a standalone and isolated server where all the heavy
+processment takes place) to lint the related buffer and return back the
+control to Sublime Text 3 immediately, when the Anaconda&amp;rsquo;s JsonServer has
+linted the buffer, it return it back to anaconda that proceed to lint the
+buffer. Anaconda linting is really smooth and fast.&lt;/p&gt;
+
+&lt;p&gt;As anaconda can use whatever python interpeter that the user want to use (
+including virtual environments and remote interpreters), anaconda can lint
+the code for a Python version different than the version included with
+Sublime Text 3 (Python 3.3.3).&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_28&#34;&gt;Linting behaviour&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Always mode (defaut)&lt;/strong&gt;: When &lt;code&gt;anaconda_linting_behaviour&lt;/code&gt; is set as
+&lt;code&gt;always&lt;/code&gt;, the linters are fired in the background as the user edit the
+file that is working on and in load/save events. The linting process is fired
+also when a buffer gains the application focus. It is performed in the
+background in an external application and is handled in another execution
+thread so it doesn&amp;rsquo;t block the Sublime Text GUI ever. The process is fired
+when the plugin detects that the user stopped typing for a determined and
+configurable period of time that can be defined setting the value of the
+configuration variable &lt;code&gt;anaconda_linter_delay&lt;/code&gt;, that is &lt;code&gt;0.5s&lt;/code&gt; default.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Load and Save mode&lt;/strong&gt;: When &lt;code&gt;anaconda_linting_bahaviour&lt;/code&gt; is set as
+&lt;code&gt;load-save&lt;/code&gt;, the linters are fired on load/save and focus gain only.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Save only mode&lt;/strong&gt;: When &lt;code&gt;anaconda_linting_behaviour&lt;/code&gt; is set as &lt;code&gt;save-only&lt;/code&gt;
+the linters are fired on file saving only.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;toc_29&#34;&gt;What can anaconda lint?&lt;/h2&gt;
+
+&lt;p&gt;Anaconda can lint:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Syntax errors and inconsistencies (using PyFlakes or PyLint)&lt;/li&gt;
+&lt;li&gt;PEP8 Violations&lt;/li&gt;
+&lt;li&gt;PEP257 Violations&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;PyFlakes, pep8 and pep257 libraries are included in the plugin, to use PyLint
+instead of PyFlakes, the PyLint utility has to be installed and be visible
+by the user&amp;rsquo;s configured python interpreter.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: PEP257 linter is disabled by default
+&lt;strong&gt;note&lt;/strong&gt;: PyLint can&amp;rsquo;t lint unsaved buffers&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_30&#34;&gt;Disabling the linter&lt;/h2&gt;
+
+&lt;p&gt;There is people that doesn&amp;rsquo;t care about linting or they just use another
+plugin to do it, they can completely deactivate this feature setting the
+&lt;code&gt;anaconda_linting&lt;/code&gt; as &lt;code&gt;false&lt;/code&gt; in the anaconda or project configuration.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: imports validation depends of anaconda linting handler so it will
+not work if anaconda linting is disabled&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_31&#34;&gt;Disabling the linter in certain files&lt;/h2&gt;
+
+&lt;p&gt;Sometimes, the users need to open or work on files that they don&amp;rsquo;t maintain
+at all because they are part of a third party software, deprecated code or
+they have been written by developers that doesn&amp;rsquo;t care about the PEP8. In
+those situations the users can completely disable the linting in just those
+files using the Command Palette &lt;code&gt;Anaconda: Disable linting
+on this file&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Disabled files will persist between Sublime Text 3 sessions, and they can
+be linted again using the Command Palette &lt;code&gt;Anaconda: Enable linting on this
+file&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_32&#34;&gt;Enabling pep257&lt;/h2&gt;
+
+&lt;p&gt;Anaconda supports docstrings linting using &lt;a href=&#34;http://legacy.python.org/dev/peps/pep-0257/&#34;&gt;pep257&lt;/a&gt;
+specification. This feature is disabled by default but can be enabled setting
+the &lt;code&gt;pep257&lt;/code&gt; as &lt;code&gt;true&lt;/code&gt; in the configuration file or the project file.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_33&#34;&gt;Disabling certain errors for pep257&lt;/h2&gt;
+
+&lt;p&gt;Specific errors can be disabled adding them (as string elements into a list) on
+the &lt;code&gt;pep257_ignore&lt;/code&gt; user settings in the config file. The &lt;code&gt;D209&lt;/code&gt; is disabled
+by default as it has been deprecated.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_34&#34;&gt;Disabling pep8&lt;/h2&gt;
+
+&lt;p&gt;Pep8 violations can be disabled setting the value of the &lt;code&gt;pep8&lt;/code&gt; configuration
+variable as &lt;code&gt;false&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_35&#34;&gt;Disabling certain pep8 errors&lt;/h2&gt;
+
+&lt;p&gt;Is also possible to disable just some errors like the infamous &lt;code&gt;line too long
+E501&lt;/code&gt; error in pep8. It can be done adding them to the &lt;code&gt;pep8_ignore&lt;/code&gt; list using
+the error code like:&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;pep8_ignore&amp;quot;:
+[
+    &amp;quot;E501&amp;quot;
+]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;There is an equivalent for PyFlakes errors called &lt;code&gt;pyflakes_ignore&lt;/code&gt;, look at
+the section below for details.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_36&#34;&gt;Disabling specific PyFlakes errors&lt;/h2&gt;
+
+&lt;p&gt;The user can also disable specific PyFlakes errors (unused import module for
+example) uncommenting them in the &lt;code&gt;pyflakes_explicit_ignore&lt;/code&gt; list in the
+global anaconda configuration file or adding this list to any project
+configuration with the warning/errors that they wish to disable. For example,
+to disable the unused import warning:&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;pyflakes_explicit_ignore&amp;quot;:
+    [
+        &amp;quot;UnusedImport&amp;quot;
+    ],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: for specific information about the different mechanisms that can
+be used to configure anaconda, refer to the &lt;a href=&#34;https://damnwidget.github.com/anaconda/configuration&#34;&gt;Configuring Anaconda&lt;/a&gt; section.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_37&#34;&gt;Using PyLint as PyFlakes alternative&lt;/h2&gt;
+
+&lt;p&gt;Anaconda has full support for PyLint as linter application but some
+considerations has to be taken before do it.&lt;/p&gt;
+
+&lt;p&gt;Due 3rd party dependencies required for PyLint, Anaconda doesn&amp;rsquo;t add it like do
+with pep8 and PyFlakes libraries, if users want to use PyLint as their linter
+they need to download and install it by themselves.&lt;/p&gt;
+
+&lt;p&gt;Anaconda does not use a subprocess to call the PyLint linter like Pylinter
+plugin does. We just import some files from pylint and run the inter from the
+JsonServer process capturing the system stdout file descriptor. That means
+that anaconda &lt;em&gt;will&lt;/em&gt; use your configured python interpreter (and environment)
+in order to lint your files with PyLint so it should be installed in your
+virtual environment if you are using virtualenv.&lt;/p&gt;
+
+&lt;p&gt;PyLint &lt;em&gt;doesn&amp;rsquo;t&lt;/em&gt; support lint buffers that are not saved yet in the file
+system so it &lt;em&gt;can&amp;rsquo;t&lt;/em&gt; lint files until you save them.&lt;/p&gt;
+
+&lt;p&gt;Anaconda uses E, W and V codes to maintain compability with PyFlakes and PEP8
+linters so the PyLint mapping is as follows:&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;mapping = {
+    &#39;C&#39;: &#39;V&#39;,
+    &#39;E&#39;: &#39;E&#39;,
+    &#39;F&#39;: &#39;E&#39;,
+    &#39;I&#39;: &#39;V&#39;,
+    &#39;R&#39;: &#39;W&#39;,
+    &#39;W&#39;: &#39;W&#39;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;PyLint errors can be ignored using the configuration option &lt;code&gt;pyling_ignore&lt;/code&gt;.
+When PyLint is used, PyFlakes is totally turned off.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: PyLint can be really annoying use it at your own risk&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_38&#34;&gt;Showing linting error list&lt;/h2&gt;
+
+&lt;p&gt;Users can show a quick panel with all the errors in the file that they are
+working on using the command palette &lt;code&gt;Anaconda: Show error list&lt;/code&gt; or in the
+contextual menu &lt;code&gt;Anaconda &amp;gt; Show error list&lt;/code&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_39&#34;&gt;Jump to the next error&lt;/h2&gt;
+
+&lt;p&gt;Users can use the &lt;code&gt;Anaconda: Next lint error&lt;/code&gt; command from the Command Palette
+or from the context menu to navigate trough the lint errors on the file. This
+is useful for anyone fixing PEP8 violations in a file for example.
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_40&#34;&gt;Autoformat PEP8 Errors&lt;/h1&gt;
+
+&lt;p&gt;Anaconda supports the &lt;a href=&#34;https://github.com/hhatto/autopep8&#34;&gt;AutoPEP8&lt;/a&gt;
+tool and its integrated and distributed as part of the plugin itself. Users
+can reformat their files to follow PEP8 automatically using the Command
+Palette &lt;code&gt;Anaconda: Autoformat PEP8 Errors&lt;/code&gt; or choosing the same option in the
+contextual menu.&lt;/p&gt;
+
+&lt;p&gt;The autoformat operation is done asynchronous but as it&amp;rsquo;s a heavy process, it
+can timeout before has any effect, take a look in the next sections to know
+a bit more about autoformat and it&amp;rsquo;s options.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_41&#34;&gt;How it works?&lt;/h2&gt;
+
+&lt;p&gt;AutoPEP8 is not the fastest tool in the world as it perform several complex
+syntactic checks and parses. When the autoformat is fired, anaconda run it
+into a separate process and continue it&amp;rsquo;s normal operations but the buffer
+that the user asked to autoformat is set as &lt;code&gt;read-only&lt;/code&gt; while the autoformat
+operation returns back the new modified buffer or a timeout/error occurs.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_42&#34;&gt;What about the timeout?&lt;/h2&gt;
+
+&lt;p&gt;The timeout is one second long by default and can be configured setting the
+configuration option &lt;code&gt;auto_formatting_timeout&lt;/code&gt; in your project settings or
+in the global anaconda configuration settings file.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_43&#34;&gt;Fire PEP8 autoformating on save&lt;/h2&gt;
+
+&lt;p&gt;The autoformating process can be fired automatically when the file is saved
+setting the configuration option &lt;code&gt;auto_formatting&lt;/code&gt; as &lt;code&gt;true&lt;/code&gt; in the options.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_44&#34;&gt;Supported PEP8 Autoformat errors list?&lt;/h2&gt;
+
+&lt;p&gt;Autoformat can handle the following list of errors:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;E101 - Reindent all lines.&lt;br&gt;
+E111 - Reindent all lines.&lt;br&gt;
+E121 - Fix indentation to be a multiple of four.&lt;br&gt;
+E122 - Add absent indentation for hanging indentation.&lt;br&gt;
+E123 - Align closing bracket to match opening bracket.&lt;br&gt;
+E124 - Align closing bracket to match visual indentation.&lt;br&gt;
+E125 - Indent to distinguish line from next logical line.&lt;br&gt;
+E126 - Fix over-indented hanging indentation.&lt;br&gt;
+E127 - Fix visual indentation.&lt;br&gt;
+E128 - Fix visual indentation.&lt;br&gt;
+E129 - Indent to distinguish line from next logical line.&lt;br&gt;
+E201 - Remove extraneous whitespace.&lt;br&gt;
+E202 - Remove extraneous whitespace.&lt;br&gt;
+E203 - Remove extraneous whitespace.&lt;br&gt;
+E211 - Remove extraneous whitespace.&lt;br&gt;
+E221 - Fix extraneous whitespace around keywords.&lt;br&gt;
+E222 - Fix extraneous whitespace around keywords.&lt;br&gt;
+E223 - Fix extraneous whitespace around keywords.&lt;br&gt;
+E224 - Remove extraneous whitespace around operator.&lt;br&gt;
+E225 - Fix missing whitespace around operator.&lt;br&gt;
+E226 - Fix missing whitespace around operator.&lt;br&gt;
+E227 - Fix missing whitespace around operator.&lt;br&gt;
+E228 - Fix missing whitespace around operator.&lt;br&gt;
+E231 - Add missing whitespace.&lt;br&gt;
+E241 - Fix extraneous whitespace around keywords.&lt;br&gt;
+E242 - Remove extraneous whitespace around operator.&lt;br&gt;
+E251 - Remove whitespace around parameter &amp;lsquo;=&amp;rsquo; sign.&lt;br&gt;
+E261 - Fix spacing after comment hash.&lt;br&gt;
+E262 - Fix spacing after comment hash.&lt;br&gt;
+E271 - Fix extraneous whitespace around keywords.&lt;br&gt;
+E272 - Fix extraneous whitespace around keywords.&lt;br&gt;
+E273 - Fix extraneous whitespace around keywords.&lt;br&gt;
+E274 - Fix extraneous whitespace around keywords.&lt;br&gt;
+E301 - Add missing blank line.&lt;br&gt;
+E302 - Add missing 2 blank lines.&lt;br&gt;
+E303 - Remove extra blank lines.&lt;br&gt;
+E304 - Remove blank line following function decorator.&lt;br&gt;
+E401 - Put imports on separate lines.&lt;br&gt;
+E501 - Try to make lines fit within &amp;ndash;max-line-length characters.&lt;br&gt;
+E502 - Remove extraneous escape of newline.&lt;br&gt;
+E701 - Put colon-separated compound statement on separate lines.&lt;br&gt;
+E702 - Put semicolon-separated compound statement on separate lines.&lt;br&gt;
+E703 - Put semicolon-separated compound statement on separate lines.&lt;br&gt;
+E711 - Fix comparison with None.&lt;br&gt;
+E712 - Fix comparison with boolean.&lt;br&gt;
+W191 - Reindent all lines.&lt;br&gt;
+W291 - Remove trailing whitespace.&lt;br&gt;
+W293 - Remove trailing whitespace on blank line.&lt;br&gt;
+W391 - Remove trailing blank lines.&lt;br&gt;
+E26  - Format block comments.&lt;br&gt;
+W6   - Fix various deprecated code (via lib2to3).&lt;br&gt;
+W602 - Fix deprecated form of raising exception.&lt;br&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_45&#34;&gt;Look &amp;amp; Feel&lt;/h1&gt;
+
+&lt;p&gt;Anaconda look &amp;amp; feel can be extensively customized.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_46&#34;&gt;Gutter Marks&lt;/h2&gt;
+
+&lt;p&gt;Gutter marks are enabled by default, they can be disabled setting the
+configuration option &lt;code&gt;anaconda_gutter_marks&lt;/code&gt; as &lt;code&gt;false&lt;/code&gt; in the plugin or
+project configuration files.&lt;/p&gt;
+
+&lt;p&gt;By default, the &lt;code&gt;basic&lt;/code&gt; gutter marks theme is used, this is, round marks
+are displayed in the left gutter bar of the Sublime Text 3 buffer. To display
+fancy icons, the users can set the &lt;code&gt;anaconda_gutter_theme&lt;/code&gt; configuration
+option to any of the available themes:&lt;/p&gt;
+
+&lt;table class=&#34;table table-striped&#34;&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Gutter Theme&lt;/th&gt;
+&lt;th&gt;Error&lt;/th&gt;
+&lt;th&gt;Warning&lt;/th&gt;
+&lt;th&gt;Violation&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Alpha&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/alpha-illegal.png&#34; alt=&#34;Error&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/alpha-warning.png&#34; alt=&#34;Warning&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/alpha-violation.png&#34; alt=&#34;Violation&#34; /&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;Bright&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/bright-illegal.png&#34; alt=&#34;Error&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/bright-warning.png&#34; alt=&#34;Warning&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/bright-violation.png&#34; alt=&#34;Violation&#34; /&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;Dark&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/dark-illegal.png&#34; alt=&#34;Error&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/dark-warning.png&#34; alt=&#34;Warning&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/dark-violation.png&#34; alt=&#34;Violation&#34; /&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;Simple&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/simple-illegal.png&#34; alt=&#34;Error&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/simple-warning.png&#34; alt=&#34;Warning&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/gutter_themes/simple-violation.png&#34; alt=&#34;Violation&#34; /&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h2 id=&#34;toc_47&#34;&gt;Error lint style&lt;/h2&gt;
+
+&lt;p&gt;Anaconda will draw boxes around the errors, warnings, and violations in the
+code that is being linted, this behaviour can be configured setting the value
+of the configuration option &lt;code&gt;anaconda_linter_mark_style&lt;/code&gt;, the possible options
+are:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;outline (the defautlt) - it will draw a border line around the affected lines&lt;/li&gt;
+&lt;li&gt;fill - it will draw a border and fill it with background color around the
+affected lines&lt;/li&gt;
+&lt;li&gt;none - it will not draw anything&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;table class=&#34;table table-striped&#34;&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Outline&lt;/th&gt;
+&lt;th&gt;Fill&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/mark_style/outline.png&#34; alt=&#34;outline&#34; /&gt;
+&lt;/td&gt;
+&lt;td&gt;&lt;img src=&#34;/anaconda/img/mark_style/fill.png&#34; alt=&#34;fill&#34; /&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h2 id=&#34;toc_48&#34;&gt;Error underlines&lt;/h2&gt;
+
+&lt;p&gt;The characteristic red underline that appears under the errors on the lines,
+you can set the &lt;code&gt;anaconda_linter_underlines&lt;/code&gt; as &lt;code&gt;false&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: that option takes effect only when the &lt;code&gt;anaconda_linter_mark_style&lt;/code&gt;
+is set to &lt;code&gt;none&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_49&#34;&gt;Persist linter marks while typing&lt;/h2&gt;
+
+&lt;p&gt;Anaconda will remove all the lint marks from the buffer while the user is
+typing by default, this behaviour can be also configured setting the option
+&lt;code&gt;anaconda_linter_persistent&lt;/code&gt; as &lt;code&gt;true&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_50&#34;&gt;Linting theme customization&lt;/h2&gt;
+
+&lt;p&gt;Users can customize anaconda linting marks as they like adding some custom
+rules to their SublimeText theme:&lt;/p&gt;
+
+&lt;table class=&#34;table table-striped&#34;&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Tag name&lt;/th&gt;
+&lt;th&gt;Suggested background (dark)&lt;/th&gt;
+&lt;th&gt;Suggested foregorund (dark)&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;anaconda.outline.illegal&lt;/td&gt;
+&lt;td&gt;#ff4a52&lt;/td&gt;
+&lt;td&gt;#ffffff&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;anaconda.underline.illegal&lt;/td&gt;
+&lt;td&gt;#ff0000&lt;/td&gt;
+&lt;td&gt;N/A&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;anaconda.outline.warning&lt;/td&gt;
+&lt;td&gt;#df9400&lt;/td&gt;
+&lt;td&gt;#ffffff&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;anaconda.underline.warning&lt;/td&gt;
+&lt;td&gt;#ff0000&lt;/td&gt;
+&lt;td&gt;N/A&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;anaconda.outline.violation&lt;/td&gt;
+&lt;td&gt;#ffffff33&lt;/td&gt;
+&lt;td&gt;#ffffff&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;anaconda.underline.violation&lt;/td&gt;
+&lt;td&gt;#ff0000&lt;/td&gt;
+&lt;td&gt;N/A&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;toc_51&#34;&gt;XML File example&lt;/h3&gt;
+
+&lt;p&gt;You can of course copy this piece of XML and paste into your theme&lt;/p&gt;
+
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;!-- Anaconda --&amp;gt;
+&amp;lt;dict&amp;gt;
+  &amp;lt;key&amp;gt;name&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda Error Outline&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;scope&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda.outline.illegal&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;settings&amp;lt;/key&amp;gt;
+  &amp;lt;dict&amp;gt;
+      &amp;lt;key&amp;gt;background&amp;lt;/key&amp;gt;
+      &amp;lt;string&amp;gt;#FF4A52&amp;lt;/string&amp;gt;
+      &amp;lt;key&amp;gt;foreground&amp;lt;/key&amp;gt;
+      &amp;lt;string&amp;gt;#FFFFFF&amp;lt;/string&amp;gt;
+  &amp;lt;/dict&amp;gt;
+&amp;lt;/dict&amp;gt;
+&amp;lt;dict&amp;gt;
+  &amp;lt;key&amp;gt;name&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda Error Underline&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;scope&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda.underline.illegal&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;settings&amp;lt;/key&amp;gt;
+  &amp;lt;dict&amp;gt;
+      &amp;lt;key&amp;gt;background&amp;lt;/key&amp;gt;
+      &amp;lt;string&amp;gt;#FF0000&amp;lt;/string&amp;gt;
+  &amp;lt;/dict&amp;gt;
+&amp;lt;/dict&amp;gt;
+&amp;lt;dict&amp;gt;
+  &amp;lt;key&amp;gt;name&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda Warning Outline&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;scope&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda.outline.warning&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;settings&amp;lt;/key&amp;gt;
+  &amp;lt;dict&amp;gt;
+      &amp;lt;key&amp;gt;background&amp;lt;/key&amp;gt;
+      &amp;lt;string&amp;gt;#DF9400&amp;lt;/string&amp;gt;
+      &amp;lt;key&amp;gt;foreground&amp;lt;/key&amp;gt;
+      &amp;lt;string&amp;gt;#FFFFFF&amp;lt;/string&amp;gt;
+  &amp;lt;/dict&amp;gt;
+&amp;lt;/dict&amp;gt;
+&amp;lt;dict&amp;gt;
+  &amp;lt;key&amp;gt;name&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda Warning Underline&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;scope&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda.underline.warning&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;settings&amp;lt;/key&amp;gt;
+  &amp;lt;dict&amp;gt;
+      &amp;lt;key&amp;gt;background&amp;lt;/key&amp;gt;
+      &amp;lt;string&amp;gt;#FF0000&amp;lt;/string&amp;gt;
+  &amp;lt;/dict&amp;gt;
+&amp;lt;/dict&amp;gt;
+&amp;lt;dict&amp;gt;
+  &amp;lt;key&amp;gt;name&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda Violation Outline&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;scope&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda.outline.violation&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;settings&amp;lt;/key&amp;gt;
+  &amp;lt;dict&amp;gt;
+      &amp;lt;key&amp;gt;background&amp;lt;/key&amp;gt;
+      &amp;lt;string&amp;gt;#ffffff33&amp;lt;/string&amp;gt;
+      &amp;lt;key&amp;gt;foreground&amp;lt;/key&amp;gt;
+      &amp;lt;string&amp;gt;#FFFFFF&amp;lt;/string&amp;gt;
+  &amp;lt;/dict&amp;gt;
+&amp;lt;/dict&amp;gt;
+&amp;lt;dict&amp;gt;
+  &amp;lt;key&amp;gt;name&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda Violation Underline&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;scope&amp;lt;/key&amp;gt;
+  &amp;lt;string&amp;gt;anaconda.underline.violation&amp;lt;/string&amp;gt;
+  &amp;lt;key&amp;gt;settings&amp;lt;/key&amp;gt;
+  &amp;lt;dict&amp;gt;
+      &amp;lt;key&amp;gt;background&amp;lt;/key&amp;gt;
+      &amp;lt;string&amp;gt;#FF0000&amp;lt;/string&amp;gt;
+  &amp;lt;/dict&amp;gt;
+&amp;lt;/dict&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>About Anaconda</title>
+      <link>http://idamnwidget.github.io/anaconda/about/</link>
+      <pubDate>Sun, 12 Oct 2014 18:47:22 IST</pubDate>
+      <author>Oscar Campos</author>
+      <guid>http://idamnwidget.github.io/anaconda/about/</guid>
+      <description>
+
+&lt;p&gt;Anaconda is a plugin that turns your Sublime Text 3 into a full featured Python
+development IDE.&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_0&#34;&gt;Supported Platforms&lt;/h1&gt;
+
+&lt;p&gt;Anaconda currently support all the three Sublime Text 3 platforms, that is,
+Linux, OS X and Windows, the status of the plugin in them is&lt;/p&gt;
+
+&lt;table class=&#34;table table-striped&#34;&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Platform&lt;/th&gt;
+&lt;th&gt;Status&lt;/th&gt;
+&lt;th&gt;Development&lt;/th&gt;
+&lt;th&gt;Maintainer&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Linux&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class=&#34;green&#34;&gt;Stable&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class=&#34;green&#34;&gt;Active&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/DamnWidget&#34;&gt;@damnwidget&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;OS X&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class=&#34;green&#34;&gt;Stable&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class=&#34;green&#34;&gt;Active&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/DamnWidget&#34;&gt;@damnwidget&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Windows&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class=&#34;green&#34;&gt;Stable&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class=&#34;green&#34;&gt;Active&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;We are looking for a maintainer for the Windows platform, currently,
+&lt;a href=&#34;https://github.com/DamnWidget&#34;&gt;@damnwidget&lt;/a&gt; fix bugs and solve
+incidences for Windows using a Virtual Machine, it works, but is not ideal.&lt;/p&gt;
+
+&lt;p&gt;On Windows, users can run the plugin in profiling mode (Sublime Text 3 doesn&amp;rsquo;t
+support the &lt;code&gt;cProfile&lt;/code&gt; library in &lt;code&gt;POSIX&lt;/code&gt; platforms) configuring the option
+&lt;code&gt;anaconda_debug&lt;/code&gt; to &lt;code&gt;profiler&lt;/code&gt;. If the profiling mode is active, a profiling
+log should be displayed in the Sublime Text 3 console where the user can check
+where the time is being spent.&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_1&#34;&gt;With performance in mind&lt;/h1&gt;
+
+&lt;p&gt;Are you tired of extensions that promise you nice features but make your
+Sublime Text freeze and blocks while you are writing?. Well, we too, this is
+why the main goal of anaconda is the performance. Anaconda will never freeze
+your Sublime Text as everything in anaconda runs asynchronous.&lt;/p&gt;
+
+&lt;p&gt;It doesn&amp;rsquo;t matters if you are linting a file with a few hundred or a few
+thousands of lines, anaconda will work smooth in each situation making you
+focus in your code and not interrupting your writing each few seconds.&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_2&#34;&gt;Anaconda&amp;rsquo;s History&lt;/h1&gt;
+
+&lt;p&gt;At began, anaconda was a small project with no pretensions at all, we only
+wanted to have a single plugin able to complete and lint code in a single
+package that ran in Sublime Text 3 as all the other plugins were broken or
+just didn&amp;rsquo;t work.&lt;/p&gt;
+
+&lt;p&gt;After a few weeks, other people started to use it and the first feedbacks came.
+One of the first things that people reported is that sometimes, when they were
+trying to auto-complete projects that used huge libraries like PyQt or NumPy,
+the ST3 was unresponsive for a few seconds while the underlying &lt;code&gt;jedi&lt;/code&gt; library
+was caching and processing the contents of the package, that was obviously
+wrong and is why we decide to go asynchronous.&lt;/p&gt;
+
+&lt;p&gt;Today, Anaconda is used by thousands of Python developers around the globe and
+this number continue growing daily (more than any other Python specialized
+plugin for Sublime Text).&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_3&#34;&gt;Anaconda Architecture&lt;/h1&gt;
+
+&lt;p&gt;Anaconda is an &lt;code&gt;asynchronous client-server&lt;/code&gt; architecture application. That means
+that part of anaconda runs in the Sublime Text 3 embedded Python interpreter
+runtime and other runs in a decoupled standalone asynchronous server.&lt;/p&gt;
+
+&lt;p&gt;All the heavy process is done in this standalone server so the embedded Python
+interpreter in Sublime Text 3 never get stuck, stale or unresponsive.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_4&#34;&gt;How this works?&lt;/h2&gt;
+
+&lt;p&gt;Anaconda detects if any Sublime Text 3 window has a Python buffer view. If there
+is any Python buffer, it starts a new standalone anaconda&amp;rsquo;s JsonServer (that
+knows how to speaks JSON with the part of anaconda that is running into the
+Sublime Text 3 runtime) for that window.&lt;/p&gt;
+
+&lt;p&gt;Anaconda&amp;rsquo;s JsonServers use the Python interpreter that is available in the
+system &lt;code&gt;PATH&lt;/code&gt; but this behavior can be configured globally or per project (
+take a look at &lt;a href=&#34;http://localhost:1313/anaconda/anaconda_settings/&#34;&gt;Configuring Anaconda the Right Way&lt;/a&gt;
+for detailed information about that).&lt;/p&gt;
+
+&lt;p&gt;In this way, we solve two common problems in Sublime Text plugins:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Plugins have to work/use the Python version of the embedded Sublime Text runtime (Python 3.3.3).&lt;/li&gt;
+&lt;li&gt;Plugins usually make Sublime Text 3 unresponsive (or completely freeze) when they do weight process or calculations even using Threads as the embedded Sublime Text Python interpreter also have a &lt;a href=&#34;https://wiki.python.org/moin/GlobalInterpreterLock&#34;&gt;GIL&lt;/a&gt; that get locked&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;toc_5&#34;&gt;How anaconda solves those two problems?&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;In anaconda, auto completion, linting, refactoring, code analytics, complexity
+checks and validations runs using your system Python interpreter (or whatever other
+that you configure) with no limitations&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;In anaconda, each Sublime Text window (if you have more than one open) use
+it&amp;rsquo;s own standalone copy of anaconda&amp;rsquo;s JsonServer running as a separate process
+so it can be effectively using more than one core of your processor, not
+blocking your Sublime Text embedded Python interpreter GIL and non making the
+ST3 GUI wait for any operation.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;When we are writing, the part of anaconda that resides in your Sublime Text,
+asks to the JsonServer for completions, linting, code formating, documentation,
+function signatures, imports validation and much more in concurrent way through
+a real non blocking socket and register a callback into the Anaconda&amp;rsquo;s callback
+system to interact with the Sublime Text 3 API when there is an available
+result coming back from the non blocking socket.&lt;/p&gt;
+
+&lt;p&gt;This is why anaconda can perform multiple operations at the same time without
+any performance degradation not mattering if your project is a few files with
+a few lines or a Django monster with hundred of thousands of lines.&lt;/p&gt;
+
+&lt;h2 id=&#34;toc_6&#34;&gt;Why not for Sublime Text 2?&lt;/h2&gt;
+
+&lt;p&gt;Honestly, who want to use ST2 could being using ST3? I am serious, the
+performance of ST3 is far better than the old ST2. The only reason for
+don&amp;rsquo;t switch from ST2 to ST3 was the lack of plugins, but that is not a
+problem nowadays.&lt;/p&gt;
+
+&lt;p&gt;A part from that, maintain a multi ST project is a pain, and is not because
+you have to support Python2 and Python3 (JsonServer already support Python2
+and Python3) but because ST2 and ST3 API&amp;rsquo;s are not compatible, believe me,
+I already maintain a &lt;a href=&#34;https://github.com/DamnWidget/SublimePySide&#34;&gt;multi ST project&lt;/a&gt;
+and I will not do it again, ever.
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_7&#34;&gt;Anaconda ST3 Python IDE logo&lt;/h1&gt;
+
+&lt;p&gt;This is the Anaconda Sublime Text 3 Python IDE logotype&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;/anaconda/img/anaconda-sm.png&#34;&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

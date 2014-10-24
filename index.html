@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html class="no-js" lang="en-US" prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb#">
+<head>
+    <meta charset="utf-8">
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="description" content="Anaconda is an autocompletion, liniting, code analyzer and IDE for SublimeText 3">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+<meta name="keywords" content="">
+
+ 
+<meta property="og:type" content="article"/>
+<meta property="og:description" content=""/>
+<meta property="og:title" content="Anaconda, the Python IDE for Sublime Text 3 : spf13.com"/>
+<meta property="og:site_name" content="spf13 is Steve Francia"/>
+<meta property="og:image" content="" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="" />
+<meta property="og:image:height" content="" />
+<meta property="og:url" content="http://idamnwidget.github.io/anaconda/">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="0001-01-01"/>
+<meta property="article:modified_time" content="0001-01-01"/>
+
+
+
+
+
+<meta name="twitter:card" content="summary">
+
+<meta name="twitter:site" content="@damnwidget">
+<meta name="twitter:title" content="Anaconda, the Python IDE for Sublime Text 3 : damnwidget.github.io/anaconda">
+<meta name="twitter:creator" content="@spf13">
+<meta name="twitter:description" content="">
+<meta name="twitter:image:src" content="">
+<meta name="twitter:domain" content="damnwidget.github.io">
+
+
+
+    <base href="http://idamnwidget.github.io/anaconda">
+    <title>Anaconda, the Python IDE for Sublime Text 3</title>
+    <link rel="canonical" href="http://idamnwidget.github.io/anaconda/">
+    <link href="http://idamnwidget.github.io/anaconda/index.xml" rel="alternate" type="application/rss+xml" title="Anaconda, the Python IDE for Sublime Text 3" />
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="/anaconda/css/anaconda.css">
+<link rel="stylesheet" href="/anaconda/css/prettify.css">
+
+
+
+
+</head>
+<body>
+
+<header class="navbar navbar-inverse navbar-fixed-top docs-nav" role="banner">
+
+    <div class="container">
+        <div class="navbar-header">
+            <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">AnacondaST3</a>
+
+        </div>
+        <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+
+            <ul class="nav navbar-nav">
+                <li><a href="anaconda/IDE/">Powerful IDE</a></li>
+                <li><a href="anaconda/anaconda_settings">Configure Anaconda</a></li>
+                <li><a href="anaconda/tests_runner/">Tests Runner</a></li>
+                <li><a href="anaconda/vagrant/">Vagrant Integration</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+
+                <li><a href="anaconda/about/">About</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        Github <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="https://github.com/DamnWidget/anaconda">Anaconda Repo</a></li>
+                        <li><a href="https://github.com/DamnWidget/anaconda/issues">Anaconda Issues</a></li>
+                        <li><a href="https://github.com/DamnWidget/anaconda/wiki">Anaconda Wiki</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+</header>
+
+<div class="modal fade" id="package-control">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title">Installation using Package Control</h4>
+      </div>
+      <div class="modal-body">
+        <p>To install anaconda trough Package Control show the <code>Command Palette</code> (Tools -> Command Palette) and write <code>install package</code></p>
+<p><img src="/anaconda/img/screenshots/command_palette.png"></img></p>
+<p>then write <code>anaconda</code> in the input window popup that just appeared (that is the SublimeText 3 Command Palette) and press <code>enter</code></p>
+<p><img src="/anaconda/img/screenshots/install_anaconda.png"></img></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="anaconda-header" id="content">
+  <div class="container">
+    <h1><span class="anaconda">Anaconda</span> <span class="ide">Python IDE</span></h1>
+    <p>Anaconda turns your Sublime Text 3 into a full featured Python development IDE</p>
+    <a role="button" class="btn btn-primary btn-large btn-download" href="https://github.com/DamnWidget/anaconda/archive/v1.3.4.tar.gz"><span class="glyphicon glyphicon-download-alt"></span> Download Anaconda v1.3.4</a>
+    <button type="button" class="btn btn-primary btn-large btn-pc" data-toggle="modal" data-target="#package-control"><span class="glyphicon glyphicon-cloud"></span> Use Package Control</button>
+  </div>
+</section>
+
+
+<section class="banner">
+  <div class="container">
+    <div class="anaconda-social">
+        <ul class="anaconda-social-buttons">
+            <li>
+                <iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=DamnWidget&amp;repo=anaconda&amp;type=watch&amp;count=true" width="100" height="20" title="Star on GitHub"
+                ></iframe>
+            </li>
+            <li>
+                <iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=DamnWidget&amp;repo=anaconda&amp;type=fork&amp;count=true" width="96" height="20" title="Fork on GitHub"></iframe>
+            </li>
+            <li class="follow-btn">
+                <iframe
+                    src="//platform.twitter.com/widgets/follow_button.html?screen_name=damnwidget&amp;show_screen_name=true&amp;show_count=true"
+                    class="twitter-follow-button twitter-follow-button"
+                    style="width: 226px; height: 20px;"
+                    allowtransparency="true"
+                    frameborder="0"
+                    scrolling="no">
+                </iframe>
+            </li>
+            <li class="tweet-btn">
+                <iframe
+                    src="https://platform.twitter.com/widgets/tweet_button.html?size=m&amp;count=horizontal&amp;lanf=en&amp;url=https%3A%2F%2Fdamnwidget.github.io%2Fanaconda&amp;via=damnwidget&amp;related=damnwidget&amp;text=Anaconda%20plugin%20turns%20your%20SublimeText%203%20into%20a%20full%20featured%20Python%20IDE&amp;hashtags=ST3"
+                    class="twitter-share-button twitter-tweet-button twitter-share-button twitter-count-horizontal"
+                    style="width: 109px; height: 20px;"
+                    allowtransparency="true"
+                    frameborder="0"
+                    scrolling="no">
+                </iframe>
+            </li>
+        </ul>
+    </div>
+  </div>
+</section>
+
+
+<div class="container anaconda-container">
+    <div class="row">
+        <div class="col-md-3">
+
+            <div class="sidebar hidden-print hidden-xs hidden-sm affix-top" role="complementary">
+                <ul class="nav sidenav">
+                    <li class="active">
+                        <a href="#anaconda-overview">Anaconda Overview</a>
+                        <ul class="nav">
+                            <li class=""><a href="#anaconda-overview-performance">Performance</a></li>
+                            <li class=""><a href="#anaconda-overview-out-of-the-box">Out of the box</a></li>
+                        </ul>
+                    </li>
+                    <li class="">
+                        <a href="#using-anaconda">Using Anaconda</a>
+                        <ul class="nav">
+                            <li><a href="#using-anaconda-installation">Installation</a></li>
+                            <li><a href="#using-anaconda-installation-manual">Manual Installation</a></li>
+                            <li><a href="#using-anaconda-installation-git">Install using Git</a></li>
+                            <li><a href="#using-anaconda-per-project-config">Project Configuration</a></li>
+                        </ul>
+                    </li>
+                    <li class=""><a href="#license">License</a></li>
+                </ul>
+            </div>
+
+        </div>
+
+        <div class="col-md-9" role="main">
+            <div class="anaconda-content">
+
+                <div class="anaconda-section">
+                    <h1 id="anaconda-overview" class="page-header">Anaconda Overview</h1>
+                    <p>Anaconda is a plugin that turns your SublimeText 3 into a rich featured Python development stack that boost your productivity and helps you to ensure the quality and style of your code.</p>
+
+                    <div id="carousel-features" class="carousel slide" data-ride="carousel" data-interval="10000" data-pause="hover">
+
+                        
+                        <div class="carousel-inner">
+
+                            <div class="item active">
+                                <img src="/anaconda/img/screenshots/auto_completion.png" alt="Anaconda Autocompletion">
+                                <div class="carousel-caption">
+                                    <h3>Auto Completion</h3>
+                                    <p>Python Code Autocompletion</p>
+                                </div>
+                            </div>
+
+                            <div class="item">
+                                <img src="/anaconda/img/screenshots/linting.png" alt="Anaconda Linting">
+                                <div class="carousel-caption">
+                                    <h3>Code Linting</h3>
+                                    <p>Lint Python syntax errors and PEP8 violations</p>
+                                </div>
+                            </div>
+
+                            <div class="item">
+                                <img src="/anaconda/img/screenshots/validate_imports.png" alt="Anaconda Imports Validator">
+                                <div class="carousel-caption">
+                                    <h3>Imports Validation</h3>
+                                    <p>Check if file imports are valid</p>
+                                </div>
+                            </div>
+
+                            <div class="item">
+                                <img src="/anaconda/img/screenshots/animations/auto_import.gif" alt="Anaconda Auto Import">
+                                <div class="carousel-caption">
+                                    <h3>Auto Imports</h3>
+                                    <p>Try to import the undefined word under the cursor</p>
+                                </div>
+                            </div>
+
+                            <div class="item">
+                                <img src="/anaconda/img/screenshots/animations/auto_format.gif" alt="Anaconda Auto Format">
+                                <div class="carousel-caption">
+                                    <h3>Auto Format PEP8 Violations</h3>
+                                    <p>Try to solve automatically PEP8 errors in the file</p>
+                                </div>
+                            </div>
+
+                            <div class="item">
+                                <img src="/anaconda/img/screenshots/animations/disable_linting.gif" alt="Anaconda Disable Linting">
+                                <div class="carousel-caption">
+                                    <h3>Disable Linting on File</h3>
+                                    <p>Useful when you don't want to lint a file</p>
+                                </div>
+                            </div>
+
+                            <div class="item">
+                                <img src="/anaconda/img/screenshots/animations/goto_definition.gif" alt="Anaconda Goto Definition">
+                                <div class="carousel-caption">
+                                    <h3>Goto Python Definition</h3>
+                                    <p>Jump to any file that define the Python object under the cursor</p>
+                                </div>
+                            </div>
+
+                            <div class="item">
+                                <img src="/anaconda/img/screenshots/animations/find_usages.gif" alt="Anaconda Find Usages">
+                                <div class="carousel-caption">
+                                    <h3>Find Object Usages</h3>
+                                    <p>Find where the object under the cursor is being used</p>
+                                </div>
+                            </div>
+
+                            <div class="item">
+                                <img src="/anaconda/img/screenshots/animations/show_doc.gif" alt="Anaconda Show Documentation">
+                                <div class="carousel-caption">
+                                    <h3>Show Documentation</h3>
+                                    <p>Open a bottom pannel with documentation about the class, method or function where your cursor is</p>
+                                </div>
+                            </div>
+
+                            <div class="item">
+                                <img src="/anaconda/img/screenshots/animations/mccabe.gif" alt="Anaconda McCabe Complexity Checker">
+                                <div class="carousel-caption">
+                                    <h3>McCabe Complexity Checker</h3>
+                                    <p>Analyze your code with the Code Complexity Checker McCabe to detect overcomplex algorithms or functions</p>
+                                </div>
+                            </div>
+
+                            <div class="item">
+                                <img src="/anaconda/img/screenshots/animations/unit_testing.gif" alt="Anaconda Tests Runner">
+                                <div class="carousel-caption">
+                                    <h3>Tests Runner</h3>
+                                    <p>Run your project unit tests with the granularity that you need</p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        
+                        <a class="left carousel-control" href="#carousel-features" role="button" data-slide="prev">
+                            <span class="glyphicon glyphicon-chevron-left"></span>
+                        </a>
+                        <a class="right carousel-control" href="#carousel-features" role="button" data-slide="next">
+                            <span class="glyphicon glyphicon-chevron-right"></span>
+                        </a>
+                    </div>
+
+                    <h3 class="anaconda-heading" id="anaconda-overview-performance">With performance in mind</h3>
+                    <p>The <strong>main</strong> goal of anaconda is to provide a high performance python development environment, this is why anaconda <strong>will never</strong> freeze your SublimeText 3 as everything in anaconda runs concurrent and asynchronous using an asynchronous <strong>client-server</strong> architecture.</p>
+
+                    <h3 class="anaconda-heading" id="anaconda-overview-out-of-the-box">Out of the box</h3>
+                    <p>The plugin <strong>works out of the box</strong> with no configuration but we recommend to become familiar with the numerous anaconda's configuration options to fine tuning your installation to get all the power that Aanaconda can offer you.</p>
+                    <p>By default, anaconda uses the python interpreter that is in your <code>PATH</code> environment variable, the most important configuration option is the <code>python_interpreter</code> option that allow the user to use a different python interpreter, for example, one that resides in a <strong>virtual environment</strong>:</p>
+                    <blockquote class="code">
+                        <pre class="prettyprint">{"python_interpreter": "~/.virtualenvs/myproject/bin/python"}</pre>
+                    </blockquote>
+
+                    <strong>Note</strong>: for detailed information about how to <strong>properly configure</strong> anaconda to get the maximum of it, follow the <a href="anaconda/anaconda_settings/">Configure Anaconda the Right Way</a> section.
+
+                </div>
+
+                <div class="anaconda-section">
+                    <h1 id="using-anaconda" class="page-header">Using Anaconda</h1>
+                    <p>To use anaconda you need to have installed Sublime Text 3 first, you can <a href="http://www.sublimetext.com/3" target="_blank">download</a> it from it's official website in case that you didn't already.</p>
+
+                    <h3 class="anaconda-heading" id="using-anaconda-installation">Installation</h3>
+                    <p>The easiest way to install anaconda is using <a href="https://sublime.wbond.net" target="_blank">Package Control</a> for SublimeText 3, in case that you don't have installed Package Control already, just open the SublimeText console (View -> Show Console) and copy and paste the code below, when done, press <code>enter</code>.</p>
+
+                    <blockquote class="code">
+                        <p><pre class="prettyprint">import urllib.request,os,hashlib; h = '7183a2d3e96f11eeadd761d777e62404' + 'e330c659d4bb41d3bdf022e94cab3cd0'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://sublime.wbond.net/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)</pre></p>
+                    </blockquote>
+
+                    <p>To install anaconda trough Package Control show the <code>Command Palette</code> (Tools -> Command Palette) and write <code>install package</code></p>
+<p><img src="/anaconda/img/screenshots/command_palette.png"></img></p>
+<p>then write <code>anaconda</code> in the input window popup that just appeared (that is the SublimeText 3 Command Palette) and press <code>enter</code></p>
+<p><img src="/anaconda/img/screenshots/install_anaconda.png"></img></p>
+
+                    <h3 id="using-anaconda-installation-manual">Manual installation</h3>
+                    <p>You can download a compressed packed version of anaconda from the link below and decompress it into your SublimeText 3 packages directory</p>
+
+                    <p><a href="https://github.com/DamnWidget/anaconda/archive/v1.3.4.tar.gz">https://github.com/DamnWidget/anaconda/archive/v1.3.4.tar.gz</a></p>
+
+                    <blockquote class="code">
+                        <p>The packages directory can be found in:</p>
+                        <p>
+                            <ul>
+                                <li><strong>Linux</strong>: ~/.config/sublime-text-3/Packages</li>
+                                <li><strong>OS X</strong>: ~/Library/Application Support/Subime Text 3/Packages</li>
+                                <li><strong>Windows</strong>: %APPDATA%\\Sublime Text 3</li>
+                            </ul>
+                        </p>
+                    </blockquote>
+
+                    <h3 id="using-anaconda-installation-git">Install using Git</h3>
+                    <p>As third option, you can just go to your SublimeText 3 packages directory and clone the repo directly from Github, in that way you can easily install updates just running <code>git pull</code> in the directory.</p>
+
+                    <blockquote class="code"><p>Just run <code>git clone https://github.com/DamnWidget/anaconda</code> inside your packages directory to install from git</p></blockquote>
+
+                    <h3 id="using-anaconda-per-project-config">Per Project Configuration</h3>
+                    <p>Anaconda run just fine out (always that you have a valid python interpreter configured and in your <code>PATH</code>) but it's also possible (and desirable) a finer <em>per project configuration</em>. You can configure anaconda in all the projects that you want.</p>
+
+                    <p>To configure anaconda to behave differently in certain project you just have to edit the project configuration file (Project -> Edit Project) and add any configuration that you need into the <code>"settings"</code> key:</p>
+                    <blockquote class="code"><p><pre class="prettyprint">{
+    "build_systems":
+    [
+        {
+            "name": "Anaconda Python Builder",
+            "selector": "source.python",
+            "shell_cmd": "python -u \"$file\""
+        }
+    ],
+    "folders":
+    [
+        {
+            "follow_symlinks": true,
+            "path": "."
+        }
+    ],
+    "settings":
+    {
+        "anaconda_linting": true,
+        "anaconda_linting_behaviour": "always",
+        "pep257": false,
+        "python_interpreter": "~/.virtualenvs/anaconda/bin/python",
+        "test_command": "python -m unittest discover",
+        "use_pylint": false,
+        "validate_imports": true
+    }
+}
+                    </pre></p></blockquote>
+                    <p>Check the <a href="./#">configuration</a> documentation to get a much more extensive information</p>
+                </div>
+
+                <div class="anaconda-section">
+                    <h1 id="license" class="page-header">License</h1>
+                    <blockquote><p>Anaconda Python IDE, plugin for Sublime Text 3<br>
+                    Copyright (C) 2013 - 2014 Oscar Campos</p>
+
+                    <p>This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.</p>
+
+                    <p>This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.</p>
+
+                    <p>You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p>
+                    </blockquote>
+                </div>
+
+            </div>
+
+        </div> 
+
+    </div> 
+
+</div> 
+
+<footer class="anaconda-footer" role="contentinfo">
+  <div class="container">
+    <p>This project is maintained by <a href="https://github.com/DamnWidget">@damnwidget</a> with the help of <a href="https://github.com/DamnWidget/anaconda/graphs/contributors">several contributors</a>.
+    <p>Code licensed under <a href="http://www.gnu.org/licenses/gpl.html">GPL</a>, documentation under <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons Attribution">CC BY 3.0</a></p>
+    <p>This page is hosted in <a href="https://pages.github.com/">GitHub Pages</a> and has been generated with <a href="https://github.com/spf13/hugo">Hugo</a></p>
+  </div>
+</footer>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/holder/2.2.0/holder.min.js"></script>
+<script src="/anaconda/javascript/anaconda.js"></script>
+<script src="/anaconda/javascript/prettify/prettify.js"></script>
+
+<script>
+  !function ($) {
+    $(function(){
+      window.prettyPrint && prettyPrint()
+    })
+  }(window.jQuery)
+</script>
+
+</body>
+</html>
