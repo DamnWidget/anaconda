@@ -2,6 +2,8 @@
 
 Anaconda turns your Sublime Text 3 into a full featured Python IDE. Read the plugin documentation on [http://damnwidget.github.io/anaconda](http://damnwidget.github.io/anaconda).
 
+[![Build Status](https://www.gitbook.io/button/status/book/damnwidget/anacondast3-developers-documentation)](https://www.gitbook.io/book/damnwidget/anacondast3-developers-documentation/activity)
+
 # Getting Started 
 
 Anaconda works out of the box but there are multitude of options and features that you can tune and adapt to your own style or needs.
@@ -32,6 +34,8 @@ Your sublime text can't find the interpreter that you set in your configuration,
 # Contributing with Anaconda
 
 There are several ways to contribute with anaconda.
+
+**important**: there is a [Developers Documentation book](http://damnwidget.gitbooks.io/anacondast3-developers-documentation/) that is maintained up to date with the last information about anaconda internals and useful information about how to contribute with the project
 
 ## Feedback
 
