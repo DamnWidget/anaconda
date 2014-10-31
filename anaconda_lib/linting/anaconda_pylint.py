@@ -10,6 +10,7 @@ Anaconda PyLint wrapper
 import os
 import sys
 import logging
+import subprocess
 
 if sys.version_info >= (3, 0):
     from io import StringIO
@@ -20,8 +21,12 @@ else:
         from StringIO import StringIO
         assert StringIO
 
-from pylint import lint
+
 from pylint.__pkginfo__ import numversion
+
+from process import spawn
+
+PIPE = subprocess.PIPE
 
 
 class PyLinter(object):
@@ -30,13 +35,8 @@ class PyLinter(object):
 
     def __init__(self, filename, rcfile):
         self.filename = filename
-        self.exit = sys.exit
         self.rcfile = rcfile
-        self.stdout = sys.stdout
-        self.output = StringIO()
-
-        sys.exit = lambda x: None
-        sys.stdout = self.output
+        self.output = None
 
         self.execute()
 
@@ -53,18 +53,23 @@ class PyLinter(object):
         if self.rcfile:
             args.append('--rcfile={0}'.format(os.path.expanduser(self.rcfile)))
 
-        args.insert(0, self.filename)
-        lint.Run(args)
+        args.append(self.filename)
+        args = [sys.executable, '-m', 'pylint.lint'] + args
+
+        proc = spawn(args, stdout=PIPE, stderr=PIPE, cwd=os.getcwd())
+        if proc is None:
+            return {'E': [], 'W': [], 'V': []}
+
+        self.output, _ = proc.communicate()
+        if sys.version_info >= (3, 0):
+            self.output = self.output.decode('utf8')
 
     def parse_errors(self):
         """Parse the output given by PyLint
         """
 
         errors = {'E': [], 'W': [], 'V': []}
-        data = self.output.getvalue()
-
-        sys.exit = self.exit
-        sys.stdout = self.stdout
+        data = self.output
 
         for error in data.splitlines():
             if '************* Module ' in error:
