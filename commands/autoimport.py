@@ -2,30 +2,68 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
-import re
+import logging
+import traceback
 
 import sublime
 import sublime_plugin
 
-from ..anaconda_lib.helpers import is_python
-from ..anaconda_lib.linting.sublime import ANACONDA
+from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.jsonclient import Callback
+from ..anaconda_lib.progress_bar import ProgressBar
+from ..anaconda_lib.helpers import is_python, get_settings
 
 
 class AnacondaAutoImport(sublime_plugin.TextCommand):
     """Execute auto import for undefined names
     """
 
-    def run(self, edit):
+    import_data = None
 
-        self.data = None
-        location = self.view.rowcol(self.view.sel()[0].begin())
-        if not self._detected_undefined_name(location):
-            sublime.message_dialog(
-                'The word under the cursor is not an undefined name.')
+    def run(self, edit):
+        """Run the autoimport command
+        """
+
+        if self.import_data is not None:
+            self.update_imports(edit)
+            self.import_data = None
             return
 
-        for name in self.data:
-            self.insert_import(edit, name)
+        code = self.view.substr(sublime.Region(0, self.view.size()))
+        try:
+            messages = {
+                'start': 'Autoimporting please wait...',
+                'end': 'Autoimport fix done!',
+                'fail': 'Autoimport failed, buffer unchanged.',
+                'timeout': 'Autoimport failed, buffer unchanged.'
+            }
+            self.pbar = ProgressBar(messages)
+            self.pbar.start()
+
+            data = {
+                'vid': self.view.id(),
+                'code': code,
+                'method': 'autoimport',
+                'handler': 'autoimport'
+            }
+            timeout = get_settings(self.view, 'auto_import_timeout', 1)
+
+            callback = Callback(timeout=timeout)
+            callback.on(success=self.prepare_imports)
+            callback.on(error=self.on_failure)
+            callback.on(timeout=self.on_timeout)
+
+            Worker().execute(callback, **data)
+        except:
+            logging.error(traceback.format_exc())
+
+    def prepare_imports(self, data):
+        """Collect the returned data and prepare the imports
+        """
+
+        self.import_data = data
+        self.pbar.terminate()
+        self.view.run_command('anaconda_auto_import')
 
     def is_enabled(self):
         """Determine if this command is enabled or not
@@ -33,32 +71,16 @@ class AnacondaAutoImport(sublime_plugin.TextCommand):
 
         return is_python(self.view, True)
 
-    def insert_import(self, edit, name):
-        iline = self._guess_insertion_line()
-        import_str = 'import {name}\n\n\n'.format(name=name)
-        current_lines = self.view.lines(sublime.Region(0, self.view.size()))
-        import_point = current_lines[iline].begin()
+    def update_imports(self, edit):
+        """Update the imports block
+        """
 
-        self.view.insert(edit, import_point, import_str)
+        line_start = self.import_data['line_start']
+        line_end = self.import_data['line_end']
+        import_block = self.import_data['import_block']
 
-    def _guess_insertion_line(self):
-        view_code = self.view.substr(sublime.Region(0, self.view.size()))
-        match = re.search(r'^(@.+|def|class)\s+', view_code, re.M)
-        if match is not None:
-            code = view_code[:match.start()]
-
-        return len(code.split('\n')) - 1
-
-    def _detected_undefined_name(self, location):
-        vid = self.view.id()
-        errors_mapping = {0: 'ERRORS', 1: 'WARNINGS', 2: 'VIOLATIONS'}
-        for i, error_type in errors_mapping.items():
-            for line, strings in ANACONDA[error_type].get(vid, {}).items():
-                for string in strings:
-                    if (location[0] == line and 'Undefined ' in string):
-                        if self.data is None:
-                            self.data = []
-
-                        self.data.append(string.split('\'')[1])
-
-        return False if self.data is None else True
+        buffer_lines = self.view.lines(sublime.Region(0, self.view.size()))
+        start = buffer_lines[line_start].begin()
+        end = buffer_lines[line_end].end()
+        self.view.erase(edit, sublime.Region(start, end))
+        self.view.insert(edit, buffer_lines[line_start].begin(), import_block)
