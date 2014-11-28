@@ -409,7 +409,7 @@ to get the max from it, you can configure multitude of options to tune it
 and adapt it to your needs.&lt;/p&gt;
 
 &lt;p&gt;To take a look at the common configuration of the Anaconda powerful IDE
-features, take a look at the &lt;a hreg=&#34;anaconda/IDE/&#34;&gt;Powerful IDE&lt;/a&gt; section,
+features, take a look at the &lt;a href=&#34;anaconda/IDE/&#34;&gt;Powerful IDE&lt;/a&gt; section,
 in this section we will speak about where and how to configure anaconda to use
 multiple &lt;strong&gt;virtual environments&lt;/strong&gt;, create hook config files and other anaconda
 specific options that can make your life way easier.&lt;/p&gt;
