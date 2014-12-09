@@ -26,7 +26,13 @@ class AutoComplete(Command):
             completions = self.script.completions()
             if DEBUG_MODE is True:
                 logging.info(completions)
-            data = [('{0}\t{1}'.format(comp.name, comp.type), comp.name) for comp in completions]
+            data = []
+            for comp in completions:
+                if comp.type == 'function':
+                    data.append(('{0}\t{1}'.format(comp.name, comp.type), comp.name + '($0)'))
+                else:
+                    data.append(('{0}\t{1}'.format(comp.name, comp.type), comp.name))
+
             self.callback({
                 'success': True, 'completions': data, 'uid': self.uid
             })

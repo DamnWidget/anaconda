@@ -52,7 +52,7 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
 
         Worker().execute(self._complete, **data)
 
-    def on_modified(self, view):
+    def on_post_text_command(self, view, name, args):
         """Called after changes has been made to a view.
         """
 
@@ -65,9 +65,18 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
                 and view.substr(view.sel()[0].begin()) == ')'):
             if JUST_COMPLETED:
                 view.run_command('anaconda_complete_funcargs')
+                JUST_COMPLETED = False
 
-            JUST_COMPLETED = False
-        elif view.substr(sublime.Region(
+    def on_modified(self, view):
+        """Called after changes has been made to a view.
+        """
+
+        if not is_python(view, autocomplete_ignore_repl=True):
+            return
+
+        global JUST_COMPLETED
+
+        if view.substr(sublime.Region(
                 view.sel()[0].begin() - 7, view.sel()[0].end())) == 'import ':
             self._run_auto_complete()
 
