@@ -13,6 +13,7 @@ import logging
 import functools
 import traceback
 import subprocess
+from collections import defaultdict
 
 import sublime
 
@@ -28,6 +29,8 @@ NONE = 0x00
 ONLY_CODE = 0x01
 NOT_SCRATCH = 0x02
 LINTING_ENABLED = 0x04
+
+ENVIRON_HOOK_INVALID = defaultdict(lambda: False)
 
 
 def is_code(view, lang='python', ignore_comments=False, ignore_repl=False):
@@ -132,12 +135,15 @@ def get_settings(view, name, default=None):
     """Get settings
     """
 
+    global ENVIRON_HOOK_INVALID
+
     if view is None:
         return default
 
     plugin_settings = sublime.load_settings('Anaconda.sublime-settings')
 
-    if name in ('python_interpreter', 'extra_paths'):
+    if (name in ('python_interpreter', 'extra_paths')
+            and not ENVIRON_HOOK_INVALID[view.id()]):
         if view.window() is not None and view.window().folders():
             dirname = view.window().folders()[0]
             while True:
@@ -148,7 +154,18 @@ def get_settings(view, name, default=None):
                         try:
                             data = json.loads(jsonfile.read())
                         except Exception as error:
-                            print(error)
+                            sublime.error_message(
+                                "Anaconda Message:\n"
+                                "I found an .anaconda environment file in {} "
+                                "path but it doesn't seems to be a valid JSON "
+                                "file.\n\nThat means that your .anaconda "
+                                "hook file is being ignored.".format(
+                                    environfile
+                                )
+                            )
+                            logging.error(error)
+                            ENVIRON_HOOK_INVALID[view.id()] = True
+                            break  # stop loop
                         else:
                             return data.get(
                                 name,
