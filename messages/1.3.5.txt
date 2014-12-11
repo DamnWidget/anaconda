@@ -1,0 +1,32 @@
+Changes in 1.3.5
+================
+
+- Added regular expression to capture error output cmd in anaconda build system
+- Added 'knob' gutter mark theme
+
+Bug Fixes
+=========
+
+Fixed #231
+    * When an environment hook file (.anaconda) was present but it
+      could not being parsed as valid JSON, anaconda loops forever. Added
+      gracefully fail and show an error message to inform the user about the
+      problem in the hook file.
+
+    * Fixed misspelled word environment in error message
+
+    * Improved condition to show try to get the python_environment in
+      the hook file depending on the view identification
+
+
+Fixed #230
+    * Seems like the PyLint linter had never worked at all due an
+      unknown cache in PyLint when it's used as library (that is not
+      supossed to). Taking a look in #230 I discovered that when
+      `pylint.lint.Run(args)` is being used as library it caches the
+      content of the given file or just the reporter output (I didn't
+      determined really where the cahce was).
+    * Change: Replaced the handler for a spawn process that call:
+      sys.executebale -m pylint.lint args
+
+For more detailed information about those changes run git v1.3.3..v1.3.4 on git repository
