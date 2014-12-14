@@ -322,11 +322,7 @@
                     <p>To use anaconda you need to have installed Sublime Text 3 first, you can <a href="http://www.sublimetext.com/3" target="_blank">download</a> it from it's official website in case that you didn't already.</p>
 
                     <h3 class="anaconda-heading" id="using-anaconda-installation">Installation</h3>
-                    <p>The easiest way to install anaconda is using <a href="https://sublime.wbond.net" target="_blank">Package Control</a> for SublimeText 3, in case that you don't have installed Package Control already, just open the SublimeText console (View -> Show Console) and copy and paste the code below, when done, press <code>enter</code>.</p>
-
-                    <blockquote class="code">
-                        <p><pre class="prettyprint">import urllib.request,os,hashlib; h = '7183a2d3e96f11eeadd761d777e62404' + 'e330c659d4bb41d3bdf022e94cab3cd0'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://sublime.wbond.net/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)</pre></p>
-                    </blockquote>
+		    <p>The easiest way to install anaconda is using <a href="https://sublime.wbond.net" target="_blank">Package Control</a> for SublimeText 3, in case that you don't have installed Package Control already, just follow <a href="https://sublime.wbond.net/installation" target="_blank">the installation guide</a> in the Package Control website. 
 
                     <p>To install anaconda trough Package Control show the <code>Command Palette</code> (Tools -> Command Palette) and write <code>install package</code></p>
 <p><img src="/anaconda/img/screenshots/command_palette.png"></img></p>
