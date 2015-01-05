@@ -471,7 +471,7 @@ class Checker(object):
             return
 
         scopes = [scope for scope in self.scopeStack[:-1]
-                  if isinstance(scope, (FunctionScope, ModuleScope))]
+                  if isinstance(scope, (FunctionScope, ModuleScope, GeneratorScope))]
         if isinstance(self.scope, GeneratorScope) and scopes[-1] != self.scopeStack[-2]:
             scopes.append(self.scopeStack[-2])
 
@@ -693,7 +693,11 @@ class Checker(object):
             raise RuntimeError("Got impossible expression context: %r" % (node.ctx,))
 
     def RETURN(self, node):
-        if node.value and not self.scope.returnValue:
+        if (
+            node.value and
+            hasattr(self.scope, 'returnValue') and
+            not self.scope.returnValue
+        ):
             self.scope.returnValue = node.value
         self.handleNode(node.value, node)
 
