@@ -220,7 +220,17 @@ def project_name():
     if project_name is None:
         folders = window.folders()
         if len(folders) > 0:
-            project_name = window.folders()[0].rsplit(os.sep, 1)[1]
+            try:
+                project_name = window.folders()[0].rsplit(os.sep, 1)[1]
+            except IndexError:
+                # ST3 on Windows behave weird and sometimes doesn't
+                # return back a valid folders path for the active
+                # window, this is a workaround to fix #253
+                v = active_view()
+                if v is not None and v.file_name() is not None:
+                    project_name = v.file_name().rsplit(os.sep, 1)[1]
+                else:
+                    project_name = 'anaconda-{id}'.format(id=window.window_id)
         else:
             project_name = 'anaconda-{id}'.format(id=window.window_id)
     else:
