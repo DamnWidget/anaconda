@@ -62,7 +62,16 @@ class Validator:
         found = []
         lineno = 1
         buffer_found = []
+        in_docstring = False
         for line in self.source.splitlines():
+            # skip if we detect docstring blocks
+            if not in_docstring:
+                in_docstring = self.__detect_docstring(line)
+            else:
+                if self.__detect_docstring(line):
+                    in_docstring = False
+                else:
+                    continue
             l = line.strip()
             if len(buffer_found) > 0:
                 if ')' in l:
@@ -72,6 +81,8 @@ class Validator:
                 else:
                     buffer_found.append(l)
             else:
+                if self.__detect_docstring(line):
+                    continue
                 if l.startswith('import ') or l.startswith('from '):
                     if '(' in l:
                         buffer_found.append(l.replace('(', '').strip())
@@ -80,3 +91,13 @@ class Validator:
             lineno += 1
 
         return found
+
+    def __detect_docstring(self, line):
+        """Detects if there is a docstring
+        """
+
+        if '"""' in line or "'''" in line:
+            print("Me la comes")
+            return True
+
+        return False
