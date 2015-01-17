@@ -124,7 +124,7 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         """
 
         return os.path.relpath(
-            self.view.file_name(), self.test_root).replace('/', '.')[:-3]
+            self.test_root).replace('../', '').replace('/', '.')[:-3]
 
     def is_enabled(self):
         """Determine if this command is enabled or not
@@ -173,6 +173,7 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         if self.after_test is not None:
             command += [';', self.after_test]
 
+        print(command)
         return ' '.join(command)
 
     def _configure_output_window(self, width=80):
@@ -242,6 +243,8 @@ class AnacondaRunCurrentTest(AnacondaRunTestsBase):
         )
         if test_name is not None:
             return test_path + test_name
+
+        return ''
 
 
 class AnacondaRunLastTest(AnacondaRunTestsBase):
