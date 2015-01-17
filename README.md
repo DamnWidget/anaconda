@@ -4,7 +4,7 @@ Anaconda turns your Sublime Text 3 into a full featured Python IDE. Read the plu
 
 [![Build Status](https://www.gitbook.io/button/status/book/damnwidget/anacondast3-developers-documentation)](https://www.gitbook.io/book/damnwidget/anacondast3-developers-documentation/activity)
 
-# Getting Started 
+# Getting Started
 
 Anaconda works out of the box but there are multitude of options and features that you can tune and adapt to your own style or needs.
 
@@ -30,6 +30,13 @@ You have to update your package control version to the version 2.0 or better
 ## I get errors in the console about "the file can't be open" in worker.py file
 
 Your sublime text can't find the interpreter that you set in your configuration, by default, anaconda set this as `python` so it will get your configured Python interpreter in your PATH (if any)
+
+## Autocomplete for import behaves badly
+
+Sublime Text 3 Python default package decide to cancel the autocompletion when some words are detected (for example `def` or `class`) but it also decides to cancel it with the word `import`.
+
+To fix that behavior and make ST3 use the anaconda's completion create a new Python directory in your Packages directory and copy the contents of the file [Completion Rules.tmPreferences](https://raw.githubusercontent.com/DamnWidget/anaconda/master/Completion%20Rules.tmPreferences) there with the same name.
+
 
 # Contributing with Anaconda
 
