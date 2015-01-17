@@ -1507,13 +1507,13 @@ rules to their SublimeText theme:&lt;/p&gt;
       <guid>http://damnwidget.github.io/anaconda/about/</guid>
       <description>
 
-&lt;p&gt;Anaconda is a plugin that turns your Sublime Text 3 into a full featured Python
+&lt;p&gt;Anaconda is a plugin that turns your Sublime Text 3 into a full-featured Python
 development IDE.&lt;/p&gt;
 
 &lt;h1 id=&#34;toc_0&#34;&gt;Supported Platforms&lt;/h1&gt;
 
-&lt;p&gt;Anaconda currently support all the three Sublime Text 3 platforms, that is,
-Linux, OS X and Windows, the status of the plugin in them is&lt;/p&gt;
+&lt;p&gt;Anaconda currently supports all three Sublime Text 3 platforms:
+Linux, OS X and Windows.  The status of the plugin among these platforms is&lt;/p&gt;
 
 &lt;table class=&#34;table table-striped&#34;&gt;
 &lt;thead&gt;
@@ -1549,63 +1549,63 @@ Linux, OS X and Windows, the status of the plugin in them is&lt;/p&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
 
-&lt;p&gt;We are looking for a maintainer for the Windows platform, currently,
-&lt;a href=&#34;https://github.com/DamnWidget&#34;&gt;@damnwidget&lt;/a&gt; fix bugs and solve
-incidences for Windows using a Virtual Machine, it works, but is not ideal.&lt;/p&gt;
+&lt;p&gt;We are looking for a maintainer for the Windows platform. Currently,
+&lt;a href=&#34;https://github.com/DamnWidget&#34;&gt;@damnwidget&lt;/a&gt; fixes bugs and solves
+incidents for Windows using a Virtual Machine; it works, but is not ideal.&lt;/p&gt;
 
 &lt;p&gt;On Windows, users can run the plugin in profiling mode (Sublime Text 3 doesn&amp;rsquo;t
-support the &lt;code&gt;cProfile&lt;/code&gt; library in &lt;code&gt;POSIX&lt;/code&gt; platforms) configuring the option
+support the &lt;code&gt;cProfile&lt;/code&gt; library in &lt;code&gt;POSIX&lt;/code&gt; platforms), configuring the option
 &lt;code&gt;anaconda_debug&lt;/code&gt; to &lt;code&gt;profiler&lt;/code&gt;. If the profiling mode is active, a profiling
-log should be displayed in the Sublime Text 3 console where the user can check
+log should be displayed in the Sublime Text 3 console, where the user can check
 where the time is being spent.&lt;/p&gt;
 
 &lt;h1 id=&#34;toc_1&#34;&gt;With performance in mind&lt;/h1&gt;
 
 &lt;p&gt;Are you tired of extensions that promise you nice features but make your
-Sublime Text freeze and blocks while you are writing?. Well, we too, this is
-why the main goal of anaconda is the performance. Anaconda will never freeze
-your Sublime Text as everything in anaconda runs asynchronous.&lt;/p&gt;
+Sublime Text freeze and block you from writing? Us too! This is
+why the main goal of Anaconda is performance. Anaconda will never freeze
+your Sublime Text, as everything in Anaconda runs asynchronously.&lt;/p&gt;
 
-&lt;p&gt;It doesn&amp;rsquo;t matters if you are linting a file with a few hundred or a few
-thousands of lines, anaconda will work smooth in each situation making you
-focus in your code and not interrupting your writing each few seconds.&lt;/p&gt;
+&lt;p&gt;It doesn&amp;rsquo;t matter whether you&amp;rsquo;re linting a file with a few hundred or a few
+thousand lines; Anaconda will work smoothly in each situation, helping you
+to focus on your code without being interrupted every few seconds.&lt;/p&gt;
 
 &lt;h1 id=&#34;toc_2&#34;&gt;Anaconda&amp;rsquo;s History&lt;/h1&gt;
 
-&lt;p&gt;At began, anaconda was a small project with no pretensions at all, we only
-wanted to have a single plugin able to complete and lint code in a single
-package that ran in Sublime Text 3 as all the other plugins were broken or
+&lt;p&gt;At the beginning, Anaconda was a small project with no pretensions at all; we only
+wanted to have a single plugin to complete and lint code in a single
+package that ran in Sublime Text 3, as all the other plugins were broken or
 just didn&amp;rsquo;t work.&lt;/p&gt;
 
-&lt;p&gt;After a few weeks, other people started to use it and the first feedbacks came.
-One of the first things that people reported is that sometimes, when they were
+&lt;p&gt;After a few weeks, other people started to use it and provide feedback.
+One of the first things that people reported is that sometimes when they were
 trying to auto-complete projects that used huge libraries like PyQt or NumPy,
-the ST3 was unresponsive for a few seconds while the underlying &lt;code&gt;jedi&lt;/code&gt; library
-was caching and processing the contents of the package, that was obviously
-wrong and is why we decide to go asynchronous.&lt;/p&gt;
+ ST3 was unresponsive for a few seconds while the underlying &lt;code&gt;jedi&lt;/code&gt; library
+was caching and processing the contents of the package. This was obviously
+the wrong approach and is why we decided to go asynchronous.&lt;/p&gt;
 
-&lt;p&gt;Today, Anaconda is used by thousands of Python developers around the globe and
-this number continue growing daily (more than any other Python specialized
-plugin for Sublime Text).&lt;/p&gt;
+&lt;p&gt;Today, Anaconda is used by thousands of Python developers around the globe, and
+this number grows daily — more than any other Python-specialized
+plugin for Sublime Text.&lt;/p&gt;
 
 &lt;h1 id=&#34;toc_3&#34;&gt;Anaconda Architecture&lt;/h1&gt;
 
 &lt;p&gt;Anaconda is an &lt;code&gt;asynchronous client-server&lt;/code&gt; architecture application. That means
-that part of anaconda runs in the Sublime Text 3 embedded Python interpreter
-runtime and other runs in a decoupled standalone asynchronous server.&lt;/p&gt;
+that part of Anaconda runs in the Sublime Text 3 embedded Python interpreter
+runtime, and the other part runs in a decoupled, standalone, asynchronous server.&lt;/p&gt;
 
-&lt;p&gt;All the heavy process is done in this standalone server so the embedded Python
-interpreter in Sublime Text 3 never get stuck, stale or unresponsive.&lt;/p&gt;
+&lt;p&gt;All the heavy processing is done in this standalone server so that the embedded Python
+interpreter in Sublime Text 3 never gets stuck, stale or unresponsive.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_4&#34;&gt;How this works?&lt;/h2&gt;
+&lt;h2 id=&#34;toc_4&#34;&gt;How does this work?&lt;/h2&gt;
 
 &lt;p&gt;Anaconda detects if any Sublime Text 3 window has a Python buffer view. If there
-is any Python buffer, it starts a new standalone anaconda&amp;rsquo;s JsonServer (that
-knows how to speaks JSON with the part of anaconda that is running into the
-Sublime Text 3 runtime) for that window.&lt;/p&gt;
+are any Python buffers, it starts a new standalone Anaconda JsonServer for that window.  This server
+knows how to speak JSON with the part of Anaconda that is running in the
+Sublime Text 3 runtime.&lt;/p&gt;
 
 &lt;p&gt;Anaconda&amp;rsquo;s JsonServers use the Python interpreter that is available in the
-system &lt;code&gt;PATH&lt;/code&gt; but this behavior can be configured globally or per project (
+system &lt;code&gt;PATH&lt;/code&gt;, but this behavior can be configured globally or per project (
 take a look at &lt;a href=&#34;http://localhost:1313/anaconda/anaconda_settings/&#34;&gt;Configuring Anaconda the Right Way&lt;/a&gt;
 for detailed information about that).&lt;/p&gt;
 
@@ -1613,51 +1613,49 @@ for detailed information about that).&lt;/p&gt;
 
 &lt;ul&gt;
 &lt;li&gt;Plugins have to work/use the Python version of the embedded Sublime Text runtime (Python 3.3.3).&lt;/li&gt;
-&lt;li&gt;Plugins usually make Sublime Text 3 unresponsive (or completely freeze) when they do weight process or calculations even using Threads as the embedded Sublime Text Python interpreter also have a &lt;a href=&#34;https://wiki.python.org/moin/GlobalInterpreterLock&#34;&gt;GIL&lt;/a&gt; that get locked&lt;/li&gt;
+&lt;li&gt;Plugins usually make Sublime Text 3 unresponsive (or completely frozen) when they do weight process or calculations, even when using Threads, as the embedded Sublime Text Python interpreter also has a &lt;a href=&#34;https://wiki.python.org/moin/GlobalInterpreterLock&#34;&gt;GIL&lt;/a&gt; that gets locked.&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;h3 id=&#34;toc_5&#34;&gt;How anaconda solves those two problems?&lt;/h3&gt;
+&lt;h3 id=&#34;toc_5&#34;&gt;How does Anaconda solve these two problems?&lt;/h3&gt;
 
 &lt;ul&gt;
-&lt;li&gt;&lt;p&gt;In anaconda, auto completion, linting, refactoring, code analytics, complexity
-checks and validations runs using your system Python interpreter (or whatever other
-that you configure) with no limitations&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;In Anaconda, auto completion, linting, refactoring, code analytics, complexity
+checks and validations run using your system Python interpreter (or whatever you configure) with no limitations.&lt;/p&gt;&lt;/li&gt;
 
-&lt;li&gt;&lt;p&gt;In anaconda, each Sublime Text window (if you have more than one open) use
-it&amp;rsquo;s own standalone copy of anaconda&amp;rsquo;s JsonServer running as a separate process
-so it can be effectively using more than one core of your processor, not
-blocking your Sublime Text embedded Python interpreter GIL and non making the
+&lt;li&gt;&lt;p&gt;In Anaconda, each Sublime Text window (if you have more than one open) uses
+its own standalone copy of Anaconda&amp;rsquo;s JsonServer running as a separate process,
+so it can effectively use more than one core of your processor, without
+blocking your Sublime Text embedded Python interpreter GIL or making the
 ST3 GUI wait for any operation.&lt;/p&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;When we are writing, the part of anaconda that resides in your Sublime Text,
-asks to the JsonServer for completions, linting, code formating, documentation,
-function signatures, imports validation and much more in concurrent way through
-a real non blocking socket and register a callback into the Anaconda&amp;rsquo;s callback
+&lt;p&gt;When you are writing, the part of Anaconda that resides in your Sublime Text
+asks the JsonServer for completions, linting, code formating, documentation,
+and function signatures. It also imports validation, and does much more concurrently through
+a real, non-blocking socket. The ST-residing part of Anaconda also registers a callback into Anaconda&amp;rsquo;s callback
 system to interact with the Sublime Text 3 API when there is an available
-result coming back from the non blocking socket.&lt;/p&gt;
+result coming back from the non-blocking socket.&lt;/p&gt;
 
-&lt;p&gt;This is why anaconda can perform multiple operations at the same time without
-any performance degradation not mattering if your project is a few files with
+&lt;p&gt;This is why Anaconda can perform multiple operations at the same time without
+any performance degradation, whether your project is a few files with
 a few lines or a Django monster with hundred of thousands of lines.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_6&#34;&gt;Why not for Sublime Text 2?&lt;/h2&gt;
+&lt;h2 id=&#34;toc_6&#34;&gt;Why can&amp;rsquo;t I use it with Sublime Text 2?&lt;/h2&gt;
 
-&lt;p&gt;Honestly, who want to use ST2 could being using ST3? I am serious, the
-performance of ST3 is far better than the old ST2. The only reason for
-don&amp;rsquo;t switch from ST2 to ST3 was the lack of plugins, but that is not a
-problem nowadays.&lt;/p&gt;
+&lt;p&gt;Honestly, who wants to use ST2 when there&amp;rsquo;s ST3? Seriously, the
+performance of ST3 is far better than ST2. The only reason not to switch used to be the lack of plugins,
+but that&amp;rsquo;s no longer a problem.&lt;/p&gt;
 
-&lt;p&gt;A part from that, maintain a multi ST project is a pain, and is not because
-you have to support Python2 and Python3 (JsonServer already support Python2
-and Python3) but because ST2 and ST3 API&amp;rsquo;s are not compatible, believe me,
-I already maintain a &lt;a href=&#34;https://github.com/DamnWidget/SublimePySide&#34;&gt;multi ST project&lt;/a&gt;
-and I will not do it again, ever.
+&lt;p&gt;In addition, maintaining a multi-ST project is a pain — not because
+you have to support Python2 and Python3 (JsonServer already supports them both),
+but because the ST2 and ST3 APIs are not compatible. Believe us,
+we already maintain a &lt;a href=&#34;https://github.com/DamnWidget/SublimePySide&#34;&gt;multi-ST project&lt;/a&gt;,
+and will not do it again, ever.
 &lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
 
 &lt;h1 id=&#34;toc_7&#34;&gt;Anaconda ST3 Python IDE logo&lt;/h1&gt;
 
-&lt;p&gt;This is the Anaconda Sublime Text 3 Python IDE logotype&lt;/p&gt;
+&lt;p&gt;This is the Anaconda Sublime Text 3 Python IDE logotype.&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&#34;/anaconda/img/anaconda-sm.png&#34;&gt;&lt;/p&gt;
 </description>
