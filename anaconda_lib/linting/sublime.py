@@ -147,12 +147,13 @@ class Linter:
             self.add_message(
                 error['lineno'], lines, error['raw_error'], messages
             )
+            print(error)
 
             if error['underline_range'] is True:
                 self.underline_range(
                     error['lineno'], error['offset'], underlines
                 )
-            elif error.get('len') is not None:
+            elif error.get('len') is not None and error.get('regex') is None:
                 self.underline_range(
                     error['lineno'], error['offset'],
                     underlines, error['len']
