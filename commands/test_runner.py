@@ -123,8 +123,13 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         """Return back the tests path
         """
 
-        return os.path.relpath(
-            self.test_root).replace('../', '').replace('/', '.')[:-3]
+        real_path = os.path.relpath(
+            self.view.file_name(), self.test_root).replace('/', '.')
+        print(real_path)
+        if real_path is not None:
+            return real_path[:-3]
+
+        return ""
 
     def is_enabled(self):
         """Determine if this command is enabled or not

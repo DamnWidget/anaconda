@@ -97,7 +97,6 @@ class Validator:
         """
 
         if '"""' in line or "'''" in line:
-            print("Me la comes")
             return True
 
         return False

@@ -147,7 +147,6 @@ class Linter:
             self.add_message(
                 error['lineno'], lines, error['raw_error'], messages
             )
-            print(error)
 
             if error['underline_range'] is True:
                 self.underline_range(
