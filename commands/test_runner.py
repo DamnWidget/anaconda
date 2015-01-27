@@ -114,8 +114,10 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         the path is different
         """
 
-        return 'Packages/{}/PythonConsoleDark.hidden-tmTheme'.format(
-            'anaconda' if git_installation else 'Anaconda'
+        theme = get_settings(
+            self.view, 'test_runner_theme', 'PythonConsoleDark.hidden-tmTheme')
+        return 'Packages/{}/{}'.format(
+            'anaconda' if git_installation else 'Anaconda', theme
         )
 
     @property

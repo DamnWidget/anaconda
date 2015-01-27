@@ -423,6 +423,15 @@
     */
 
     /*
+        Theme to use in the output panel.
+
+        Uncomment the line below to override the default tests runner
+        output, by default the theme is PythonConsoleDark.hidden-tmTheme
+        NOTE: The file specified here **MUST** exists in `Packages/Anaconda`
+    */
+    //"test_runner_theme": "PythonConsoleDark.hidden-tmTheme",
+
+    /*
         Uncomment the line below to execute any command before try to execute
         your test suite. (if you need to run more than one command, just use a
         list of commands ["cmd1", "cmd2", ...])
