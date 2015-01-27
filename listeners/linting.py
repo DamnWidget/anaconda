@@ -93,6 +93,9 @@ class BackgroundLinter(sublime_plugin.EventListener):
                 view, NOT_SCRATCH | LINTING_ENABLED, code=self.lang.lower()):
             if self.lang in view.settings().get('syntax'):
                 self.run_linter(view)
+                if get_settings(
+                        view, "anaconda_linter_show_errors_on_save", False):
+                    sublime.active_window().run_command('anaconda_get_lines')
         else:
             self._erase_marks_if_no_linting(view)
 
@@ -114,7 +117,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
 
         constraints = ONLY_CODE | NOT_SCRATCH | LINTING_ENABLED
         if (not check_linting(view, constraints, code=self.lang.lower())
-                or not self.lang in view.settings().get('syntax')):
+                or self.lang not in view.settings().get('syntax')):
             return
 
         last_selected_line = last_selected_lineno(view)

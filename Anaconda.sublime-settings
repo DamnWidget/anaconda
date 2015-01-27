@@ -239,6 +239,14 @@
     "anaconda_linter_underlines": true,
 
     /*
+        If anaconda_linter_show_errors_on_save is set to true, anaconda
+        will show a list of errors when the user save the file
+
+        This is disabled by default
+    */
+    "anaconda_linter_show_errors_on_save": false,
+
+    /*
         Use PyLint instead of PyFlakes and PEP-8
 
         **** WARNING ****
