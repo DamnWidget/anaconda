@@ -777,7 +777,7 @@ exists yet&lt;/p&gt;
 &lt;h4 id=&#34;toc_4&#34;&gt;Remove Python snippets from completions&lt;/h4&gt;
 
 &lt;p&gt;The user can also choose to don&amp;rsquo;t show Python snippets in their autocompletion
-results setting the option &lt;code&gt;hide_snippers_on_completion&lt;/code&gt; as &lt;code&gt;true&lt;/code&gt; in the
+results setting the option &lt;code&gt;hide_snippets_on_completion&lt;/code&gt; as &lt;code&gt;true&lt;/code&gt; in the
 plugin or project configuration.&lt;/p&gt;
 
 &lt;h4 id=&#34;toc_5&#34;&gt;Complete function and class parameters&lt;/h4&gt;
