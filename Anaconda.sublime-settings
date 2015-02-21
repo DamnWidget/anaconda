@@ -27,7 +27,15 @@
         If you set the following option as true, anaconda will display the
         documentation of modules, classes or methods in a floating popup
     */
-    "enable_docstrings_tooltip": false,
+    "enable_docstrings_tooltip": true,
+
+    /*
+        If the option below is set as true, anaconda will merge the
+        outputs of display_signatures and show documentation
+
+        *note*: This has only effect if tooltips are enabled for both
+    */
+    "merge_signatures_and_doc": false,
 
 
     /*

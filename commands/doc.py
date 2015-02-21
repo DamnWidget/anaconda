@@ -6,8 +6,9 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.tooltips import Tooltip
 from ..anaconda_lib.callback import Callback
-from ..anaconda_lib.helpers import prepare_send_data, is_python
+from ..anaconda_lib.helpers import prepare_send_data, is_python, get_settings
 
 
 class AnacondaDoc(sublime_plugin.TextCommand):
@@ -30,7 +31,10 @@ class AnacondaDoc(sublime_plugin.TextCommand):
             except Exception as error:
                 print(error)
         else:
-            self.print_doc(edit)
+            if get_settings(self.view, 'enable_docstrings_tooltip', False):
+                self.print_popup(edit)
+            else:
+                self.print_doc(edit)
 
     def is_enabled(self):
         """Determine if this command is enabled or not
@@ -69,6 +73,29 @@ class AnacondaDoc(sublime_plugin.TextCommand):
         self.view.window().run_command(
             'show_panel', {'panel': 'output.anaconda_documentation'}
         )
+
+    def print_popup(self, edit):
+        """Show message in a popup
+        """
+
+        st_ver = int(sublime.version())
+        if st_ver >= 3070:
+            css = get_settings(self.view, 'anaconda_tooltip_theme', 'dark')
+            tooltip = Tooltip(css)
+            dlines = self.documentation.splitlines()
+            name = dlines[0].split('for ')[1]
+            docstring = '\n'.join(dlines[2:])
+            content = {'name': name, 'content': docstring}
+            kwargs = {'location': -1, 'max_width': 600}
+            if st_ver >= 3071:
+                kwargs['flags'] = sublime.COOPERATE_WITH_AUTO_COMPLETE
+            text = tooltip.generate('doc', content)
+            if text is not None:
+                self.view.show_popup(text, **kwargs)
+            else:
+                self.print_doc(edit)
+        else:
+            self.print_doc(edit)
 
     def _show_status(self):
         """Show message in the view status bar
