@@ -37,6 +37,12 @@ Sublime Text 3 Python default package decide to cancel the autocompletion when s
 
 To fix that behavior and make ST3 use the anaconda's completion create a new Python directory in your Packages directory and copy the contents of the file [Completion Rules.tmPreferences](https://raw.githubusercontent.com/DamnWidget/anaconda/master/Completion%20Rules.tmPreferences) there with the same name.
 
+## Autocomplete drop-down shows up incorrectly
+
+SublimeCodeIntel interfere with anaconda's autocompletion, consider to disable
+SublimeCodeIntel into Python views or completely disable/remove it when anaconda
+is being used.
+
 
 # Contributing with Anaconda
 
