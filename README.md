@@ -1,7 +1,7 @@
 # Anaconda
 Anaconda turns your Sublime Text 3 into a full featured Python IDE. Read the plugin documentation on [http://damnwidget.github.io/anaconda](http://damnwidget.github.io/anaconda).
 
-[![Build Status](https://www.gitbook.io/button/status/book/damnwidget/anacondast3-developers-documentation)](https://www.gitbook.io/book/damnwidget/anacondast3-developers-documentation/activity)
+[![Book Status](https://www.gitbook.io/button/status/book/damnwidget/anacondast3-developers-documentation)](https://www.gitbook.io/book/damnwidget/anacondast3-developers-documentation/activity)
 
 ## Getting Started
 Anaconda works out of the box but there are multitude of options and features that you can tune and adapt to your own style or needs.
@@ -15,6 +15,13 @@ Anaconda works out of the box but there are multitude of options and features th
 
 ## License
 This program is distributed under the terms of the GNU GPL v3. See the [LICENSE][license] file for more details.
+
+## Tooltips
+anaconda officially supports user themeable tooltips and displaying advanced signatures. This is how it looks in a dark theme:
+
+![Tooltips Image][tooltips-dark-image]
+
+**Note**: This feature is enabled for users of Sublime Text 3 build 3070 or superior only.
 
 ## Troubleshooting
 This section lists some common issues faced by users, along with workarounds.
@@ -64,3 +71,4 @@ Please donate to help keep this project alive.
   [flatter-link]: http://flattr.com/thing/1765332/DamnWidgetanaconda-on-GitHub
   [githalytics-image]: https://cruel-carlota.pagodabox.com/de124b4ffd37f6c0491ee7e4de3ec4cc "githalytics.com"
   [githalytics-link]: http://githalytics.com/DamnWidget/anaconda
+  [tooltips-dark-image]: http://damnwidget.github.io/anaconda/img/tooltips.png
