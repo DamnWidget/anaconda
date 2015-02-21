@@ -1,0 +1,6 @@
+Changes in 1.4.1
+================
+
+- Fixed small bug introduced in v1.4.0 when find usages was used
+
+For more detailed information about those changes run git v1.4.0..v1.4.1 on git repository

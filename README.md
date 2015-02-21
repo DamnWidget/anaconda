@@ -27,18 +27,22 @@ anaconda officially supports user themeable tooltips and displaying advanced sig
 This section lists some common issues faced by users, along with workarounds.
 
 #### Anaconda does not appear in the Available Packages list on Package Control.
+
 **Work-around**: You have to update your Package Control version to the version 2.0 or better.
 
 #### Errors in the console about "the file can't be open" in worker.py file.
-Your Sublime Text can't find the interpreter that you set in your configuration, by default, anaconda set this as `python` so it will get your configured Python interpreter in your PATH (if any).
-**Work-around**: Add a Python interpreter (named `python`) to your PATH.
+Your Sublime Text can't find the interpreter that you set in your configuration, by default, anaconda sets this as `python` so it will get your configured Python interpreter in your PATH (if any).
+
+**Work-around**: Add a Python interpreter (named `python`) to your PATH or set a right full path to your python interpreter as parameter of `python_interpreter` settings option, for example `/usr/local/bin/pyhton3.4`.
 
 #### Auto-complete for import behaves badly.
 Sublime Text 3's default Python package cancels the auto-completion when some words are detected (for example `def` or `class`). This list of words includes `import`.
+
 **Work-around**: Create a new Python directory in your Packages directory and copy the contents of the file [Completion Rules.tmPreferences][Completion-Rules] there with the same name.
 
 #### Auto-complete drop-down shows up incorrectly.
 SublimeCodeIntel interferes with anaconda's auto-completion.
+
 **Work-around**: Consider disabling SublimeCodeIntel for Python views or disabling/removing it completely when using anaconda.
 
 ## Contributing to Anaconda
@@ -62,13 +66,13 @@ Please donate to help keep this project alive.
 [![Flatter][flatter-image]][flatter-link]
 [![githalytics.com alpha][githalytics-image]][githalytics-link]
 
-  [license]: https://raw.githubusercontent.com/DamnWidget/anaconda/master/LICENSE
-  [Completion-Rules]: https://raw.githubusercontent.com/DamnWidget/anaconda/master/Completion%20Rules.tmPreferences
-  [dev-docs]: http://damnwidget.gitbooks.io/anacondast3-developers-documentation/
-  [paypal-donate-image]: https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif
-  [paypal-donate-link]: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=KP7PAHR962UGG&lc=US&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted
-  [flatter-image]: https://api.flattr.com/button/flattr-badge-large.png
-  [flatter-link]: http://flattr.com/thing/1765332/DamnWidgetanaconda-on-GitHub
-  [githalytics-image]: https://cruel-carlota.pagodabox.com/de124b4ffd37f6c0491ee7e4de3ec4cc "githalytics.com"
-  [githalytics-link]: http://githalytics.com/DamnWidget/anaconda
-  [tooltips-dark-image]: http://damnwidget.github.io/anaconda/img/tooltips.png
+[license]: https://raw.githubusercontent.com/DamnWidget/anaconda/master/LICENSE
+[Completion-Rules]: https://raw.githubusercontent.com/DamnWidget/anaconda/master/Completion%20Rules.tmPreferences
+[dev-docs]: http://damnwidget.gitbooks.io/anacondast3-developers-documentation/
+[paypal-donate-image]: https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif
+[paypal-donate-link]: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=KP7PAHR962UGG&lc=US&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted
+[flatter-image]: https://api.flattr.com/button/flattr-badge-large.png
+[flatter-link]: http://flattr.com/thing/1765332/DamnWidgetanaconda-on-GitHub
+[githalytics-image]: https://cruel-carlota.pagodabox.com/de124b4ffd37f6c0491ee7e4de3ec4cc "githalytics.com"
+[githalytics-link]: http://githalytics.com/DamnWidget/anaconda
+[tooltips-dark-image]: http://damnwidget.github.io/anaconda/img/tooltips.png
