@@ -85,16 +85,28 @@ class JediUsages(object):
         region_name = 'anaconda.indicator.{}.{}'.format(
             self.text.view.id(), lineno
         )
-        show = lambda: self.text.view.add_regions(
+        show = self._show(
             region_name,
             [sublime.Region(pt, pt)],
             'comment',
             'bookmark',
             sublime.DRAW_EMPTY_AS_OVERWRITE
         )
-        hide = lambda: self.text.view.erase_regions(region_name)
+        hide = self._hide(region_name)
 
         for i in range(3):
             delta = 300 * i * 2
             sublime.set_timeout(show, delta)
             sublime.set_timeout(hide, delta + 300)
+
+    def _show(self, region_name, pt):
+        self.text.view.add_regions(
+            region_name,
+            [sublime.Region(pt, pt)],
+            'comment',
+            'bookmarl',
+            sublime.DRAW_EMPTY_AS_OVERWRITE
+        )
+
+    def _hide(self, region_name):
+        self.text.view.erase_regions(region_name)
