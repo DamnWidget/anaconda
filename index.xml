@@ -853,6 +853,9 @@ anaconda&amp;rsquo;s settings &lt;code&gt;enable_signatures_tooltip&lt;/code&gt;
 are set as &lt;code&gt;true&lt;/code&gt;, anaconda will display a tooltip with useful information
 about the method or class being used.&lt;/p&gt;
 
+&lt;p&gt;&lt;img src=&#34;/anaconda/img/tooltips.png&#34; alt=&#34;&#34; /&gt;
+&lt;/p&gt;
+
 &lt;h1 id=&#34;toc_14&#34;&gt;Get Documentation&lt;/h1&gt;
 
 &lt;p&gt;Anaconda can look for and show the user the docstring of whatever function,
