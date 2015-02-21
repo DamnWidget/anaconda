@@ -842,7 +842,18 @@ seconds to indicate the user where the cursor is located at.&lt;/p&gt;
 &lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;h1 id=&#34;toc_12&#34;&gt;Get Documentation&lt;/h1&gt;
+&lt;h1 id=&#34;toc_12&#34;&gt;Display Signatures&lt;/h1&gt;
+
+&lt;h2 id=&#34;toc_13&#34;&gt;How it works?&lt;/h2&gt;
+
+&lt;p&gt;When enabled, anaconda will show information about the methods that the
+programmer are typing into their Sublime Text 3 in the status bar. If
+the version of Sublime Text 3 in use is build 3070 or superior and the
+anaconda&amp;rsquo;s settings &lt;code&gt;enable_signatures_tooltip&lt;/code&gt; and &lt;code&gt;merge_signatures_and_doc&lt;/code&gt;
+are set as &lt;code&gt;true&lt;/code&gt;, anaconda will display a tooltip with useful information
+about the method or class being used.&lt;/p&gt;
+
+&lt;h1 id=&#34;toc_14&#34;&gt;Get Documentation&lt;/h1&gt;
 
 &lt;p&gt;Anaconda can look for and show the user the docstring of whatever function,
 method, class, module or package. The user just have to put the cursor over the
@@ -850,13 +861,13 @@ symbol that want to get the docstring from (or after a parenthesis, for example
 after write &lt;code&gt;sys.exit(&lt;/code&gt;) and then trigger the command to get the function
 signature and docstring in a bottom panel without lose focus form the buffer.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_13&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;toc_15&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;As usual, anaconda asks the underlying jedi engine about the symbol under the
 cursor signature and docstring (if any) and then show it to the user using
-an additional panel.&lt;/p&gt;
+an additional panel or a tooltip.&lt;/p&gt;
 
-&lt;h3 id=&#34;toc_14&#34;&gt;How to use it?&lt;/h3&gt;
+&lt;h3 id=&#34;toc_16&#34;&gt;How to use it?&lt;/h3&gt;
 
 &lt;p&gt;The command can be triggered with:&lt;/p&gt;
 
@@ -867,17 +878,17 @@ an additional panel.&lt;/p&gt;
 &lt;li&gt;Command Palette: &lt;code&gt;Command Palatte &amp;gt; Anaconda: Show&lt;/code&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;h1 id=&#34;toc_15&#34;&gt;Refactor Rename&lt;/h1&gt;
+&lt;h1 id=&#34;toc_17&#34;&gt;Refactor Rename&lt;/h1&gt;
 
 &lt;p&gt;With this command, the user can (try to) rename the object under the cursor
 in a project basis scope in a safe way.&lt;/p&gt;
 
-&lt;h3 id=&#34;toc_16&#34;&gt;How to use it?&lt;/h3&gt;
+&lt;h3 id=&#34;toc_18&#34;&gt;How to use it?&lt;/h3&gt;
 
 &lt;p&gt;The command can be trigger using the context menu &lt;code&gt;Anaconda &amp;gt; Rename object
 under the cursor&lt;/code&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
 
-&lt;h1 id=&#34;toc_17&#34;&gt;McCabe code complxity checker&lt;/h1&gt;
+&lt;h1 id=&#34;toc_19&#34;&gt;McCabe code complxity checker&lt;/h1&gt;
 
 &lt;p&gt;The users can run the
 &lt;a href=&#34;http://en.wikipedia.org/wiki/Cyclomatic_complexity&#34;&gt;McCabe complexity checker&lt;/a&gt;
@@ -885,7 +896,7 @@ tool in whatever python file that they want. It&amp;rsquo;s threshold can be adj
 configuring the option &lt;code&gt;mccabe_threshold&lt;/code&gt; in the configuration file on in
 the project configuration file.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_18&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;toc_20&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;Anaconda includes part of the &lt;a href=&#34;https://github.com/flintwork/mccabe&#34;&gt;McCabe&lt;/a&gt;
 Python tool and can execute it in any open buffer, get the results and present
@@ -893,7 +904,7 @@ a list of functions (and lines) that presents a complexity higher than the
 configured threshold. If no complexity is found, a descriptive message
 appears in the status bar.&lt;/p&gt;
 
-&lt;h3 id=&#34;toc_19&#34;&gt;How to use it?&lt;/h3&gt;
+&lt;h3 id=&#34;toc_21&#34;&gt;How to use it?&lt;/h3&gt;
 
 &lt;p&gt;The McCabe complexity checker can be fired:&lt;/p&gt;
 
@@ -903,7 +914,7 @@ appears in the status bar.&lt;/p&gt;
 &lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;h1 id=&#34;toc_20&#34;&gt;Autoimport undefined names&lt;/h1&gt;
+&lt;h1 id=&#34;toc_22&#34;&gt;Autoimport undefined names&lt;/h1&gt;
 
 &lt;p&gt;Anaconda can add an &lt;code&gt;import &amp;lt;undefined_name&amp;gt;&lt;/code&gt; literal at the end of the imports
 block if the anaconda auto importer is used in an undefined name in the buffer.&lt;/p&gt;
@@ -911,24 +922,24 @@ block if the anaconda auto importer is used in an undefined name in the buffer.&
 &lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: Anaconda will &lt;strong&gt;NOT&lt;/strong&gt; check if that import is valid or not before
 place it in the buffer.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_21&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;toc_23&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;Anaconda auto-import feature is really a dummy or toy feature and is under
 redesign to offer a better experience to the user.&lt;/p&gt;
 
-&lt;h3 id=&#34;toc_22&#34;&gt;How to use it?&lt;/h3&gt;
+&lt;h3 id=&#34;toc_24&#34;&gt;How to use it?&lt;/h3&gt;
 
 &lt;p&gt;Just place the cursor over the undefined name in the buffer and use the
 context menu &lt;code&gt;Anaconda &amp;gt; Autoimport undefined word under the cursor&lt;/code&gt;
 &lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
 
-&lt;h1 id=&#34;toc_23&#34;&gt;Imports Validator&lt;/h1&gt;
+&lt;h1 id=&#34;toc_25&#34;&gt;Imports Validator&lt;/h1&gt;
 
 &lt;p&gt;One of the latest additions to anaconda is the ability to validate the imports
 in the project files if the &lt;code&gt;validate_imports&lt;/code&gt; option is set as &lt;code&gt;true&lt;/code&gt;. Note
 that this option is set as &lt;code&gt;false&lt;/code&gt; by default.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_24&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;toc_26&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;Anaconda asks the underlying jedi engine about the buffer/file/project imports
 to detect if the symbols are valid and the configured python interpreter is
@@ -947,7 +958,7 @@ to tell anaconda to don&amp;rsquo;t mark them as invalid.&lt;/p&gt;
 &lt;p&gt;(Yes, it will validate imports made with the auto import feature described
 above)&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
 
-&lt;h1 id=&#34;toc_25&#34;&gt;Anaconda&amp;rsquo;s Build System&lt;/h1&gt;
+&lt;h1 id=&#34;toc_27&#34;&gt;Anaconda&amp;rsquo;s Build System&lt;/h1&gt;
 
 &lt;p&gt;As you already know, one of the weakness of Sublime Text 3 is that it uses
 it&amp;rsquo;s embedded Python interpreter when you try to build the files that you
@@ -969,7 +980,7 @@ used by the build system automatically.&lt;/p&gt;
 take a look at &lt;a href=&#34;/anaconda/anaconda_settings/&#34;&gt;Configure Anaconda the Right Way&lt;/a&gt;
 &lt;br&gt;&lt;br&gt;&lt;/p&gt;
 
-&lt;h1 id=&#34;toc_26&#34;&gt;Anaconda Linting&lt;/h1&gt;
+&lt;h1 id=&#34;toc_28&#34;&gt;Anaconda Linting&lt;/h1&gt;
 
 &lt;p&gt;Anaconda was based/inspired/ported from the old Sublime Text 2 SublimeLinter
 plugin. Although anaconda linter was inspired by SublimeLinter, anaconda
@@ -987,7 +998,7 @@ because that, anaconda&amp;rsquo;s linting is smooth and flawless.&lt;/p&gt;
 mechanisms, they can still block the ST3 GUI but seems to be smoother than
 old Sublime Linter for Sublime Text 2&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_27&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;toc_29&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;Anaconda listen for events that come from the Sublime Text GUI itself, in
 certain events, the linter can be fired, for example, after save or open a
@@ -1003,7 +1014,7 @@ including virtual environments and remote interpreters), anaconda can lint
 the code for a Python version different than the version included with
 Sublime Text 3 (Python 3.3.3).&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_28&#34;&gt;Linting behaviour&lt;/h2&gt;
+&lt;h2 id=&#34;toc_30&#34;&gt;Linting behaviour&lt;/h2&gt;
 
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;Always mode (defaut)&lt;/strong&gt;: When &lt;code&gt;anaconda_linting_behaviour&lt;/code&gt; is set as
@@ -1021,7 +1032,7 @@ configuration variable &lt;code&gt;anaconda_linter_delay&lt;/code&gt;, that is &
 the linters are fired on file saving only.&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;h2 id=&#34;toc_29&#34;&gt;What can anaconda lint?&lt;/h2&gt;
+&lt;h2 id=&#34;toc_31&#34;&gt;What can anaconda lint?&lt;/h2&gt;
 
 &lt;p&gt;Anaconda can lint:&lt;/p&gt;
 
@@ -1038,7 +1049,7 @@ by the user&amp;rsquo;s configured python interpreter.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: PEP257 linter is disabled by default
 &lt;strong&gt;note&lt;/strong&gt;: PyLint can&amp;rsquo;t lint unsaved buffers&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_30&#34;&gt;Disabling the linter&lt;/h2&gt;
+&lt;h2 id=&#34;toc_32&#34;&gt;Disabling the linter&lt;/h2&gt;
 
 &lt;p&gt;There is people that doesn&amp;rsquo;t care about linting or they just use another
 plugin to do it, they can completely deactivate this feature setting the
@@ -1047,7 +1058,7 @@ plugin to do it, they can completely deactivate this feature setting the
 &lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: imports validation depends of anaconda linting handler so it will
 not work if anaconda linting is disabled&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_31&#34;&gt;Disabling the linter in certain files&lt;/h2&gt;
+&lt;h2 id=&#34;toc_33&#34;&gt;Disabling the linter in certain files&lt;/h2&gt;
 
 &lt;p&gt;Sometimes, the users need to open or work on files that they don&amp;rsquo;t maintain
 at all because they are part of a third party software, deprecated code or
@@ -1060,24 +1071,24 @@ on this file&lt;/code&gt;.&lt;/p&gt;
 be linted again using the Command Palette &lt;code&gt;Anaconda: Enable linting on this
 file&lt;/code&gt;.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_32&#34;&gt;Enabling pep257&lt;/h2&gt;
+&lt;h2 id=&#34;toc_34&#34;&gt;Enabling pep257&lt;/h2&gt;
 
 &lt;p&gt;Anaconda supports docstrings linting using &lt;a href=&#34;http://legacy.python.org/dev/peps/pep-0257/&#34;&gt;pep257&lt;/a&gt;
 specification. This feature is disabled by default but can be enabled setting
 the &lt;code&gt;pep257&lt;/code&gt; as &lt;code&gt;true&lt;/code&gt; in the configuration file or the project file.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_33&#34;&gt;Disabling certain errors for pep257&lt;/h2&gt;
+&lt;h2 id=&#34;toc_35&#34;&gt;Disabling certain errors for pep257&lt;/h2&gt;
 
 &lt;p&gt;Specific errors can be disabled adding them (as string elements into a list) on
 the &lt;code&gt;pep257_ignore&lt;/code&gt; user settings in the config file. The &lt;code&gt;D209&lt;/code&gt; is disabled
 by default as it has been deprecated.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_34&#34;&gt;Disabling pep8&lt;/h2&gt;
+&lt;h2 id=&#34;toc_36&#34;&gt;Disabling pep8&lt;/h2&gt;
 
 &lt;p&gt;Pep8 violations can be disabled setting the value of the &lt;code&gt;pep8&lt;/code&gt; configuration
 variable as &lt;code&gt;false&lt;/code&gt;.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_35&#34;&gt;Disabling certain pep8 errors&lt;/h2&gt;
+&lt;h2 id=&#34;toc_37&#34;&gt;Disabling certain pep8 errors&lt;/h2&gt;
 
 &lt;p&gt;Is also possible to disable just some errors like the infamous &lt;code&gt;line too long
 E501&lt;/code&gt; error in pep8. It can be done adding them to the &lt;code&gt;pep8_ignore&lt;/code&gt; list using
@@ -1092,7 +1103,7 @@ the error code like:&lt;/p&gt;
 &lt;p&gt;There is an equivalent for PyFlakes errors called &lt;code&gt;pyflakes_ignore&lt;/code&gt;, look at
 the section below for details.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_36&#34;&gt;Disabling specific PyFlakes errors&lt;/h2&gt;
+&lt;h2 id=&#34;toc_38&#34;&gt;Disabling specific PyFlakes errors&lt;/h2&gt;
 
 &lt;p&gt;The user can also disable specific PyFlakes errors (unused import module for
 example) uncommenting them in the &lt;code&gt;pyflakes_explicit_ignore&lt;/code&gt; list in the
@@ -1109,7 +1120,7 @@ to disable the unused import warning:&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: for specific information about the different mechanisms that can
 be used to configure anaconda, refer to the &lt;a href=&#34;https://damnwidget.github.com/anaconda/configuration&#34;&gt;Configuring Anaconda&lt;/a&gt; section.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_37&#34;&gt;Using PyLint as PyFlakes alternative&lt;/h2&gt;
+&lt;h2 id=&#34;toc_39&#34;&gt;Using PyLint as PyFlakes alternative&lt;/h2&gt;
 
 &lt;p&gt;Anaconda has full support for PyLint as linter application but some
 considerations has to be taken before do it.&lt;/p&gt;
@@ -1146,20 +1157,20 @@ When PyLint is used, PyFlakes is totally turned off.&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: PyLint can be really annoying use it at your own risk&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_38&#34;&gt;Showing linting error list&lt;/h2&gt;
+&lt;h2 id=&#34;toc_40&#34;&gt;Showing linting error list&lt;/h2&gt;
 
 &lt;p&gt;Users can show a quick panel with all the errors in the file that they are
 working on using the command palette &lt;code&gt;Anaconda: Show error list&lt;/code&gt; or in the
 contextual menu &lt;code&gt;Anaconda &amp;gt; Show error list&lt;/code&gt;&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_39&#34;&gt;Jump to the next error&lt;/h2&gt;
+&lt;h2 id=&#34;toc_41&#34;&gt;Jump to the next error&lt;/h2&gt;
 
 &lt;p&gt;Users can use the &lt;code&gt;Anaconda: Next lint error&lt;/code&gt; command from the Command Palette
 or from the context menu to navigate trough the lint errors on the file. This
 is useful for anyone fixing PEP8 violations in a file for example.
 &lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
 
-&lt;h1 id=&#34;toc_40&#34;&gt;Autoformat PEP8 Errors&lt;/h1&gt;
+&lt;h1 id=&#34;toc_42&#34;&gt;Autoformat PEP8 Errors&lt;/h1&gt;
 
 &lt;p&gt;Anaconda supports the &lt;a href=&#34;https://github.com/hhatto/autopep8&#34;&gt;AutoPEP8&lt;/a&gt;
 tool and its integrated and distributed as part of the plugin itself. Users
@@ -1171,7 +1182,7 @@ contextual menu.&lt;/p&gt;
 can timeout before has any effect, take a look in the next sections to know
 a bit more about autoformat and it&amp;rsquo;s options.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_41&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;toc_43&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;AutoPEP8 is not the fastest tool in the world as it perform several complex
 syntactic checks and parses. When the autoformat is fired, anaconda run it
@@ -1179,18 +1190,18 @@ into a separate process and continue it&amp;rsquo;s normal operations but the bu
 that the user asked to autoformat is set as &lt;code&gt;read-only&lt;/code&gt; while the autoformat
 operation returns back the new modified buffer or a timeout/error occurs.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_42&#34;&gt;What about the timeout?&lt;/h2&gt;
+&lt;h2 id=&#34;toc_44&#34;&gt;What about the timeout?&lt;/h2&gt;
 
 &lt;p&gt;The timeout is one second long by default and can be configured setting the
 configuration option &lt;code&gt;auto_formatting_timeout&lt;/code&gt; in your project settings or
 in the global anaconda configuration settings file.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_43&#34;&gt;Fire PEP8 autoformating on save&lt;/h2&gt;
+&lt;h2 id=&#34;toc_45&#34;&gt;Fire PEP8 autoformating on save&lt;/h2&gt;
 
 &lt;p&gt;The autoformating process can be fired automatically when the file is saved
 setting the configuration option &lt;code&gt;auto_formatting&lt;/code&gt; as &lt;code&gt;true&lt;/code&gt; in the options.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_44&#34;&gt;Supported PEP8 Autoformat errors list?&lt;/h2&gt;
+&lt;h2 id=&#34;toc_46&#34;&gt;Supported PEP8 Autoformat errors list?&lt;/h2&gt;
 
 &lt;p&gt;Autoformat can handle the following list of errors:&lt;/p&gt;
 
@@ -1251,11 +1262,11 @@ W602 - Fix deprecated form of raising exception.&lt;br&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
 
-&lt;h1 id=&#34;toc_45&#34;&gt;Look &amp;amp; Feel&lt;/h1&gt;
+&lt;h1 id=&#34;toc_47&#34;&gt;Look &amp;amp; Feel&lt;/h1&gt;
 
 &lt;p&gt;Anaconda look &amp;amp; feel can be extensively customized.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_46&#34;&gt;Gutter Marks&lt;/h2&gt;
+&lt;h2 id=&#34;toc_48&#34;&gt;Gutter Marks&lt;/h2&gt;
 
 &lt;p&gt;Gutter marks are enabled by default, they can be disabled setting the
 configuration option &lt;code&gt;anaconda_gutter_marks&lt;/code&gt; as &lt;code&gt;false&lt;/code&gt; in the plugin or
@@ -1319,7 +1330,7 @@ option to any of the available themes:&lt;/p&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
 
-&lt;h2 id=&#34;toc_47&#34;&gt;Error lint style&lt;/h2&gt;
+&lt;h2 id=&#34;toc_49&#34;&gt;Error lint style&lt;/h2&gt;
 
 &lt;p&gt;Anaconda will draw boxes around the errors, warnings, and violations in the
 code that is being linted, this behaviour can be configured setting the value
@@ -1351,7 +1362,7 @@ affected lines&lt;/li&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
 
-&lt;h2 id=&#34;toc_48&#34;&gt;Error underlines&lt;/h2&gt;
+&lt;h2 id=&#34;toc_50&#34;&gt;Error underlines&lt;/h2&gt;
 
 &lt;p&gt;The characteristic red underline that appears under the errors on the lines,
 you can set the &lt;code&gt;anaconda_linter_underlines&lt;/code&gt; as &lt;code&gt;false&lt;/code&gt;.&lt;/p&gt;
@@ -1359,13 +1370,13 @@ you can set the &lt;code&gt;anaconda_linter_underlines&lt;/code&gt; as &lt;code&
 &lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: that option takes effect only when the &lt;code&gt;anaconda_linter_mark_style&lt;/code&gt;
 is set to &lt;code&gt;none&lt;/code&gt;.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_49&#34;&gt;Persist linter marks while typing&lt;/h2&gt;
+&lt;h2 id=&#34;toc_51&#34;&gt;Persist linter marks while typing&lt;/h2&gt;
 
 &lt;p&gt;Anaconda will remove all the lint marks from the buffer while the user is
 typing by default, this behaviour can be also configured setting the option
 &lt;code&gt;anaconda_linter_persistent&lt;/code&gt; as &lt;code&gt;true&lt;/code&gt;.&lt;/p&gt;
 
-&lt;h2 id=&#34;toc_50&#34;&gt;Linting theme customization&lt;/h2&gt;
+&lt;h2 id=&#34;toc_52&#34;&gt;Linting theme customization&lt;/h2&gt;
 
 &lt;p&gt;Users can customize anaconda linting marks as they like adding some custom
 rules to their SublimeText theme:&lt;/p&gt;
@@ -1418,7 +1429,7 @@ rules to their SublimeText theme:&lt;/p&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
 
-&lt;h3 id=&#34;toc_51&#34;&gt;XML File example&lt;/h3&gt;
+&lt;h3 id=&#34;toc_53&#34;&gt;XML File example&lt;/h3&gt;
 
 &lt;p&gt;You can of course copy this piece of XML and paste into your theme&lt;/p&gt;
 
