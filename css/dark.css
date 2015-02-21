@@ -3,18 +3,17 @@ html {
     color: #d3bc5f;
 }
 
-h1 {
+h3 {
     color: #beb7c8;
+    font-size: 1.2em;
 }
 
 .signature {
     margin-top: 4px;
 }
 
-.doc h1 {
-    background-color: #616161;
-}
-
-.content {
-
+.doc_signature {
+    margin-top: 4px;
+    color: #44849b;
+    font-size: 1.2em;
 }
