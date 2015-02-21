@@ -19,6 +19,14 @@ Anaconda works out of the box but there are multitude of options and features th
 
 This program is distributed under the terms of the GNU GPL v3. See the [LICENSE](https://raw.github.com/DamnWidget/anaconda/master/LICENSE) file for details.
 
+# Tooltips
+
+I know lot of you asked for this already, anaconda officially supports user themeable
+tooltips and advanced displaying signatures. This is how it looks in a dark theme:
+![](http://damnwidget.github.io/anaconda/img/tooltips.png)
+
+**note**: this feature is enabled for users of Sublime Text 3 build 3070 or superior only.
+
 # Troubleshootings
 
 Guide to solve common issues
