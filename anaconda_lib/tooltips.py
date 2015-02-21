@@ -28,12 +28,33 @@ class Tooltip(object):
             self._load_tooltips()
             Tooltip.loaded = True
 
-    def generate(self, tooltip, text):
+    def show_tooltip(self, view, tooltip, content, fallback):
+        """Generates and display a tooltip or pass execution to fallback
+        """
+
+        st_ver = int(sublime.version())
+        if st_ver < 3070:
+            return fallback()
+
+        kwargs = {'location': -1, 'max_width': 600}
+        if st_ver >= 3071:
+            kwargs['flags'] = sublime.COOPERATE_WITH_AUTO_COMPLETE
+        text = self._generate(tooltip, content)
+        if text is None:
+            return fallback()
+
+        return view.show_popup(text, **kwargs)
+
+    def _generate(self, tooltip, content):
         """Generate a tooltip with the given text
         """
 
         try:
-            return self.tooltips[tooltip].safe_substitute(text)
+            t = self.theme
+            theme = self.themes[t] if t in self.themes else self.themes['dark']
+            context = {'css': theme}
+            context.update(content)
+            return self.tooltips[tooltip].safe_substitute(context)
         except KeyError as err:
             print('while generating tooltip: tooltip {} don\'t exists'.format(
                 str(err))
@@ -50,16 +71,7 @@ class Tooltip(object):
         for template_file in glob.glob(template_files_pattern):
             with open(template_file, 'r', encoding='utf8') as tplfile:
                 tplname = os.path.basename(template_file).split('.tpl')[0]
-                try:
-                    theme = self.themes[self.theme]
-                except KeyError:
-                    print('configured theme {} not found')
-                    theme = self.themes['dark']
-                finally:
-                    tpldata = '<style>{}</style>{}'.format(
-                        theme, tplfile.read()
-                    )
-
+                tpldata = '<style>${{css}}</style>{}'.format(tplfile.read())
                 self.tooltips[tplname] = Template(tpldata)
 
     def _load_css_themes(self):

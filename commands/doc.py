@@ -2,6 +2,8 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
+from functools import partial
+
 import sublime
 import sublime_plugin
 
@@ -78,24 +80,14 @@ class AnacondaDoc(sublime_plugin.TextCommand):
         """Show message in a popup
         """
 
-        st_ver = int(sublime.version())
-        if st_ver >= 3070:
-            css = get_settings(self.view, 'anaconda_tooltip_theme', 'dark')
-            tooltip = Tooltip(css)
-            dlines = self.documentation.splitlines()
-            name = dlines[0].split('for ')[1]
-            docstring = '\n'.join(dlines[2:])
-            content = {'name': name, 'content': docstring}
-            kwargs = {'location': -1, 'max_width': 600}
-            if st_ver >= 3071:
-                kwargs['flags'] = sublime.COOPERATE_WITH_AUTO_COMPLETE
-            text = tooltip.generate('doc', content)
-            if text is not None:
-                self.view.show_popup(text, **kwargs)
-            else:
-                self.print_doc(edit)
-        else:
-            self.print_doc(edit)
+        dlines = self.documentation.splitlines()
+        name = dlines[0].split('for ')[1]
+        docstring = '\n'.join(dlines[2:])
+        content = {'name': name, 'content': docstring}
+
+        css = get_settings(self.view, 'anaconda_tooltip_theme', 'dark')
+        Tooltip(css).show_tooltip(
+            self.view, 'doc', content, partial(self.print_doc, edit))
 
     def _show_status(self):
         """Show message in the view status bar
