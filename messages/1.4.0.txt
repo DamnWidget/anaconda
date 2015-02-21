@@ -1,0 +1,59 @@
+Changes in 1.4.0
+================
+
+Sublime Text 3 build 3070 included a new API that allow us to show
+tooltips with basic formated HTML on them.
+
+This release implements this feature that should be available to anyone
+using Sublime Text 3 build 3070 or newer.
+
+### Notes
+In build 3070 the tooltips doesn't play nice with the auto completion
+the solution is to update to 3071 or better or just disable tooltips
+in anaconda configuration file
+
+Configuration Changes
+=====================
+
+* Display signatures is not true by default
+* Tooltips are enabled by default
+* More informative display signatures is enabled by default
+
+Customizable Tooltips
+=====================
+
+The theme of the tooltips are customizable, there are two by default themes:
+
+* Dark (for darker themes)
+* Light (for lighter themes)
+
+Users can create their own custom themes adding CSS files with their
+customizations into `Packages/User/Anaconda.themes` like for example:
+
+    Packages/User/Anaconda.themes/custom_tooltip.css
+
+### CSS Template
+
+```css
+html {
+    background-color: #141414;
+    color: #d3bc5f;
+}
+
+h3 {
+    color: #beb7c8;
+    font-size: 1.2em;
+}
+
+.signature {
+    margin-top: 4px;
+}
+
+.doc_signature {
+    margin-top: 4px;
+    color: #44849b;
+    font-size: 1.2em;
+}
+```
+
+For more detailed information about those changes run git v1.3.7..v1.4.0 on git repository
