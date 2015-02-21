@@ -3,6 +3,34 @@
 */
 {
     /*
+        Anaconda Tooltip Options
+
+        Sublime Text 3 supports tooltips since build 3070, if anaconda
+        runs in a ST3 instalation equal or newer than build 3070 it can
+        be configured to show tooltips for documentation and signatures
+
+        The options below sets how the tooltip is shown. Set the theme
+        as dark if you are using a dark theme or light if you are using
+        a light one.
+    */
+    "anaconda_tooltip_theme": "dark",  // possible options "light" or "dark"
+
+    /*
+        If you set the following option as true, anaconda will display the
+        signatures of the methods in a floating popup
+
+        *note*: this action takes effect if "display_signatures" is true
+    */
+    "enable_signatures_tooltip": true,
+
+    /*
+        If you set the following option as true, anaconda will display the
+        documentation of modules, classes or methods in a floating popup
+    */
+    "enable_docstrings_tooltip": false,
+
+
+    /*
         Auto project switching
 
         If you set this to true, anaconda will detect project switches and
@@ -73,7 +101,7 @@
         If you set the following option as true, anaconda will display the
         signatures of the methods you are using while typing
     */
-    "display_signatures": false,
+    "display_signatures": true,
 
     /*
         The following set of options controls the pep8 autoformating behaviour
