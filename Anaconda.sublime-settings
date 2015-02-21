@@ -33,9 +33,9 @@
         If the option below is set as true, anaconda will merge the
         outputs of display_signatures and show documentation
 
-        *note*: This has only effect if tooltips are enabled for both
+        *note*: This has only effect if tooltips are enabled
     */
-    "merge_signatures_and_doc": false,
+    "merge_signatures_and_doc": true,
 
 
     /*
