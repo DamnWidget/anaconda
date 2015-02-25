@@ -37,8 +37,9 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
                 location = (location[0], location[1] - 1)
 
             data = prepare_send_data(location, 'doc', 'jedi')
-            data['html'] = get_settings(
-                view, 'enable_signatures_tooltip', False)
+            if int(sublime.version()) >= 3070:
+                data['html'] = get_settings(
+                    view, 'enable_signatures_tooltip', False)
             Worker().execute(partial(self.prepare_data, view), **data)
         except Exception as error:
             logging.error(error)

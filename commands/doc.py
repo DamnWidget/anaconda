@@ -27,8 +27,9 @@ class AnacondaDoc(sublime_plugin.TextCommand):
                     location = (location[0], location[1] - 1)
 
                 data = prepare_send_data(location, 'doc', 'jedi')
-                data['html'] = get_settings(
-                    self.view, 'enable_docstrings_tooltip', False)
+                if int(sublime.version()) >= 3070:
+                    data['html'] = get_settings(
+                        self.view, 'enable_docstrings_tooltip', False)
                 Worker().execute(
                     Callback(on_success=self.prepare_data), **data
                 )
