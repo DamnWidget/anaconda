@@ -149,7 +149,8 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         self.view.window().run_command(
             'exec', {
                 'shell_cmd': command,
-                'working_dir': self.test_root
+                'working_dir': self.test_root,
+                'syntax': self.output_syntax
             }
         )
         self._save_test_run(command)
@@ -188,7 +189,6 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         """
 
         panel = self.view.window().get_output_panel('exec')
-        panel.set_syntax_file(self.output_syntax)
         panel.settings().set('wrap_width', width,)
 
         if self.output_show_color:
