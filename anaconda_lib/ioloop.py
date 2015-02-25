@@ -37,6 +37,7 @@ import time
 import errno
 import socket
 import select
+import logging
 import traceback
 import threading
 
@@ -74,7 +75,8 @@ class IOHandlers(object):
         """Register a new handler
         """
 
-        print('Registering handler with address {}'.format(handler.address))
+        logging.info(
+            'Registering handler with address {}'.format(handler.address))
 
         with self._lock:
             if handler.fileno() not in self._handler_pool:
@@ -275,10 +277,11 @@ def loop():
     """
 
     def restart_poll(error):
-        print('Unhandled exception in poll, restarting the poll request')
-        print(error)
+        logging.error(
+            'Unhandled exception in poll, restarting the poll request')
+        logging.error(error)
         for traceback_line in traceback.format_exc().splitlines():
-            print(traceback_line)
+            logging.error(traceback_line)
 
         with IOHandlers()._lock:
             for handler in IOHandlers()._handler_pool.values():
@@ -299,7 +302,7 @@ def loop():
                         'persist, fill an issue report on:'
                         '   https://github.com/DamnWidget/anaconda/issues'
                     )
-                    print(msg)
+                    logging.error(msg)
                     import sublime
                     sublime.error_message(msg)
                     terminate()

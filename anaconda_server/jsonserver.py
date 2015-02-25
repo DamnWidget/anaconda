@@ -37,7 +37,6 @@ PY3 = True if sys.version_info >= (3,) else False
 
 
 class JSONHandler(asynchat.async_chat):
-
     """Hadnles JSON messages from a client
     """
 
@@ -115,7 +114,6 @@ class JSONHandler(asynchat.async_chat):
 
 
 class JSONServer(asyncore.dispatcher):
-
     """Asynchronous standard library TCP JSON server
     """
 
@@ -163,7 +161,6 @@ class JSONServer(asyncore.dispatcher):
 
 
 class Checker(threading.Thread):
-
     """Check that the ST3 PID already exists every delta seconds
     """
 
@@ -215,7 +212,7 @@ class Checker(threading.Thread):
                 startupinfo=startupinfo
             )
             pid = PID if not PY3 else bytes(PID, 'utf8')
-            if not pid in output:
+            if pid not in output:
                 self.server.logger.info(
                     'process {0} does not exists stopping server...'.format(
                         PID

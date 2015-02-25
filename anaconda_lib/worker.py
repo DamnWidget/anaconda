@@ -233,7 +233,7 @@ class LocalWorker(BaseWorker):
                     python = python.replace(
                         '$VIRTUAL_ENV', os.environ.get('VIRTUAL_ENV'))
                 else:
-                    print(
+                    logging.info(
                         'WARNING: your anaconda configured python interpreter '
                         'is {} but there is no $VIRTUAL_ENV key in your '
                         'environment, fallin back to `python`.'.format(

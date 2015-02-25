@@ -8,6 +8,7 @@
 
 import os
 import pickle
+import logging
 
 
 class PersistentList(list):
@@ -26,7 +27,8 @@ class PersistentList(list):
         except IOError:
             pass
         except Exception as e:
-            print('Detected error {}, deleting persistent list...'.format(e))
+            logging.error(
+                'Detected error {}, deleting persistent list...'.format(e))
             os.remove(self._file_path)
 
     def __setitem__(self, key, value):

@@ -11,6 +11,7 @@ import os
 import sys
 import time
 import pstats
+import logging
 import functools
 
 try:
@@ -104,7 +105,7 @@ def profile(func):
                 ps.sort_stats('time')
                 ps.print_stats(15)
             else:
-                print(
+                logging.error(
                     'cProfile doesn\'t seems to can be imported on ST3 + {}, '
                     'sorry. You may want to use @timeit instead, so sorry '
                     'really'.format(sys.platform)

@@ -91,8 +91,8 @@ class JediHandler(AnacondaHandler):
 
         Goto(self.callback, self.uid, self.script)
 
-    def doc(self):
+    def doc(self, html=False):
         """Call doc
         """
 
-        Doc(self.callback, self.uid, self.script)
+        Doc(self.callback, self.uid, self.script, html)

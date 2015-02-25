@@ -112,7 +112,7 @@ def create_subprocess(args, **kwargs):
     """Create a subprocess and return it back
     """
 
-    if not 'cwd' in kwargs:
+    if 'cwd' not in kwargs:
         kwargs['cwd'] = os.path.dirname(os.path.abspath(__file__))
     kwargs['bufsize'] = -1
 
