@@ -35,7 +35,8 @@ class AnacondaDoc(sublime_plugin.TextCommand):
             except Exception as error:
                 print(error)
         else:
-            if get_settings(self.view, 'enable_docstrings_tooltip', False):
+            if (get_settings(self.view, 'enable_docstrings_tooltip', False)
+                    and int(sublime.version()) >= 3070):
                 self.print_popup(edit)
             else:
                 self.print_doc(edit)
