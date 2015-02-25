@@ -1,0 +1,13 @@
+Changes in 1.4.2
+================
+
+## Fixes
+* Fix for issue #280
+* Fix for issue #279
+* Fix for issue #278
+
+## Improvements
+* Improved tooltips for method signatures and docstrings
+* Support `$project_path` in `python_interpreter` and `extra_paths`
+
+For more detailed information about those changes run git v1.4.1..v1.4.2 on git repository
