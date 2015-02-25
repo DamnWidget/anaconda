@@ -2,6 +2,7 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
+import logging
 from functools import partial
 
 import sublime_plugin
@@ -35,9 +36,11 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
                 location = (location[0], location[1] - 1)
 
             data = prepare_send_data(location, 'doc', 'jedi')
+            data['html'] = get_settings(
+                view, 'enable_signatures_tooltip', False)
             Worker().execute(partial(self.prepare_data, view), **data)
         except Exception as error:
-            print(error)
+            logging.error(error)
 
     def prepare_data(self, view, data):
         """Prepare the returned data
@@ -47,11 +50,14 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
         show_doc = get_settings(view, 'merge_signatures_and_doc', True)
         if data['success'] and 'No docstring' not in data['doc']:
             if show_tooltip and show_doc:
-                self.doc = '\n'.join(data['doc'].splitlines()[2:])
+                self.doc = '<br>'.join(data['doc'].split('<br>')[2:])
 
-            self.signature = data['doc'].splitlines()[2]
+            if not show_tooltip:
+                self.signature = data['doc'].splitlines()[2]
+            else:
+                self.signature = data['doc'].split('<br>')[0]
             if ('(' in self.signature and
-               self.signature.split('(')[0].strip() not in self.exclude):
+                    self.signature.split('(')[0].strip() not in self.exclude):
                 if self.signature is not None and self.signature != '':
                     if show_tooltip:
                         return self._show_popup(view)

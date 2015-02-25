@@ -27,6 +27,8 @@ class AnacondaDoc(sublime_plugin.TextCommand):
                     location = (location[0], location[1] - 1)
 
                 data = prepare_send_data(location, 'doc', 'jedi')
+                data['html'] = get_settings(
+                    self.view, 'enable_docstrings_tooltip', False)
                 Worker().execute(
                     Callback(on_success=self.prepare_data), **data
                 )
@@ -81,10 +83,10 @@ class AnacondaDoc(sublime_plugin.TextCommand):
         """
 
         dlines = self.documentation.splitlines()
-        name = dlines[0].split('for ')[1]
-        docstring = '\n'.join(dlines[2:])
+        name = dlines[0]
+        docstring = ''.join(dlines[1:])
         content = {'name': name, 'content': docstring}
-
+        self.documentation = None
         css = get_settings(self.view, 'anaconda_tooltip_theme', 'dark')
         Tooltip(css).show_tooltip(
             self.view, 'doc', content, partial(self.print_doc, edit))

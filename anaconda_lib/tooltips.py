@@ -4,6 +4,7 @@
 
 import os
 import glob
+import logging
 from string import Template
 
 import sublime
@@ -54,10 +55,12 @@ class Tooltip(object):
             theme = self.themes[t] if t in self.themes else self.themes['dark']
             context = {'css': theme}
             context.update(content)
-            return self.tooltips[tooltip].safe_substitute(context)
+            data = self.tooltips[tooltip].safe_substitute(context)
+            return data
         except KeyError as err:
-            print('while generating tooltip: tooltip {} don\'t exists'.format(
-                str(err))
+            logging.error(
+                'while generating tooltip: tooltip {} don\'t exists'.format(
+                    str(err))
             )
             return None
 
@@ -83,7 +86,7 @@ class Tooltip(object):
         css_files_pattern = os.path.join(
             os.path.dirname(__file__), '../', 'css', '*.css')
         for css_file in glob.glob(css_files_pattern):
-            print('anaconda: {} css theme loaded'.format(
+            logging.info('anaconda: {} css theme loaded'.format(
                 self._load_css(css_file))
             )
 
@@ -92,7 +95,7 @@ class Tooltip(object):
         if os.path.exists(user_css_path):
             css_files_pattern = os.path.join(user_css_path, '*.css')
             for css_file in glob.glob(css_files_pattern):
-                print(
+                logging.info(
                     'anaconda: {} user css theme loaded',
                     self._load_css(css_file)
                 )
