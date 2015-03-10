@@ -1,0 +1,8 @@
+Changes in 1.4.4
+================
+
+## Fixes
+* Fix for issue #287
+* Fix for issue #289
+
+For more detailed information about those changes run git v1.4.3..v1.4.4 on git repository
