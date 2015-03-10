@@ -9,6 +9,8 @@ from string import Template
 
 import sublime
 
+from .helpers import get_settings
+
 
 class Tooltip(object):
     """Just a wrapper around Sublime Text 3 tooltips
@@ -17,6 +19,7 @@ class Tooltip(object):
     themes = {}
     tooltips = {}
     loaded = False
+    basesize = 75
 
     def __init__(self, theme):
         self.theme = theme
@@ -37,7 +40,8 @@ class Tooltip(object):
         if st_ver < 3070:
             return fallback()
 
-        kwargs = {'location': -1, 'max_width': 600}
+        width = get_settings(view, 'font_size', 8) * 75
+        kwargs = {'location': -1, 'max_width': width if width < 900 else 900}
         if st_ver >= 3071:
             kwargs['flags'] = sublime.COOPERATE_WITH_AUTO_COMPLETE
         text = self._generate(tooltip, content)
