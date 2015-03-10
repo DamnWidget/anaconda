@@ -206,7 +206,19 @@ class Checker(threading.Thread):
             # we need something that always work so we are forced here to use
             # the Windows tasklist command and check its output
             startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            try:
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            except AttributeError:
+                # some versions of Windows define STARTF_USEWHOWWINDOW
+                # in a separate _suprocess module
+                try:
+                    import _subprocess
+                except ImportError:
+                    self.server.logger.info(
+                        'warning: could not import _subprocess')
+                else:
+                    startupinfo.dwFlags != _subprocess.STARTF_USESHOWWINDOW
+
             output = subprocess.check_output(
                 ['tasklist', '/FI', 'PID eq {0}'.format(PID)],
                 startupinfo=startupinfo
