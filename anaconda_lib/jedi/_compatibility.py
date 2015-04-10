@@ -65,23 +65,6 @@ or the name of the module if it is a builtin one and a boolean indicating
 if the module is contained in a package.
 """
 
-# next was defined in python 2.6, in python 3 obj.next won't be possible
-# anymore
-try:
-    next = next
-except NameError:
-    _raiseStopIteration = object()
-
-    def next(iterator, default=_raiseStopIteration):
-        if not hasattr(iterator, 'next'):
-            raise TypeError("not an iterator")
-        try:
-            return iterator.next()
-        except StopIteration:
-            if default is _raiseStopIteration:
-                raise
-            else:
-                return default
 
 # unicode function
 try:
@@ -124,18 +107,6 @@ Usage::
     reraise(Exception, sys.exc_info()[2])
 
 """
-
-# hasattr function used because python
-if is_py3:
-    hasattr = hasattr
-else:
-    def hasattr(obj, name):
-        try:
-            getattr(obj, name)
-            return True
-        except AttributeError:
-            return False
-
 
 class Python3Method(object):
     def __init__(self, func):
@@ -197,3 +168,33 @@ try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest  # Python 2
+
+
+def no_unicode_pprint(dct):
+    """
+    Python 2/3 dict __repr__ may be different, because of unicode differens
+    (with or without a `u` prefix). Normally in doctests we could use `pprint`
+    to sort dicts and check for equality, but here we have to write a separate
+    function to do that.
+    """
+    import pprint
+    s = pprint.pformat(dct)
+    print(re.sub("u'", "'", s))
+
+
+def utf8_repr(func):
+    """
+    ``__repr__`` methods in Python 2 don't allow unicode objects to be
+    returned. Therefore cast them to utf-8 bytes in this decorator.
+    """
+    def wrapper(self):
+        result = func(self)
+        if isinstance(result, unicode):
+            return result.encode('utf-8')
+        else:
+            return result
+
+    if is_py3:
+        return func
+    else:
+        return wrapper

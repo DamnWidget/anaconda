@@ -1,216 +1,179 @@
 import copy
+from itertools import chain
 
-from jedi import common
-from jedi.parser import representation as pr
-from jedi import debug
+from jedi.parser import tree as pr
 
 
-def fast_parent_copy(obj):
+def deep_ast_copy(obj, parent=None, new_elements=None):
     """
-    Much, much faster than copy.deepcopy, but just for certain elements.
+    Much, much faster than copy.deepcopy, but just for Parser elements (Doesn't
+    copy parents).
     """
-    new_elements = {}
 
-    def recursion(obj):
-        if isinstance(obj, pr.Statement):
-            # Need to set _set_vars, otherwise the cache is not working
-            # correctly, don't know why.
-            obj.get_defined_names()
+    if new_elements is None:
+        new_elements = {}
 
-        new_obj = copy.copy(obj)
-        new_elements[obj] = new_obj
-
+    def copy_node(obj):
+        # If it's already in the cache, just return it.
         try:
-            items = list(new_obj.__dict__.items())
+            return new_elements[obj]
+        except KeyError:
+            # Actually copy and set attributes.
+            new_obj = copy.copy(obj)
+            new_elements[obj] = new_obj
+
+        # Copy children
+        new_children = []
+        for child in obj.children:
+            typ = child.type
+            if typ in ('whitespace', 'operator', 'keyword', 'number', 'string'):
+                # At the moment we're not actually copying those primitive
+                # elements, because there's really no need to. The parents are
+                # obviously wrong, but that's not an issue.
+                new_child = child
+            elif typ == 'name':
+                new_elements[child] = new_child = copy.copy(child)
+                new_child.parent = new_obj
+            else:  # Is a BaseNode.
+                new_child = copy_node(child)
+                new_child.parent = new_obj
+            new_children.append(new_child)
+        new_obj.children = new_children
+
+        # Copy the names_dict (if there is one).
+        try:
+            names_dict = obj.names_dict
         except AttributeError:
-            # __dict__ not available, because of __slots__
-            items = []
-
-        before = ()
-        for cls in new_obj.__class__.__mro__:
-            with common.ignored(AttributeError):
-                if before == cls.__slots__:
-                    continue
-                before = cls.__slots__
-                items += [(n, getattr(new_obj, n)) for n in before]
-
-        for key, value in items:
-            # replace parent (first try _parent and then parent)
-            if key in ['parent', '_parent'] and value is not None:
-                if key == 'parent' and '_parent' in items:
-                    # parent can be a property
-                    continue
-                with common.ignored(KeyError):
-                    setattr(new_obj, key, new_elements[value])
-            elif key in ['parent_function', 'use_as_parent', '_sub_module']:
-                continue
-            elif isinstance(value, list):
-                setattr(new_obj, key, list_rec(value))
-            elif isinstance(value, pr.Simple):
-                setattr(new_obj, key, recursion(value))
+            pass
+        else:
+            try:
+                new_obj.names_dict = new_names_dict = {}
+            except AttributeError:  # Impossible to set CompFor.names_dict
+                pass
+            else:
+                for string, names in names_dict.items():
+                    new_names_dict[string] = [new_elements[n] for n in names]
         return new_obj
 
-    def list_rec(list_obj):
-        copied_list = list_obj[:]   # lists, tuples, strings, unicode
-        for i, el in enumerate(copied_list):
-            if isinstance(el, pr.Simple):
-                copied_list[i] = recursion(el)
-            elif isinstance(el, list):
-                copied_list[i] = list_rec(el)
-        return copied_list
-    return recursion(obj)
+    if obj.type == 'name':
+        # Special case of a Name object.
+        new_elements[obj] = new_obj = copy.copy(obj)
+        if parent is not None:
+            new_obj.parent = parent
+    elif isinstance(obj, pr.BaseNode):
+        new_obj = copy_node(obj)
+        if parent is not None:
+            for child in new_obj.children:
+                if isinstance(child, (pr.Name, pr.BaseNode)):
+                    child.parent = parent
+    else:  # String literals and so on.
+        new_obj = obj  # Good enough, don't need to copy anything.
+    return new_obj
 
 
-def call_signature_array_for_pos(stmt, pos):
+def call_of_name(name, cut_own_trailer=False):
     """
-    Searches for the array and position of a tuple.
+    Creates a "call" node that consist of all ``trailer`` and ``power``
+    objects.  E.g. if you call it with ``append``::
+
+        list([]).append(3) or None
+
+    You would get a node with the content ``list([]).append`` back.
+
+    This generates a copy of the original ast node.
     """
-    def search_array(arr, pos):
-        accepted_types = pr.Array.TUPLE, pr.Array.NOARRAY
-        if arr.type == 'dict':
-            for stmt in arr.values + arr.keys:
-                new_arr, index = call_signature_array_for_pos(stmt, pos)
-                if new_arr is not None:
-                    return new_arr, index
-        else:
-            for i, stmt in enumerate(arr):
-                new_arr, index = call_signature_array_for_pos(stmt, pos)
-                if new_arr is not None:
-                    return new_arr, index
+    par = name
+    if pr.is_node(par.parent, 'trailer'):
+        par = par.parent
 
-                if arr.start_pos < pos <= stmt.end_pos:
-                    if arr.type in accepted_types and isinstance(arr.parent, pr.Call):
-                        return arr, i
-        if len(arr) == 0 and arr.start_pos < pos < arr.end_pos:
-            if arr.type in accepted_types and isinstance(arr.parent, pr.Call):
-                return arr, 0
-        return None, 0
+    power = par.parent
+    if pr.is_node(power, 'power') and power.children[0] != name \
+            and not (power.children[-2] == '**' and
+                     name.start_pos > power.children[-1].start_pos):
+        par = power
+        # Now the name must be part of a trailer
+        index = par.children.index(name.parent)
+        if index != len(par.children) - 1 or cut_own_trailer:
+            # Now we have to cut the other trailers away.
+            par = deep_ast_copy(par)
+            if not cut_own_trailer:
+                # Normally we would remove just the stuff after the index, but
+                # if the option is set remove the index as well. (for goto)
+                index = index + 1
+            par.children[index:] = []
 
-    def search_call(call, pos):
-        arr, index = None, 0
-        if call.next is not None:
-            if isinstance(call.next, pr.Array):
-                arr, index = search_array(call.next, pos)
-            else:
-                arr, index = search_call(call.next, pos)
-        if not arr and call.execution is not None:
-            arr, index = search_array(call.execution, pos)
-        return arr, index
-
-    if stmt.start_pos >= pos >= stmt.end_pos:
-        return None, 0
-
-    for command in stmt.expression_list():
-        arr = None
-        if isinstance(command, pr.Array):
-            arr, index = search_array(command, pos)
-        elif isinstance(command, pr.StatementElement):
-            arr, index = search_call(command, pos)
-        if arr is not None:
-            return arr, index
-    return None, 0
+    return par
 
 
-def search_call_signatures(user_stmt, position):
+def get_module_names(module, all_scopes):
     """
-    Returns the function Call that matches the position before.
+    Returns a dictionary with name parts as keys and their call paths as
+    values.
     """
-    debug.speed('func_call start')
-    call, index = None, 0
-    if user_stmt is not None and isinstance(user_stmt, pr.Statement):
-        # some parts will of the statement will be removed
-        user_stmt = fast_parent_copy(user_stmt)
-        arr, index = call_signature_array_for_pos(user_stmt, position)
-        if arr is not None:
-            call = arr.parent
-
-    debug.speed('func_call parsed')
-    return call, index
+    if all_scopes:
+        dct = module.used_names
+    else:
+        dct = module.names_dict
+    return chain.from_iterable(dct.values())
 
 
-def scan_statement_for_calls(stmt, search_name, assignment_details=False):
-    """ Returns the function Calls that match search_name in an Array. """
-    def scan_array(arr, search_name):
-        result = []
-        if arr.type == pr.Array.DICT:
-            for key_stmt, value_stmt in arr.items():
-                result += scan_statement_for_calls(key_stmt, search_name)
-                result += scan_statement_for_calls(value_stmt, search_name)
-        else:
-            for stmt in arr:
-                result += scan_statement_for_calls(stmt, search_name)
-        return result
-
-    check = list(stmt.expression_list())
-    if assignment_details:
-        for expression_list, op in stmt.assignment_details:
-            check += expression_list
-
-    result = []
-    for c in check:
-        if isinstance(c, pr.Array):
-            result += scan_array(c, search_name)
-        elif isinstance(c, pr.Call):
-            s_new = c
-            while s_new is not None:
-                n = s_new.name
-                if isinstance(n, pr.Name) \
-                        and search_name in [str(x) for x in n.names]:
-                    result.append(c)
-
-                if s_new.execution is not None:
-                    result += scan_array(s_new.execution, search_name)
-                s_new = s_new.next
-        elif isinstance(c, pr.ListComprehension):
-            for s in c.stmt, c.middle, c.input:
-                result += scan_statement_for_calls(s, search_name)
-
-    return result
-
-
-class FakeSubModule():
-    line_offset = 0
-
-
-class FakeArray(pr.Array):
-    def __init__(self, values, parent=None, arr_type=pr.Array.LIST):
-        p = (0, 0)
-        super(FakeArray, self).__init__(FakeSubModule, p, arr_type, parent)
-        self.values = values
-
-
-class FakeStatement(pr.Statement):
-    def __init__(self, expression_list, start_pos=(0, 0), parent=None):
-        p = start_pos
-        super(FakeStatement, self).__init__(FakeSubModule, expression_list, p, p)
-        self.set_expression_list(expression_list)
-        self.parent = parent
-
-
-class FakeImport(pr.Import):
+class FakeImport(pr.ImportName):
     def __init__(self, name, parent, level=0):
-        p = 0, 0
-        super(FakeImport, self).__init__(FakeSubModule, p, p, name,
-                                         relative_count=level)
+        super(FakeImport, self).__init__([])
         self.parent = parent
+        self._level = level
+        self.name = name
+
+    def get_defined_names(self):
+        return [self.name]
+
+    def aliases(self):
+        return {}
+
+    @property
+    def level(self):
+        return self._level
+
+    @property
+    def start_pos(self):
+        return 0, 0
+
+    def paths(self):
+        return [[self.name]]
+
+    def is_definition(self):
+        return True
 
 
 class FakeName(pr.Name):
-    def __init__(self, name_or_names, parent=None):
-        p = 0, 0
-        if isinstance(name_or_names, list):
-            names = [(n, p) for n in name_or_names]
+    def __init__(self, name_str, parent=None, start_pos=(0, 0), is_definition=None):
+        """
+        In case is_definition is defined (not None), that bool value will be
+        returned.
+        """
+        super(FakeName, self).__init__(pr.zero_position_modifier, name_str, start_pos)
+        self.parent = parent
+        self._is_definition = is_definition
+
+    def get_definition(self):
+        return self.parent
+
+    def is_definition(self):
+        if self._is_definition is None:
+            return super(FakeName, self).is_definition()
         else:
-            names = [(name_or_names, p)]
-        super(FakeName, self).__init__(FakeSubModule, names, p, p, parent)
+            return self._is_definition
 
 
-def stmts_to_stmt(statements):
-    """
-    Sometimes we want to have something like a result_set and unite some
-    statements in one.
-    """
-    if len(statements) == 1:
-        return statements[0]
-    array = FakeArray(statements, arr_type=pr.Array.NOARRAY)
-    return FakeStatement([array])
+class LazyName(FakeName):
+    def __init__(self, name, parent_callback, is_definition=None):
+        super(LazyName, self).__init__(name, is_definition=is_definition)
+        self._parent_callback = parent_callback
+
+    @property
+    def parent(self):
+        return self._parent_callback()
+
+    @parent.setter
+    def parent(self, value):
+        pass  # Do nothing, super classes can try to set the parent.

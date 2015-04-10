@@ -7,11 +7,14 @@ possible for the auto completion.
 
 
 def next(iterator, default=None):
-    if hasattr("next"):
-        return iterator.next()
+    if random.choice([0, 1]):
+        if hasattr("next"):
+            return iterator.next()
+        else:
+            return iterator.__next__()
     else:
-        return iterator.__next__()
-    return default
+        if default is not None:
+            return default
 
 
 def iter(collection, sentinel=None):
@@ -153,7 +156,7 @@ class set():
             yield i
 
     def pop(self):
-        return self.__iterable.pop()
+        return list(self.__iterable)[-1]
 
     def copy(self):
         return self

@@ -1,12 +1,14 @@
+import glob
 import os
 import sys
 
 from jedi._compatibility import exec_function, unicode
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.parser import Parser
 from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
+from jedi import cache
 
 
 def get_sys_path():
@@ -16,16 +18,25 @@ def get_sys_path():
         if not venv:
             return
         venv = os.path.abspath(venv)
-        if os.name == 'nt':
-            p = os.path.join(venv, 'lib', 'site-packages')
-        else:
-            p = os.path.join(venv, 'lib', 'python%d.%d' % sys.version_info[:2],
-                             'site-packages')
+        p = _get_venv_sitepackages(venv)
         if p not in sys_path:
             sys_path.insert(0, p)
 
+        # Add all egg-links from the virtualenv.
+        for egg_link in glob.glob(os.path.join(p, '*.egg-link')):
+            with open(egg_link) as fd:
+                sys_path.insert(0, fd.readline().rstrip())
+
     check_virtual_env(sys.path)
     return [p for p in sys.path if p != ""]
+
+def _get_venv_sitepackages(venv):
+    if os.name == 'nt':
+        p = os.path.join(venv, 'lib', 'site-packages')
+    else:
+        p = os.path.join(venv, 'lib', 'python%d.%d' % sys.version_info[:2],
+                         'site-packages')
+    return p
 
 
 def _execute_code(module_path, code):
@@ -35,89 +46,103 @@ def _execute_code(module_path, code):
         exec_function(c % code, variables)
     except Exception:
         debug.warning('sys.path manipulation detected, but failed to evaluate.')
-        return None
-    try:
-        res = variables['result']
-        if isinstance(res, str):
-            return os.path.abspath(res)
-        else:
-            return None
-    except KeyError:
-        return None
+    else:
+        try:
+            res = variables['result']
+            if isinstance(res, str):
+                return [os.path.abspath(res)]
+        except KeyError:
+            pass
+    return []
 
 
-def _paths_from_assignment(statement):
+def _paths_from_assignment(evaluator, expr_stmt):
     """
-    extracts the assigned strings from an assignment that looks as follows::
+    Extracts the assigned strings from an assignment that looks as follows::
 
     >>> sys.path[0:0] = ['module/path', 'another/module/path']
+
+    This function is in general pretty tolerant (and therefore 'buggy').
+    However, it's not a big issue usually to add more paths to Jedi's sys_path,
+    because it will only affect Jedi in very random situations and by adding
+    more paths than necessary, it usually benefits the general user.
     """
+    for assignee, operator in zip(expr_stmt.children[::2], expr_stmt.children[1::2]):
+        try:
+            assert operator in ['=', '+=']
+            assert pr.is_node(assignee, 'power') and len(assignee.children) > 1
+            c = assignee.children
+            assert c[0].type == 'name' and c[0].value == 'sys'
+            trailer = c[1]
+            assert trailer.children[0] == '.' and trailer.children[1].value == 'path'
+            # TODO Essentially we're not checking details on sys.path
+            # manipulation. Both assigment of the sys.path and changing/adding
+            # parts of the sys.path are the same: They get added to the current
+            # sys.path.
+            """
+            execution = c[2]
+            assert execution.children[0] == '['
+            subscript = execution.children[1]
+            assert subscript.type == 'subscript'
+            assert ':' in subscript.children
+            """
+        except AssertionError:
+            continue
 
-    names = statement.get_defined_names()
-    if len(names) != 1:
-        return []
-    if [unicode(x) for x in names[0].names] != ['sys', 'path']:
-        return []
-    expressions = statement.expression_list()
-    if len(expressions) != 1 or not isinstance(expressions[0], pr.Array):
-        return
-    stmts = (s for s in expressions[0].values if isinstance(s, pr.Statement))
-    expression_lists = (s.expression_list() for s in stmts)
-    return [e.value for exprs in expression_lists for e in exprs
-            if isinstance(e, pr.Literal) and e.value]
+        from jedi.evaluate.iterable import get_iterator_types
+        from jedi.evaluate.precedence import is_string
+        for val in get_iterator_types(evaluator.eval_statement(expr_stmt)):
+            if is_string(val):
+                yield val.obj
 
 
-def _paths_from_insert(module_path, exe):
-    """ extract the inserted module path from an "sys.path.insert" statement
-    """
-    exe_type, exe.type = exe.type, pr.Array.NOARRAY
-    exe_pop = exe.values.pop(0)
-    res = _execute_code(module_path, exe.get_code())
-    exe.type = exe_type
-    exe.values.insert(0, exe_pop)
-    return res
-
-
-def _paths_from_call_expression(module_path, call):
+def _paths_from_list_modifications(module_path, trailer1, trailer2):
     """ extract the path from either "sys.path.append" or "sys.path.insert" """
-    if call.execution is None:
-        return
-    n = call.name
-    if not isinstance(n, pr.Name) or len(n.names) != 3:
-        return
-    names = [unicode(x) for x in n.names]
-    if names[:2] != ['sys', 'path']:
-        return
-    cmd = names[2]
-    exe = call.execution
-    if cmd == 'insert' and len(exe) == 2:
-        path = _paths_from_insert(module_path, exe)
-    elif cmd == 'append' and len(exe) == 1:
-        path = _execute_code(module_path, exe.get_code())
-    return path and [path] or []
+    # Guarantee that both are trailers, the first one a name and the second one
+    # a function execution with at least one param.
+    if not (pr.is_node(trailer1, 'trailer') and trailer1.children[0] == '.'
+            and pr.is_node(trailer2, 'trailer') and trailer2.children[0] == '('
+            and len(trailer2.children) == 3):
+        return []
+
+    name = trailer1.children[1].value
+    if name not in ['insert', 'append']:
+        return []
+
+    arg = trailer2.children[1]
+    if name == 'insert' and len(arg.children) in (3, 4):  # Possible trailing comma.
+        arg = arg.children[2]
+    return _execute_code(module_path, arg.get_code())
 
 
-def _check_module(module):
-    try:
-        possible_stmts = module.used_names['path']
-    except KeyError:
-        return get_sys_path()
+def _check_module(evaluator, module):
+    def get_sys_path_powers(names):
+        for name in names:
+            power = name.parent.parent
+            if pr.is_node(power, 'power'):
+                c = power.children
+                if isinstance(c[0], pr.Name) and c[0].value == 'sys' \
+                        and pr.is_node(c[1], 'trailer'):
+                    n = c[1].children[1]
+                    if isinstance(n, pr.Name) and n.value == 'path':
+                        yield name, power
+
     sys_path = list(get_sys_path())  # copy
-    statements = (p for p in possible_stmts if isinstance(p, pr.Statement))
-    for stmt in statements:
-        expressions = stmt.expression_list()
-        if len(expressions) == 1 and isinstance(expressions[0], pr.Call):
-            sys_path.extend(
-                _paths_from_call_expression(module.path, expressions[0]) or [])
-        elif (
-            hasattr(stmt, 'assignment_details') and
-            len(stmt.assignment_details) == 1
-        ):
-            sys_path.extend(_paths_from_assignment(stmt) or [])
+    try:
+        possible_names = module.used_names['path']
+    except KeyError:
+        pass
+    else:
+        for name, power in get_sys_path_powers(possible_names):
+            stmt = name.get_definition()
+            if len(power.children) >= 4:
+                sys_path.extend(_paths_from_list_modifications(module.path, *power.children[2:4]))
+            elif name.get_definition().type == 'expr_stmt':
+                sys_path.extend(_paths_from_assignment(evaluator, stmt))
     return sys_path
 
 
-@memoize_default(evaluator_is_first_arg=True)
+@memoize_default(evaluator_is_first_arg=True, default=[])
 def sys_path_with_modifications(evaluator, module):
     if module.path is None:
         # Support for modules without a path is bad, therefore return the
@@ -128,26 +153,38 @@ def sys_path_with_modifications(evaluator, module):
     with common.ignored(OSError):
         os.chdir(os.path.dirname(module.path))
 
-    result = _check_module(module)
+    buildout_script_paths = set()
+
+    result = _check_module(evaluator, module)
     result += _detect_django_path(module.path)
-    # buildout scripts often contain the same sys.path modifications
-    # the set here is used to avoid duplicate sys.path entries
-    buildout_paths = set()
-    for module_path in _get_buildout_scripts(module.path):
-        try:
-            with open(module_path, 'rb') as f:
-                source = f.read()
-        except IOError:
-            pass
-        else:
-            p = Parser(common.source_to_unicode(source), module_path)
-            for path in _check_module(p.module):
-                if path not in buildout_paths:
-                    buildout_paths.add(path)
-                    result.append(path)
+    for buildout_script in _get_buildout_scripts(module.path):
+        for path in _get_paths_from_buildout_script(evaluator, buildout_script):
+            buildout_script_paths.add(path)
     # cleanup, back to old directory
     os.chdir(curdir)
-    return list(result)
+    return list(result) + list(buildout_script_paths)
+
+
+def _get_paths_from_buildout_script(evaluator, buildout_script):
+    def load(buildout_script):
+        try:
+            with open(buildout_script, 'rb') as f:
+                source = common.source_to_unicode(f.read())
+        except IOError:
+            debug.dbg('Error trying to read buildout_script: %s', buildout_script)
+            return
+
+        p = Parser(evaluator.grammar, source, buildout_script)
+        cache.save_parser(buildout_script, None, p)
+        return p.module
+
+    cached = cache.load_parser(buildout_script, None)
+    module = cached and cached.module or load(buildout_script)
+    if not module:
+        return
+
+    for path in _check_module(evaluator, module):
+        yield path
 
 
 def _traverse_parents(path):
