@@ -1,0 +1,11 @@
+Changes in 1.4.5
+================
+
+## Third party
+* Bump version for Jedi library
+
+## Fixes
+* Allows relative rcfile path #73 #291
+* Fix for #164
+
+For more detailed information about those changes run git v1.4.4..v1.4.5 on git repository
