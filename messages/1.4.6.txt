@@ -1,0 +1,7 @@
+Changes in 1.4.6
+================
+
+## Fixes
+* Fix incompatible API call into Jedi cache clearing features. Solves #297
+
+For more detailed information about those changes run git v1.4.5..v1.4.6 on git repository
