@@ -64,7 +64,6 @@ Please donate to help keep this project alive.
 
 [![PayPal][paypal-donate-image]][paypal-donate-link]
 [![Flatter][flatter-image]][flatter-link]
-[![githalytics.com alpha][githalytics-image]][githalytics-link]
 
 [license]: https://raw.githubusercontent.com/DamnWidget/anaconda/master/LICENSE
 [Completion-Rules]: https://raw.githubusercontent.com/DamnWidget/anaconda/master/Completion%20Rules.tmPreferences
@@ -73,6 +72,4 @@ Please donate to help keep this project alive.
 [paypal-donate-link]: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=KP7PAHR962UGG&lc=US&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted
 [flatter-image]: https://api.flattr.com/button/flattr-badge-large.png
 [flatter-link]: http://flattr.com/thing/1765332/DamnWidgetanaconda-on-GitHub
-[githalytics-image]: https://cruel-carlota.pagodabox.com/de124b4ffd37f6c0491ee7e4de3ec4cc "githalytics.com"
-[githalytics-link]: http://githalytics.com/DamnWidget/anaconda
 [tooltips-dark-image]: http://damnwidget.github.io/anaconda/img/tooltips.png

@@ -33,7 +33,10 @@ class JediHandler(AnacondaHandler):
         """Handle the result from the call and purge in memory jedi cache
         """
 
-        jedi.cache.clear_time_caches()
+        try:
+            jedi.cache.clear_time_caches()
+        except:
+            jedi.cache.clear_caches()
         self.real_callback(result)
 
     @property

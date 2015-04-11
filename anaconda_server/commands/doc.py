@@ -37,7 +37,7 @@ class Doc(Command):
                 if definition not in processed:
                     docs.append(
                         self._plain(definition) if not self.html
-                            else self._html(definition)
+                        else self._html(definition)
                     )
                     processed.append(definition)
 

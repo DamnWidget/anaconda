@@ -1,0 +1,8 @@
+Changes in 1.4.7
+================
+
+## Fixes
+* Wrap Jedi API call to 'clear_time_caches' into a try, except and fallback to
+  'clear_caches' for users that uses their own Jedi version (old version)
+
+For more detailed information about those changes run git v1.4.6..v1.4.7 on git repository
