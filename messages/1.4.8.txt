@@ -1,0 +1,6 @@
+Changes in 1.4.8
+================
+
+Minor release that just adds a new gutters theme for retina display devices
+
+For more detailed information about those changes run git v1.4.7..v1.4.8 on git repository

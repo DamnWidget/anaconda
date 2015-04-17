@@ -252,9 +252,9 @@
         If anaconda_gutter_marks is true, this determines what theme is used.
         Theme 'basic' only adds dots and circles to gutter.
 
-        Other available themes are 'alpha', 'bright', 'dark', 'hard' and
-        'simple'. To see icons that will be used for each theme check
-        gutter_icon_themes folder in Anaconda package.
+        Other available themes are 'alpha', 'bright', 'dark', 'hard', "retina"
+       (for retina displays) and 'simple'. To see icons that will be used for 
+        each theme check gutter_icon_themes folder in Anaconda package.
     */
     "anaconda_gutter_theme": "basic",
 
