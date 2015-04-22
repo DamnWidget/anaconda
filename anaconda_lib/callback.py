@@ -216,4 +216,4 @@ class Callback(object):
             )
 
         callback = self.callbacks.get(self._status.value, _panic)
-        return callback(*args, **kwargs)
+        return callback and callback(*args, **kwargs)
