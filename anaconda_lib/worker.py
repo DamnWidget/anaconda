@@ -250,6 +250,10 @@ class LocalWorker(BaseWorker):
             self.project_name, str(self.available_port)
         ]
         if paths:
+            for path in paths[:]:
+                # hopefully fixes #341
+                if not os.exists(path):
+                    paths.remove(path)
             args.extend(['-e', ','.join(paths)])
 
         args.extend([str(os.getpid())])
