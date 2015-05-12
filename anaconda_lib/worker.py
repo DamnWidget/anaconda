@@ -252,7 +252,7 @@ class LocalWorker(BaseWorker):
         if paths:
             for path in paths[:]:
                 # hopefully fixes #341
-                if not os.exists(path):
+                if not os.path.exists(path):
                     paths.remove(path)
             args.extend(['-e', ','.join(paths)])
 

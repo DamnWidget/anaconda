@@ -1,0 +1,7 @@
+Changes in 1.4.10
+=================
+
+## Fixes:
+    - Fixed wrong function call in last update, resolves #322
+
+For more detailed information about those changes run git v1.4.9..v1.4.10 on git repository
