@@ -1,0 +1,10 @@
+Changes in 1.4.9
+================
+
+## Fixes:
+    - Fixed linting icon path that was using double slash
+    - Callbacks are now not being called on errors if `on_failure` is not specified
+    - Fixed bug introduced by latest Sublime Text 3 releases that cache not existent
+      project directories in user configuration/environment files BUG  #341
+
+For more detailed information about those changes run git v1.4.8..v1.4.9 on git repository
