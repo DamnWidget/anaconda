@@ -300,7 +300,7 @@ def valid_languages(**kwargs):
     """Return back valid languages for anaconda plugins
     """
 
-    path = os.path.join(os.path.dirname(__file__), '../../')
+    path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)
     languages = [
         f.rsplit('_', 1)[1].lower() for f in os.listdir(path)
         if f.startswith('anaconda_') and 'vagrant' not in f

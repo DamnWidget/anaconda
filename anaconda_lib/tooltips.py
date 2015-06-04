@@ -73,8 +73,8 @@ class Tooltip(object):
         """
 
         template_files_pattern = os.path.join(
-            os.path.dirname(__file__), '../', 'templates', 'tooltips', '*.tpl'
-        )
+            os.path.dirname(__file__), os.pardir,
+            'templates', 'tooltips', '*.tpl')
         for template_file in glob.glob(template_files_pattern):
             with open(template_file, 'r', encoding='utf8') as tplfile:
                 tplname = os.path.basename(template_file).split('.tpl')[0]
@@ -88,7 +88,7 @@ class Tooltip(object):
         """
 
         css_files_pattern = os.path.join(
-            os.path.dirname(__file__), '../', 'css', '*.css')
+            os.path.dirname(__file__), os.pardir, 'css', '*.css')
         for css_file in glob.glob(css_files_pattern):
             logging.info('anaconda: {} css theme loaded'.format(
                 self._load_css(css_file))
