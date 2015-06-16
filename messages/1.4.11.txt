@@ -1,0 +1,13 @@
+Changes in 1.4.11
+=================
+
+## Fixes:
+    - Fixed call to deprecate Jedi goto method in the Script object
+      this partially solves #337
+    - Corrected path names to work correctly on Windows systems
+    - Fixed test_path to use cross-platform path separator
+
+## Updates:
+    - Updated Jedi to 7c4ef73669ce3a85ec61a5846e5979d27b9e28d0
+
+For more detailed information about those changes run git v1.4.10..v1.4.11 on git repository
