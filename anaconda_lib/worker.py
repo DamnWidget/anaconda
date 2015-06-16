@@ -207,8 +207,8 @@ class LocalWorker(BaseWorker):
         """
 
         script_file = os.path.join(
-            os.path.dirname(__file__),
-            '../anaconda_server{}jsonserver.py'.format(os.sep)
+            os.path.dirname(__file__), os.pardir,
+            'anaconda_server', 'jsonserver.py'
         )
 
         view = sublime.active_window().active_view()
@@ -258,7 +258,10 @@ class LocalWorker(BaseWorker):
 
         args.extend([str(os.getpid())])
         kwargs = {}
-        if len(sublime.active_window().folders()) > 0:
+        if (
+            len(sublime.active_window().folders()) > 0 and
+            os.path.exists(sublime.active_window().folders()[0])
+        ):
             kwargs['cwd'] = sublime.active_window().folders()[0]
         self.process = create_subprocess(args, **kwargs)
         if self.process is None:
@@ -414,7 +417,7 @@ class Worker(object):
 
         window_id = sublime.active_window().id()
         with WORKERS_LOCK:
-            if not window_id in WORKERS:
+            if window_id not in WORKERS:
                 try:
                     if self.vagrant_is_active():
                         WORKERS[window_id] = RemoteWorker()

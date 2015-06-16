@@ -16,7 +16,8 @@ class PersistentList(list):
     """Just a persistent list
     """
 
-    _file_path = '{}/../.disabled_views'.format(os.path.dirname(__file__))
+    _file_path = os.path.join(
+        os.path.dirname(__file__), os.pardir, '.disabled_views')
 
     def __init__(self):
 
