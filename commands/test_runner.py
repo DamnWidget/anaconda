@@ -127,7 +127,7 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         """
 
         real_path = os.path.relpath(
-            self.view.file_name(), self.test_root).replace('/', '.')
+            self.view.file_name(), self.test_root).replace(os.sep, '.')
         print(real_path)
         if real_path is not None:
             return real_path[:-3]
