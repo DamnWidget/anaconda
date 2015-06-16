@@ -63,7 +63,7 @@ that are not used are just being ignored.
 import copy
 from itertools import chain
 
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi import debug
 from jedi.evaluate import representation as er
 from jedi.evaluate import imports
@@ -82,11 +82,26 @@ class Evaluator(object):
     def __init__(self, grammar):
         self.grammar = grammar
         self.memoize_cache = {}  # for memoize decorators
-        self.import_cache = {}  # like `sys.modules`.
+        # To memorize modules -> equals `sys.modules`.
+        self.modules = {}  # like `sys.modules`.
         self.compiled_cache = {}  # see `compiled.create()`
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector()
         self.analysis = []
+
+    def wrap(self, element):
+        if isinstance(element, tree.Class):
+            return er.Class(self, element)
+        elif isinstance(element, tree.Function):
+            if isinstance(element, tree.Lambda):
+                return er.LambdaWrapper(self, element)
+            else:
+                return er.Function(self, element)
+        elif isinstance(element, (tree.Module)) \
+                and not isinstance(element, er.ModuleWrapper):
+            return er.ModuleWrapper(self, element)
+        else:
+            return element
 
     def find_types(self, scope, name_str, position=None, search_global=False,
                    is_goto=False):
@@ -114,7 +129,7 @@ class Evaluator(object):
         names are defined in the statement, `seek_name` returns the result for
         this name.
 
-        :param stmt: A `pr.ExprStmt`.
+        :param stmt: A `tree.ExprStmt`.
         """
         debug.dbg('eval_statement %s (%s)', stmt, seek_name)
         types = self.eval_element(stmt.get_rhs())
@@ -128,9 +143,9 @@ class Evaluator(object):
             operator = copy.copy(first_operation)
             operator.value = operator.value[:-1]
             name = str(stmt.get_defined_names()[0])
-            parent = er.wrap(self, stmt.get_parent_scope())
+            parent = self.wrap(stmt.get_parent_scope())
             left = self.find_types(parent, name, stmt.start_pos, search_global=True)
-            if isinstance(stmt.get_parent_until(pr.ForStmt), pr.ForStmt):
+            if isinstance(stmt.get_parent_until(tree.ForStmt), tree.ForStmt):
                 # Iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
                 # predictable.
@@ -150,15 +165,15 @@ class Evaluator(object):
             return iterable.unite(self.eval_element(e) for e in element)
 
         debug.dbg('eval_element %s@%s', element, element.start_pos)
-        if isinstance(element, (pr.Name, pr.Literal)) or pr.is_node(element, 'atom'):
+        if isinstance(element, (tree.Name, tree.Literal)) or tree.is_node(element, 'atom'):
             return self._eval_atom(element)
-        elif isinstance(element, pr.Keyword):
+        elif isinstance(element, tree.Keyword):
             # For False/True/None
             if element.value in ('False', 'True', 'None'):
                 return [compiled.builtin.get_by_name(element.value)]
             else:
                 return []
-        elif element.isinstance(pr.Lambda):
+        elif element.isinstance(tree.Lambda):
             return [er.LambdaWrapper(self, element)]
         elif element.isinstance(er.LambdaWrapper):
             return [element]  # TODO this is no real evaluation.
@@ -202,24 +217,24 @@ class Evaluator(object):
         generate the node (because it has just one child). In that case an atom
         might be a name or a literal as well.
         """
-        if isinstance(atom, pr.Name):
+        if isinstance(atom, tree.Name):
             # This is the first global lookup.
             stmt = atom.get_definition()
-            scope = stmt.get_parent_until(pr.IsScope, include_current=True)
-            if isinstance(stmt, pr.CompFor):
-                stmt = stmt.get_parent_until((pr.ClassOrFunc, pr.ExprStmt))
+            scope = stmt.get_parent_until(tree.IsScope, include_current=True)
+            if isinstance(stmt, tree.CompFor):
+                stmt = stmt.get_parent_until((tree.ClassOrFunc, tree.ExprStmt))
             if stmt.type != 'expr_stmt':
                 # We only need to adjust the start_pos for statements, because
                 # there the name cannot be used.
                 stmt = atom
             return self.find_types(scope, atom, stmt.start_pos, search_global=True)
-        elif isinstance(atom, pr.Literal):
+        elif isinstance(atom, tree.Literal):
             return [compiled.create(self, atom.eval())]
         else:
             c = atom.children
             # Parentheses without commas are not tuples.
             if c[0] == '(' and not len(c) == 2 \
-                    and not(pr.is_node(c[1], 'testlist_comp')
+                    and not(tree.is_node(c[1], 'testlist_comp')
                             and len(c[1].children) > 1):
                 return self.eval_element(c[1])
             try:
@@ -227,7 +242,7 @@ class Evaluator(object):
             except (IndexError, AttributeError):
                 pass
             else:
-                if isinstance(comp_for, pr.CompFor):
+                if isinstance(comp_for, tree.CompFor):
                     return [iterable.Comprehension.from_atom(self, atom)]
             return [iterable.Array(self, atom)]
 
@@ -300,7 +315,8 @@ class Evaluator(object):
                     s = imports.ImportWrapper(self, name)
                     for n in s.follow(is_goto=True):
                         yield n
-                yield name
+                else:
+                    yield name
 
         stmt = name.get_definition()
         par = name.parent
@@ -328,14 +344,15 @@ class Evaluator(object):
                         param_names += [param.name for param in params
                                         if param.name.value == name.value]
                 return param_names
-        elif isinstance(par, pr.ExprStmt) and name in par.get_defined_names():
+        elif isinstance(par, tree.ExprStmt) and name in par.get_defined_names():
             # Only take the parent, because if it's more complicated than just
             # a name it's something you can "goto" again.
             return [name]
-        elif isinstance(par, (pr.Param, pr.Function, pr.Class)) and par.name is name:
+        elif isinstance(par, (tree.Param, tree.Function, tree.Class)) and par.name is name:
             return [name]
-        elif isinstance(stmt, pr.Import):
-            return imports.ImportWrapper(self, name).follow(is_goto=True)
+        elif isinstance(stmt, tree.Import):
+            modules = imports.ImportWrapper(self, name).follow(is_goto=True)
+            return list(resolve_implicit_imports(modules))
         elif par.type == 'dotted_name':  # Is a decorator.
             index = par.children.index(name)
             if index > 0:
@@ -347,7 +364,7 @@ class Evaluator(object):
                 ))
 
         scope = name.get_parent_scope()
-        if pr.is_node(name.parent, 'trailer'):
+        if tree.is_node(name.parent, 'trailer'):
             call = helpers.call_of_name(name, cut_own_trailer=True)
             types = self.eval_element(call)
             return resolve_implicit_imports(iterable.unite(

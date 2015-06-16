@@ -74,6 +74,9 @@ class CompiledObject(Base):
     def py__bool__(self):
         return bool(self.obj)
 
+    def py__file__(self):
+        return self.obj.__file__
+
     def is_class(self):
         return inspect.isclass(self.obj)
 
@@ -85,6 +88,8 @@ class CompiledObject(Base):
     def params(self):
         params_str, ret = self._parse_function_doc()
         tokens = params_str.split(',')
+        if inspect.ismethoddescriptor(self._cls().obj):
+            tokens.insert(0, 'self')
         params = []
         for p in tokens:
             parts = [FakeName(part) for part in p.strip().split('=')]
@@ -313,6 +318,10 @@ def dotted_from_fs_path(fs_path, sys_path=None):
     if sys_path is None:
         sys_path = get_sys_path()
 
+    if os.path.basename(fs_path).startswith('__init__.'):
+        # We are calculating the path. __init__ files are not interesting.
+        fs_path = os.path.dirname(fs_path)
+
     # prefer
     #   - UNIX
     #     /path/to/pythonX.Y/lib-dynload
@@ -332,7 +341,7 @@ def dotted_from_fs_path(fs_path, sys_path=None):
     return _path_re.sub('', fs_path[len(path):].lstrip(os.path.sep)).replace(os.path.sep, '.')
 
 
-def load_module(path, name):
+def load_module(path=None, name=None):
     if path is not None:
         dotted_path = dotted_from_fs_path(path)
     else:
@@ -357,10 +366,13 @@ def load_module(path, name):
         # If a module is "corrupt" or not really a Python module or whatever.
         debug.warning('Module %s not importable.', path)
         return None
+    finally:
+        sys.path = temp
+
     # Just access the cache after import, because of #59 as well as the very
     # complicated import structure of Python.
     module = sys.modules[dotted_path]
-    sys.path = temp
+
     return CompiledObject(module)
 
 

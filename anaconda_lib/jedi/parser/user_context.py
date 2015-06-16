@@ -7,7 +7,7 @@ from jedi import common
 from jedi.parser import tokenize, Parser
 from jedi._compatibility import u
 from jedi.parser.fast import FastParser
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi import debug
 from jedi.common import PushBackIterator
 
@@ -104,7 +104,8 @@ class UserContext(object):
                 # The same is true for string prefixes -> represented as a
                 # combination of string and name.
                 if tok_type == tokenize.NUMBER and tok_str[-1] == '.' \
-                        or tok_type == tokenize.NAME and last_type == tokenize.STRING:
+                        or tok_type == tokenize.NAME and last_type == tokenize.STRING \
+                        and tok_str.lower() in ('b', 'u', 'r', 'br', 'ur'):
                     force_point = False
                 else:
                     break
@@ -266,13 +267,14 @@ class UserContext(object):
 
 class UserContextParser(object):
     def __init__(self, grammar, source, path, position, user_context,
-                 use_fast_parser=True):
+                 parser_done_callback, use_fast_parser=True):
         self._grammar = grammar
         self._source = source
         self._path = path and os.path.abspath(path)
         self._position = position
         self._user_context = user_context
         self._use_fast_parser = use_fast_parser
+        self._parser_done_callback = parser_done_callback
 
     @cache.underscore_memoization
     def _parser(self):
@@ -280,9 +282,10 @@ class UserContextParser(object):
         if self._use_fast_parser:
             parser = FastParser(self._grammar, self._source, self._path)
             # Don't pickle that module, because the main module is changing quickly
-            cache.save_parser(self._path, None, parser, pickling=False)
+            cache.save_parser(self._path, parser, pickling=False)
         else:
             parser = Parser(self._grammar, self._source, self._path)
+        self._parser_done_callback(parser)
         return parser
 
     @cache.underscore_memoization
@@ -321,8 +324,8 @@ class UserContextParser(object):
             def scan(scope):
                 for s in scope.children:
                     if s.start_pos <= self._position <= s.end_pos:
-                        if isinstance(s, (pr.Scope, pr.Flow)):
-                                if isinstance(s, pr.Flow):
+                        if isinstance(s, (tree.Scope, tree.Flow)):
+                                if isinstance(s, tree.Flow):
                                     return s
                                 return scan(s) or s
                         elif s.type in ('suite', 'decorated'):
