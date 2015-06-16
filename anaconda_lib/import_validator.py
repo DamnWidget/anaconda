@@ -48,7 +48,8 @@ class Validator:
                 continue
 
             offset = module_line.find(word) + len(word) / 2
-            if not Script(module_line, 1, offset, self.filename).goto():
+            if not Script(
+                    module_line, 1, offset, self.filename).goto_assignments():
                 if valid is True:
                     valid = False
                 error.append(word)
