@@ -28,6 +28,9 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
         """Called after changes has been made to a view
         """
 
+        if view.command_history(0)[0] in ("expand_tabs", "unexpand_tabs"):
+            return
+
         if not is_python(view) or not get_settings(view, 'display_signatures'):
             return
 
