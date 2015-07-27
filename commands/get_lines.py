@@ -49,7 +49,7 @@ class AnacondaGetLines(sublime_plugin.WindowCommand):
     def _harvest_errors(self, harvester, error_type):
         vid = self.window.active_view().id()
         for line, error_strings in ANACONDA[error_type].get(vid, {}).items():
-            if not line in harvester:
+            if line not in harvester:
                 harvester[line] = []
 
             for error in error_strings:

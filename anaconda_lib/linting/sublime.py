@@ -5,6 +5,7 @@
 import os
 import re
 import time
+from functools import partial
 
 import sublime
 
@@ -298,7 +299,7 @@ def get_lineno_msgs(view, lineno):
     return errors_msg
 
 
-def run_linter(view=None):
+def run_linter(view=None, hook=None):
     """Run the linter for the given view
     """
 
@@ -339,7 +340,10 @@ def run_linter(view=None):
         'handler': 'python_linter'
     }
 
-    Worker().execute(Callback(on_success=parse_results), **data)
+    if hook is None:
+        Worker().execute(Callback(on_success=parse_results), **data)
+    else:
+        Worker().execute(Callback(partial(hook, parse_results)), **data)
 
 
 def parse_results(data, code='python'):

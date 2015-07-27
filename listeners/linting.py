@@ -92,12 +92,20 @@ class BackgroundLinter(sublime_plugin.EventListener):
         if check_linting(
                 view, NOT_SCRATCH | LINTING_ENABLED, code=self.lang.lower()):
             if self.lang in view.settings().get('syntax'):
-                self.run_linter(view)
                 if get_settings(
                         view, "anaconda_linter_show_errors_on_save", False):
-                    sublime.active_window().run_command('anaconda_get_lines')
+                    self.run_linter(view, self._show_errors_list)
+                else:
+                    self.run_linter(view)
         else:
             self._erase_marks_if_no_linting(view)
+
+    def _show_errors_list(self, parse_results, data):
+        """Hook the parser_results callback and append some functions
+        """
+
+        parse_results(data)
+        sublime.active_window().run_command('anaconda_get_lines')
 
     def on_activated(self, view):
         """Called when a view gain the focus
