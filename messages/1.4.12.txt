@@ -1,0 +1,9 @@
+Changes in 1.4.12
+=================
+
+## Fixes:
+    - Fixed #334 - Test runner: command separator isn't cross-platform
+    - Fixed #339 - anaconda_linter_show_errors_on_save is using old buffer
+    - Fixed #344 - docstring tooltip is sometimes shown on save
+
+For more detailed information about those changes run git log v1.4.11..v1.4.12 on git repository
