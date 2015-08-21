@@ -48,10 +48,12 @@ class TestMethodMatcher(object):
         """Try to find the test path, returns None if can't be found
         """
 
-        test_method = self.find_test_method(test_file_content)
-        if test_method is not None:
-            test_class = self.find_test_class(test_file_content)
-            return delimeter + test_class + "." + test_method
+        test_class = self.find_test_class(test_file_content)
+        if test_class is not None:
+            test_method = self.find_test_method(test_file_content)
+            if test_method is not None:
+                return delimeter + test_class + "." + test_method
+            return delimeter + test_class
 
     def find_test_method(self, test_file_content):
         """Try to find the test method, returns None if can't be found
