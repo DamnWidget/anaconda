@@ -39,6 +39,9 @@ Your Sublime Text can't find the interpreter that you set in your configuration,
 Sublime Text 3's default Python package cancels the auto-completion when some words are detected (for example `def` or `class`). This list of words includes `import`.
 
 **Work-around**: Create a new Python directory in your Packages directory and copy the contents of the file [Completion Rules.tmPreferences][Completion-Rules] there with the same name.
+Delete your Sublime Text Cache file `Cache/Python/Completion Rules.tmPreferences.cache`.
+
+**NOTE**: The cache path can be optained from the Sublime TExt 3 console using the code `sublime.cache_path()`
 
 #### Auto-complete drop-down shows up incorrectly.
 SublimeCodeIntel interferes with anaconda's auto-completion.
