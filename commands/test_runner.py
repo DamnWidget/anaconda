@@ -48,8 +48,9 @@ class TestMethodMatcher(object):
         """Try to find the test path, returns None if can't be found
         """
 
-        test_class, pos = self.find_test_class(test_file_content)
-        if test_class is not None:
+        test_class_pos = self.find_test_class(test_file_content)
+        if test_class_pos is not None:
+            test_class, pos = test_class_pos
             test_method = self.find_test_method(test_file_content[pos:])
             if test_method is not None:
                 return delimeter + test_class + "." + test_method
@@ -71,7 +72,6 @@ class TestMethodMatcher(object):
         match_classes = [
             (m.group(1), m.end()) for m in
                 re.finditer(r'\s?class\s+(\w+)\s?\(', test_file_content)]
-        print(match_classes)
         if match_classes:
             try:
                 return [
