@@ -1,0 +1,8 @@
+Changes in 1.4.13
+=================
+
+## Changes:
+    - When the cursor is in a test case class definition line, command "run test under the cursor" runs all tests in this test case
+    - Removed key bindings that conlfict with vintage mode
+
+For more detailed information about those changes run git log v1.4.12..v1.4.13 on git repository
