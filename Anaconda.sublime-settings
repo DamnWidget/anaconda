@@ -181,7 +181,7 @@
     "auto_formatting": false,
 
     /*
-        TImeout for the autoformatting tool before fail
+        Timeout for the autoformatting tool before fail
         Note: Take into account that depending on the size of the file you
         want to autoformat, this can take a while
     */
@@ -391,7 +391,7 @@
             - If this option is set to something different than false,
               pylint_ignore will be silently ignored
 
-            **** WARNING ****
+        **** WARNING ****
     */
     "pylint_rcfile": false,
 
