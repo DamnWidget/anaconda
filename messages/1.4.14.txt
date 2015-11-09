@@ -1,0 +1,8 @@
+Changes in 1.4.14
+=================
+
+## Changes:
+    - Updated PyFlakes to version 1.0.0 to support Python 3.5 syntax
+    - Fixed vagrant_server branch, contribution made by @tanenbaum
+
+For more detailed information about those changes run git log v1.4.13..v1.4.14 on git repository
