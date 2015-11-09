@@ -11,7 +11,7 @@ class Doc(Command):
     """Get back a python definition where to go
     """
 
-    def __init__(self, callback, uid, script, html):
+    def __init__(self, callback, uid, script, html=None):
         self.script = script
         self.html = html
         super(Doc, self).__init__(callback, uid)
