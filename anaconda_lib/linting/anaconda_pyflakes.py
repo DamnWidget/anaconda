@@ -99,7 +99,6 @@ class PyFlakesLinter(linter.Linter):
                     pyflakes.messages.UndefinedName,
                     pyflakes.messages.UndefinedExport,
                     pyflakes.messages.UndefinedLocal,
-                    pyflakes.messages.Redefined,
                     pyflakes.messages.UnusedVariable)) and
                     error.__class__.__name__ not in explicit_ignore):
 
