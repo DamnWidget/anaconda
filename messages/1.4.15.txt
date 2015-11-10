@@ -1,0 +1,7 @@
+Changes in 1.4.15
+=================
+
+## Fixes:
+    - Removed unused error class in PyFlakes, resolves #397
+
+For more detailed information about those changes run git log v1.4.14..v1.4.15 on git repository
