@@ -54,11 +54,13 @@ class PyFlakesLinter(linter.Linter):
 
         try:
             code = code.encode('utf8') + b'\n'
-            tree = compile(code, filename or '', 'exec', _ast.PyCF_ONLY_AST)
+            tree = compile(
+                code, filename.encode('utf8') or '', 'exec', _ast.PyCF_ONLY_AST
+            )
         except (SyntaxError, IndentationError):
             return self._handle_syntactic_error(code, filename)
         except ValueError as error:
-            return [PyFlakesError(filename, FakeLoc(), error.args[0])]
+            return [PyFlakesError(filename, FakeLoc(), 'E', error.args[0]), []]
         else:
             # the file is syntactically valid, check it now
             w = pyflakes.Checker(tree, filename, ignore)
