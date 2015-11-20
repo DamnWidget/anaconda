@@ -7,7 +7,8 @@ import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.helpers import (
-    prepare_send_data, get_settings, active_view, is_python
+    prepare_send_data, get_settings, active_view, is_python,
+    completion_is_disabled
 )
 from ..anaconda_lib.decorators import profile
 
@@ -27,6 +28,9 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
         """
 
         if not is_python(view, autocomplete_ignore_repl=True):
+            return
+
+        if completion_is_disabled(view):
             return
 
         global JUST_COMPLETED

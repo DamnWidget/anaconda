@@ -33,6 +33,16 @@ LINTING_ENABLED = 0x04
 ENVIRON_HOOK_INVALID = defaultdict(lambda: False)
 
 
+def completion_is_disabled(view):
+    """Determine if the anaconda completion is disabled or not
+    """
+
+    if view is None:
+        return False
+
+    return get_settings(view, "disable_anaconda_completion", False)
+
+
 def is_code(view, lang='python', ignore_comments=False, ignore_repl=False):
     """Determine if the given view location is `lang` code
     """
