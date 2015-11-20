@@ -1,0 +1,14 @@
+Changes in 1.4.16
+=================
+
+## Fixes:
+    - Avoid collision with Ubuntu Unity keybindings. Resolves #378
+    - Tried to resolve #399, I can't reproduce myself so let's have some hope here
+
+## Updates:
+    - pep8 updated to 1.6.2
+
+## Features:
+    - Added setting to disable the autocompletion, resolves #379
+
+For more detailed information about those changes run git log v1.4.15..v1.4.16 on git repository
