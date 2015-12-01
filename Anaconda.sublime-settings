@@ -204,9 +204,12 @@
 
     /*
         Do not fix the errors listed here:
+        Note: By default we ignore E309 as this is not pep8 but it does
+        conflict with pep257 D211.
     */
     "autoformat_ignore":
     [
+        "E309"
     ],
 
     /*
@@ -321,9 +324,11 @@
         A list of pep8 error numbers to ignore.
         The list of error codes is in this file: https://github.com/jcrocholl/pep8/blob/master/pep8.py.
         Search for "Ennn:", where nnn is a 3-digit number.
+        E309 is ignored by default as it conflicts with pep257 E211
     */
     "pep8_ignore":
     [
+        "E309"
     ],
 
     // Maximum line length for pep8
@@ -351,9 +356,12 @@
         The list can be found here: https://github.com/GreenSteam/pep257/#error-codes
         D209 Multi-line docstring should end with 1 blank line is ignored by
         default as it has been deprecated.
+        D203 1 blank line before class docstring is ignored by default as it has been
+        deprecated.
     */
     "pep257_ignore":
     [
+        "D203",
         "D209"
     ],
 
