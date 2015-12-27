@@ -55,13 +55,15 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
         show_tooltip = get_settings(view, 'enable_signatures_tooltip', True)
         show_doc = get_settings(view, 'merge_signatures_and_doc', True)
         if data['success'] and 'No docstring' not in data['doc']:
+            i = data['doc'].split('<br>').index("")
             if show_tooltip and show_doc and st_version >= 3070:
-                self.doc = '<br>'.join(data['doc'].split('<br>')[2:])
+                self.doc = '<br>'.join(data['doc'].split('<br>')[i:])
 
             if not show_tooltip or st_version < 3070:
                 self.signature = data['doc'].splitlines()[2]
             else:
-                self.signature = data['doc'].split('<br>')[0]
+                self.signature = '<br>&nbsp;&nbsp;&nbsp;&nbsp;'.join(
+                    data['doc'].split('<br>')[0:i])
             if ('(' in self.signature and
                     self.signature.split('(')[0].strip() not in self.exclude):
                 if self.signature is not None and self.signature != '':
