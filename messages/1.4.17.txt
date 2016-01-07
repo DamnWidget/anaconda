@@ -1,0 +1,14 @@
+Changes in 1.4.17
+=================
+
+## Fixes:
+    - Some fixes for tooltip. Resolves #412, possibly #417?
+    -
+
+## Updates:
+    - pep257 updated to 0.7.0
+
+## Features:
+    - Previewing found token usages on quick panel item highlight
+
+For more detailed information about those changes run git log v1.4.16..v1.4.17 on git repository

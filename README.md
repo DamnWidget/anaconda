@@ -1,7 +1,6 @@
 # Anaconda
 Anaconda turns your Sublime Text 3 into a full featured Python IDE. Read the plugin documentation on [http://damnwidget.github.io/anaconda](http://damnwidget.github.io/anaconda).
 
-[![Book Status](https://www.gitbook.io/button/status/book/damnwidget/anacondast3-developers-documentation)](https://www.gitbook.io/book/damnwidget/anacondast3-developers-documentation/activity)
 
 ## Getting Started
 Anaconda works out of the box but there are multitude of options and features that you can tune and adapt to your own style or needs.
