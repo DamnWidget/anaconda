@@ -15,18 +15,20 @@ from __future__ import with_statement
 
 import os
 import sys
+import copy
 import logging
 import tokenize as tk
 from itertools import takewhile, dropwhile, chain
-from optparse import OptionParser
 from re import compile as re
+import itertools
+from collections import defaultdict, namedtuple, Set
+
 try:  # Python 3.x
     from ConfigParser import RawConfigParser
 except ImportError:  # Python 2.x
     from configparser import RawConfigParser
 
-log = logging.getLogger()
-log.setLevel(logging.DEBUG)
+log = logging.getLogger(__name__)
 
 
 try:
@@ -50,33 +52,66 @@ except NameError:  # Python 2.5 and earlier
                 return default
 
 
-__version__ = '0.4.0'
+# If possible (python >= 3.2) use tokenize.open to open files, so PEP 263
+# encoding markers are interpreted.
+try:
+    tokenize_open = tk.open
+except AttributeError:
+    tokenize_open = open
+
+
+__version__ = '0.7.0'
 __all__ = ('check', 'collect')
 
-PROJECT_CONFIG = ('setup.cfg', 'tox.ini', '.pep257')
+NO_VIOLATIONS_RETURN_CODE = 0
+VIOLATIONS_RETURN_CODE = 1
+INVALID_OPTIONS_RETURN_CODE = 2
+VARIADIC_MAGIC_METHODS = ('__init__', '__call__', '__new__')
 
-humanize = lambda string: re(r'(.)([A-Z]+)').sub(r'\1 \2', string).lower()
-is_magic = lambda name: name.startswith('__') and name.endswith('__')
-is_ascii = lambda string: all(ord(char) < 128 for char in string)
-is_blank = lambda string: not string.strip()
-leading_space = lambda string: re('\s*').match(string).group()
+
+def humanize(string):
+    return re(r'(.)([A-Z]+)').sub(r'\1 \2', string).lower()
+
+
+def is_magic(name):
+    return (name.startswith('__') and
+            name.endswith('__') and
+            name not in VARIADIC_MAGIC_METHODS)
+
+
+def is_ascii(string):
+    return all(ord(char) < 128 for char in string)
+
+
+def is_blank(string):
+    return not string.strip()
+
+
+def leading_space(string):
+    return re('\s*').match(string).group()
 
 
 class Value(object):
 
-    __init__ = lambda self, *args: vars(self).update(zip(self._fields, args))
-    __hash__ = lambda self: hash(repr(self))
-    __eq__ = lambda self, other: other and vars(self) == vars(other)
+    def __init__(self, *args):
+        vars(self).update(zip(self._fields, args))
+
+    def __hash__(self):
+        return hash(repr(self))
+
+    def __eq__(self, other):
+        return other and vars(self) == vars(other)
 
     def __repr__(self):
-        format_arg = lambda arg: '{}={!r}'.format(arg, getattr(self, arg))
-        kwargs = ', '.join(format_arg(arg) for arg in self._fields)
-        return '{}({})'.format(self.__class__.__name__, kwargs)
+        kwargs = ', '.join('{0}={1!r}'.format(field, getattr(self, field))
+                           for field in self._fields)
+        return '{0}({1})'.format(self.__class__.__name__, kwargs)
 
 
 class Definition(Value):
 
-    _fields = 'name _source start end docstring children parent'.split()
+    _fields = ('name', '_source', 'start', 'end', 'decorators', 'docstring',
+               'children', 'parent')
 
     _human = property(lambda self: humanize(type(self).__name__))
     kind = property(lambda self: self._human.split()[-1])
@@ -84,7 +119,9 @@ class Definition(Value):
     all = property(lambda self: self.module.all)
     _slice = property(lambda self: slice(self.start - 1, self.end))
     source = property(lambda self: ''.join(self._source[self._slice]))
-    __iter__ = lambda self: chain([self], *self.children)
+
+    def __iter__(self):
+        return chain([self], *self.children)
 
     @property
     def _publicity(self):
@@ -96,12 +133,19 @@ class Definition(Value):
 
 class Module(Definition):
 
-    _fields = 'name _source start end docstring children parent _all'.split()
+    _fields = ('name', '_source', 'start', 'end', 'decorators', 'docstring',
+               'children', 'parent', '_all', 'future_imports')
     is_public = True
     _nest = staticmethod(lambda s: {'def': Function, 'class': Class}[s])
     module = property(lambda self: self)
     all = property(lambda self: self._all)
-    __str__ = lambda self: 'at module level'
+
+    def __str__(self):
+        return 'at module level'
+
+
+class Package(Module):
+    """A package is a __init__.py module."""
 
 
 class Function(Definition):
@@ -113,8 +157,8 @@ class Function(Definition):
     def is_public(self):
         if self.all is not None:
             return self.name in self.all
-        else:  # TODO: are there any magic functions? not methods
-            return not self.name.startswith('_') or is_magic(self.name)
+        else:
+            return not self.name.startswith('_')
 
 
 class NestedFunction(Function):
@@ -126,7 +170,14 @@ class Method(Function):
 
     @property
     def is_public(self):
-        name_is_public = not self.name.startswith('_') or is_magic(self.name)
+        # Check if we are a setter/deleter method, and mark as private if so.
+        for decorator in self.decorators:
+            # Given 'foo', match 'foo.bar' but not 'foobar' or 'sfoo'
+            if re(r"^{0}\.".format(self.name)).match(decorator.name):
+                return False
+        name_is_public = (not self.name.startswith('_') or
+                          self.name in VARIADIC_MAGIC_METHODS or
+                          is_magic(self.name))
         return self.parent.is_public and name_is_public
 
 
@@ -141,9 +192,15 @@ class NestedClass(Class):
     is_public = False
 
 
+class Decorator(Value):
+    """A decorator for function, method or class."""
+
+    _fields = 'name arguments'.split()
+
+
 class TokenKind(int):
     def __repr__(self):
-        return "tk.{}".format(tk.tok_name[self])
+        return "tk.{0}".format(tk.tok_name[self])
 
 
 class Token(Value):
@@ -197,6 +254,8 @@ class Parser(object):
         self.stream = TokenStream(StringIO(src))
         self.filename = filename
         self.all = None
+        self.future_imports = defaultdict(lambda: False)
+        self._accumulated_decorators = []
         return self.parse_module()
 
     current = property(lambda self: self.stream.current)
@@ -232,6 +291,49 @@ class Parser(object):
             return docstring
         return None
 
+    def parse_decorators(self):
+        """Called after first @ is found.
+
+        Parse decorators into self._accumulated_decorators.
+        Continue to do so until encountering the 'def' or 'class' start token.
+        """
+        name = []
+        arguments = []
+        at_arguments = False
+
+        while self.current is not None:
+            if (self.current.kind == tk.NAME and
+                    self.current.value in ['def', 'class']):
+                # Done with decorators - found function or class proper
+                break
+            elif self.current.kind == tk.OP and self.current.value == '@':
+                # New decorator found. Store the decorator accumulated so far:
+                self._accumulated_decorators.append(
+                    Decorator(''.join(name), ''.join(arguments)))
+                # Now reset to begin accumulating the new decorator:
+                name = []
+                arguments = []
+                at_arguments = False
+            elif self.current.kind == tk.OP and self.current.value == '(':
+                at_arguments = True
+            elif self.current.kind == tk.OP and self.current.value == ')':
+                # Ignore close parenthesis
+                pass
+            elif self.current.kind == tk.NEWLINE or self.current.kind == tk.NL:
+                # Ignore newlines
+                pass
+            else:
+                # Keep accumulating current decorator's name or argument.
+                if not at_arguments:
+                    name.append(self.current.value)
+                else:
+                    arguments.append(self.current.value)
+            self.stream.move()
+
+        # Add decorator accumulated so far
+        self._accumulated_decorators.append(
+            Decorator(''.join(name), ''.join(arguments)))
+
     def parse_definitions(self, class_, all=False):
         """Parse multiple defintions and yield them."""
         while self.current is not None:
@@ -239,6 +341,9 @@ class Parser(object):
                       self.current.kind, self.current.value)
             if all and self.current.value == '__all__':
                 self.parse_all()
+            elif self.current.kind == tk.OP and self.current.value == '@':
+                self.consume(tk.OP)
+                self.parse_decorators()
             elif self.current.value in ['def', 'class']:
                 yield self.parse_definition(class_._nest(self.current.value))
             elif self.current.kind == tk.INDENT:
@@ -248,6 +353,8 @@ class Parser(object):
             elif self.current.kind == tk.DEDENT:
                 self.consume(tk.DEDENT)
                 return
+            elif self.current.value == 'from':
+                self.parse_from_import_statement()
             else:
                 self.stream.move()
 
@@ -282,7 +389,8 @@ class Parser(object):
                   self.current.value == ','):
                 all_content += self.current.value
             else:
-                raise AllError('Could not evaluate contents of __all__. ')
+                kind = token.tok_name[self.current.kind]
+                raise AllError('Unexpected token kind in  __all__: %s' % kind)
             self.stream.move()
         self.consume(tk.OP)
         all_content += ")"
@@ -301,10 +409,14 @@ class Parser(object):
         children = list(self.parse_definitions(Module, all=True))
         assert self.current is None, self.current
         end = self.line
-        module = Module(self.filename, self.source, start, end,
-                        docstring, children, None, self.all)
+        cls = Module
+        if self.filename.endswith('__init__.py'):
+            cls = Package
+        module = cls(self.filename, self.source, start, end,
+                     [], docstring, children, None, self.all)
         for child in module.children:
             child.parent = module
+        module.future_imports = self.future_imports
         log.debug("finished parsing module.")
         return module
 
@@ -334,17 +446,20 @@ class Parser(object):
             self.leapfrog(tk.INDENT)
             assert self.current.kind != tk.INDENT
             docstring = self.parse_docstring()
+            decorators = self._accumulated_decorators
+            self._accumulated_decorators = []
             log.debug("parsing nested defintions.")
             children = list(self.parse_definitions(class_))
             log.debug("finished parsing nested defintions for '%s'", name)
             end = self.line - 1
         else:  # one-liner definition
             docstring = self.parse_docstring()
+            decorators = []  # TODO
             children = []
             end = self.line
             self.leapfrog(tk.NEWLINE)
         definition = class_(name, self.source, start, end,
-                            docstring, children, None)
+                            decorators, docstring, children, None)
         for child in definition.children:
             child.parent = definition
         log.debug("finished parsing %s '%s'. Next token is %r (%s)",
@@ -352,22 +467,75 @@ class Parser(object):
                   self.current.value)
         return definition
 
+    def parse_from_import_statement(self):
+        """Parse a 'from x import y' statement.
+
+        The purpose is to find __future__ statements.
+
+        """
+        log.debug('parsing from/import statement.')
+        assert self.current.value == 'from', self.current.value
+        self.stream.move()
+        if self.current.value != '__future__':
+            return
+        self.stream.move()
+        assert self.current.value == 'import', self.current.value
+        self.stream.move()
+        if self.current.value == '(':
+            self.consume(tk.OP)
+            expected_end_kind = tk.OP
+        else:
+            expected_end_kind = tk.NEWLINE
+        while self.current.kind != expected_end_kind:
+            if self.current.kind != tk.NAME:
+                self.stream.move()
+                continue
+            log.debug("parsing import, token is %r (%s)",
+                      self.current.kind, self.current.value)
+            log.debug('found future import: %s', self.current.value)
+            self.future_imports[self.current.value] = True
+            self.consume(tk.NAME)
+            log.debug("parsing import, token is %r (%s)",
+                      self.current.kind, self.current.value)
+            if self.current.kind == tk.NAME:
+                self.consume(tk.NAME)  # as
+                self.consume(tk.NAME)  # new name, irrelevant
+            if self.current.value == ',':
+                self.consume(tk.OP)
+            log.debug("parsing import, token is %r (%s)",
+                      self.current.kind, self.current.value)
+
 
 class Error(object):
-
     """Error in docstring style."""
+
+    # should be overridden by inheriting classes
+    code = None
+    short_desc = None
+    context = None
 
     # Options that define how errors are printed:
     explain = False
     source = False
 
-    def __init__(self, message=None, final=False):
-        self.message, self.is_final = message, final
-        self.definition, self.explanation = [None, None]
+    def __init__(self, *parameters):
+        self.parameters = parameters
+        self.definition = None
+        self.explanation = None
 
-    code = property(lambda self: self.message.partition(':')[0])
+    def set_context(self, definition, explanation):
+        self.definition = definition
+        self.explanation = explanation
+
     filename = property(lambda self: self.definition.module.name)
     line = property(lambda self: self.definition.start)
+
+    @property
+    def message(self):
+        ret = '%s: %s' % (self.code, self.short_desc)
+        if self.context is not None:
+            ret += ' (' + self.context % self.parameters + ')'
+        return ret
 
     @property
     def lines(self):
@@ -408,79 +576,646 @@ class Error(object):
         return (self.filename, self.line) < (other.filename, other.line)
 
 
-def get_option_parser():
-    parser = OptionParser(version=__version__,
-                          usage='Usage: pep257 [options] [<file|dir>...]')
-    parser.config_options = ('explain', 'source', 'ignore', 'match',
-                             'match-dir', 'debug', 'verbose', 'count')
-    option = parser.add_option
-    option('-e', '--explain', action='store_true',
-           help='show explanation of each error')
-    option('-s', '--source', action='store_true',
-           help='show source for each error')
-    option('--ignore', metavar='<codes>', default='',
-           help='ignore a list comma-separated error codes, '
-                'for example: --ignore=D101,D202')
-    option('--match', metavar='<pattern>', default='(?!test_).*\.py',
-           help="check only files that exactly match <pattern> regular "
-                "expression; default is --match='(?!test_).*\.py' which "
-                "matches files that don't start with 'test_' but end with "
-                "'.py'")
-    option('--match-dir', metavar='<pattern>', default='[^\.].*',
-           help="search only dirs that exactly match <pattern> regular "
-                "expression; default is --match-dir='[^\.].*', which matches "
-                "all dirs that don't start with a dot")
-    option('-d', '--debug', action='store_true',
-           help='print debug information')
-    option('-v', '--verbose', action='store_true',
-           help='print status information')
-    option('--count', action='store_true',
-           help='print total number of errors to stdout')
-    return parser
+class ErrorRegistry(object):
+    groups = []
+
+    class ErrorGroup(object):
+
+        def __init__(self, prefix, name):
+            self.prefix = prefix
+            self.name = name
+            self.errors = []
+
+        def create_error(self, error_code, error_desc, error_context=None):
+            # TODO: check prefix
+
+            class _Error(Error):
+                code = error_code
+                short_desc = error_desc
+                context = error_context
+
+            self.errors.append(_Error)
+            return _Error
+
+    @classmethod
+    def create_group(cls, prefix, name):
+        group = cls.ErrorGroup(prefix, name)
+        cls.groups.append(group)
+        return group
+
+    @classmethod
+    def get_error_codes(cls):
+        for group in cls.groups:
+            for error in group.errors:
+                yield error.code
+
+    @classmethod
+    def to_rst(cls):
+        sep_line = '+' + 6 * '-' + '+' + '-' * 71 + '+\n'
+        blank_line = '|' + 78 * ' ' + '|\n'
+        table = ''
+        for group in cls.groups:
+            table += sep_line
+            table += blank_line
+            table += '|' + ('**%s**' % group.name).center(78) + '|\n'
+            table += blank_line
+            for error in group.errors:
+                table += sep_line
+                table += ('|' + error.code.center(6) + '| ' +
+                          error.short_desc.ljust(70) + '|\n')
+        table += sep_line
+        return table
 
 
-def collect(names, match=lambda name: True, match_dir=lambda name: True):
-    """Walk dir trees under `names` and generate filnames that `match`.
+D1xx = ErrorRegistry.create_group('D1', 'Missing Docstrings')
+D100 = D1xx.create_error('D100', 'Missing docstring in public module')
+D101 = D1xx.create_error('D101', 'Missing docstring in public class')
+D102 = D1xx.create_error('D102', 'Missing docstring in public method')
+D103 = D1xx.create_error('D103', 'Missing docstring in public function')
+D104 = D1xx.create_error('D104', 'Missing docstring in public package')
+D105 = D1xx.create_error('D105', 'Missing docstring in magic method')
 
-    Example
-    -------
-    >>> sorted(collect(['non-dir.txt', './'],
-    ...                match=lambda name: name.endswith('.py')))
-    ['non-dir.txt', './pep257.py', './setup.py', './test_pep257.py']
+D2xx = ErrorRegistry.create_group('D2', 'Whitespace Issues')
+D200 = D2xx.create_error('D200', 'One-line docstring should fit on one line '
+                                 'with quotes', 'found %s')
+D201 = D2xx.create_error('D201', 'No blank lines allowed before function '
+                                 'docstring', 'found %s')
+D202 = D2xx.create_error('D202', 'No blank lines allowed after function '
+                                 'docstring', 'found %s')
+D203 = D2xx.create_error('D203', '1 blank line required before class '
+                                 'docstring', 'found %s')
+D204 = D2xx.create_error('D204', '1 blank line required after class '
+                                 'docstring', 'found %s')
+D205 = D2xx.create_error('D205', '1 blank line required between summary line '
+                                 'and description', 'found %s')
+D206 = D2xx.create_error('D206', 'Docstring should be indented with spaces, '
+                                 'not tabs')
+D207 = D2xx.create_error('D207', 'Docstring is under-indented')
+D208 = D2xx.create_error('D208', 'Docstring is over-indented')
+D209 = D2xx.create_error('D209', 'Multi-line docstring closing quotes should '
+                                 'be on a separate line')
+D210 = D2xx.create_error('D210', 'No whitespaces allowed surrounding '
+                                 'docstring text')
+D211 = D2xx.create_error('D211', 'No blank lines allowed before class '
+                                 'docstring', 'found %s')
+
+D3xx = ErrorRegistry.create_group('D3', 'Quotes Issues')
+D300 = D3xx.create_error('D300', 'Use """triple double quotes"""',
+                         'found %s-quotes')
+D301 = D3xx.create_error('D301', 'Use r""" if any backslashes in a docstring')
+D302 = D3xx.create_error('D302', 'Use u""" for Unicode docstrings')
+
+D4xx = ErrorRegistry.create_group('D4', 'Docstring Content Issues')
+D400 = D4xx.create_error('D400', 'First line should end with a period',
+                         'not %r')
+D401 = D4xx.create_error('D401', 'First line should be in imperative mood',
+                         '%r, not %r')
+D402 = D4xx.create_error('D402', 'First line should not be the function\'s '
+                                 '"signature"')
+
+
+class AttrDict(dict):
+    def __getattr__(self, item):
+        return self[item]
+
+
+conventions = AttrDict({
+    'pep257': set(ErrorRegistry.get_error_codes()) - set(['D203']),
+})
+
+
+# General configurations for pep257 run.
+RunConfiguration = namedtuple('RunConfiguration',
+                              ('explain', 'source', 'debug',
+                               'verbose', 'count'))
+
+
+class IllegalConfiguration(Exception):
+    """An exception for illegal configurations."""
+
+    pass
+
+
+# Check configuration - used by the ConfigurationParser class.
+CheckConfiguration = namedtuple('CheckConfiguration',
+                                ('checked_codes', 'match', 'match_dir'))
+
+
+def check_initialized(method):
+    """Check that the configuration object was initialized."""
+    def _decorator(self, *args, **kwargs):
+        if self._arguments is None or self._options is None:
+            raise RuntimeError('using an uninitialized configuration')
+        return method(self, *args, **kwargs)
+    return _decorator
+
+
+class ConfigurationParser(object):
+    """Responsible for parsing configuration from files and CLI.
+
+    There are 2 types of configurations: Run configurations and Check
+    configurations.
+
+    Run Configurations:
+    ------------------
+    Responsible for deciding things that are related to the user interface,
+    e.g. verbosity, debug options, etc.
+    All run configurations default to `False` and are decided only by CLI.
+
+    Check Configurations:
+    --------------------
+    Configurations that are related to which files and errors will be checked.
+    These are configurable in 2 ways: using the CLI, and using configuration
+    files.
+
+    Configuration files are nested within the file system, meaning that the
+    closer a configuration file is to a checked file, the more relevant it will
+    be. For instance, imagine this directory structure:
+
+    A
+    +-- tox.ini: sets `select=D100`
+    +-- B
+        +-- foo.py
+        +-- tox.ini: sets `add-ignore=D100`
+
+    Then `foo.py` will not be checked for `D100`.
+    The configuration build algorithm is described in `self._get_config`.
+
+    Note: If any of `BASE_ERROR_SELECTION_OPTIONS` was selected in the CLI, all
+    configuration files will be ignored and each file will be checked for
+    the error codes supplied in the CLI.
 
     """
-    for name in names:  # map(expanduser, names):
-        if os.path.isdir(name):
-            for root, dirs, filenames in os.walk(name):
-                for dir in dirs:
-                    if not match_dir(dir):
-                        dirs.remove(dir)  # do not visit those dirs
-                for filename in filenames:
-                    if match(filename):
-                        yield os.path.join(root, filename)
+
+    CONFIG_FILE_OPTIONS = ('convention', 'select', 'ignore', 'add-select',
+                           'add-ignore', 'match', 'match-dir')
+    BASE_ERROR_SELECTION_OPTIONS = ('ignore', 'select', 'convention')
+
+    DEFAULT_MATCH_RE = '(?!test_).*\.py'
+    DEFAULT_MATCH_DIR_RE = '[^\.].*'
+    DEFAULT_CONVENTION = conventions.pep257
+
+    PROJECT_CONFIG_FILES = ('setup.cfg', 'tox.ini', '.pep257')
+
+    def __init__(self):
+        """Create a configuration parser."""
+        self._cache = {}
+        self._override_by_cli = None
+        self._options = self._arguments = self._run_conf = None
+        self._parser = self._create_option_parser()
+
+    # ---------------------------- Public Methods -----------------------------
+
+    def get_default_run_configuration(self):
+        """Return a `RunConfiguration` object set with default values."""
+        options, _ = self._parse_args([])
+        return self._create_run_config(options)
+
+    def parse(self):
+        """Parse the configuration.
+
+        If one of `BASE_ERROR_SELECTION_OPTIONS` was selected, overrides all
+        error codes to check and disregards any error code related
+        configurations from the configuration files.
+
+        """
+        self._options, self._arguments = self._parse_args()
+        self._arguments = self._arguments or ['.']
+
+        if not self._validate_options(self._options):
+            raise IllegalConfiguration()
+
+        self._run_conf = self._create_run_config(self._options)
+
+        config = self._create_check_config(self._options, use_dafaults=False)
+        self._override_by_cli = config
+
+    @check_initialized
+    def get_user_run_configuration(self):
+        """Return the run configuration for pep257."""
+        return self._run_conf
+
+    @check_initialized
+    def get_files_to_check(self):
+        """Generate files and error codes to check on each one.
+
+        Walk dir trees under `self._arguments` and generate yield filnames
+        that `match` under each directory that `match_dir`.
+        The method locates the configuration for each file name and yields a
+        tuple of (filename, [error_codes]).
+
+        With every discovery of a new configuration file `IllegalConfiguration`
+        might be raised.
+
+        """
+        def _get_matches(config):
+            """Return the `match` and `match_dir` functions for `config`."""
+            match_func = re(config.match + '$').match
+            match_dir_func = re(config.match_dir + '$').match
+            return match_func, match_dir_func
+
+        for name in self._arguments:
+            if os.path.isdir(name):
+                for root, dirs, filenames in os.walk(name):
+                    config = self._get_config(root)
+                    match, match_dir = _get_matches(config)
+
+                    # Skip any dirs that do not match match_dir
+                    dirs[:] = [dir for dir in dirs if match_dir(dir)]
+
+                    for filename in filenames:
+                        if match(filename):
+                            full_path = os.path.join(root, filename)
+                            yield full_path, list(config.checked_codes)
+            else:
+                config = self._get_config(name)
+                match, _ = _get_matches(config)
+                if match(name):
+                    yield name, list(config.checked_codes)
+
+    # --------------------------- Private Methods -----------------------------
+
+    def _get_config(self, node):
+        """Get and cache the run configuration for `node`.
+
+        If no configuration exists (not local and not for the parend node),
+        returns and caches a default configuration.
+
+        The algorithm:
+        -------------
+        * If the current directory's configuration exists in
+           `self._cache` - return it.
+        * If a configuration file does not exist in this directory:
+          * If the directory is not a root directory:
+            * Cache its configuration as this directory's and return it.
+          * Else:
+            * Cache a default configuration and return it.
+        * Else:
+          * Read the configuration file.
+          * If a parent directory exists AND the configuration file
+            allows inheritance:
+            * Read the parent configuration by calling this function with the
+              parent directory as `node`.
+            * Merge the parent configuration with the current one and
+              cache it.
+        * If the user has specified one of `BASE_ERROR_SELECTION_OPTIONS` in
+          the CLI - return the CLI configuration with the configuration match
+          clauses
+        * Set the `--add-select` and `--add-ignore` CLI configurations.
+
+        """
+        path = os.path.abspath(node)
+        path = path if os.path.isdir(path) else os.path.dirname(path)
+
+        if path in self._cache:
+            return self._cache[path]
+
+        config_file = self._get_config_file_in_folder(path)
+
+        if config_file is None:
+            parent_dir, tail = os.path.split(path)
+            if tail:
+                # No configuration file, simply take the parent's.
+                config = self._get_config(parent_dir)
+            else:
+                # There's no configuration file and no parent directory.
+                # Use the default configuration or the one given in the CLI.
+                config = self._create_check_config(self._options)
         else:
-            yield name
+            # There's a config file! Read it and merge if necessary.
+            options, inherit = self._read_configuration_file(config_file)
+
+            parent_dir, tail = os.path.split(path)
+            if tail and inherit:
+                # There is a parent dir and we should try to merge.
+                parent_config = self._get_config(parent_dir)
+                config = self._merge_configuration(parent_config, options)
+            else:
+                # No need to merge or parent dir does not exist.
+                config = self._create_check_config(options)
+
+        # Make the CLI always win
+        final_config = {}
+        for attr in CheckConfiguration._fields:
+            cli_val = getattr(self._override_by_cli, attr)
+            conf_val = getattr(config, attr)
+            final_config[attr] = cli_val if cli_val is not None else conf_val
+
+        config = CheckConfiguration(**final_config)
+
+        self._set_add_options(config.checked_codes, self._options)
+        self._cache[path] = config
+        return self._cache[path]
+
+    def _read_configuration_file(self, path):
+        """Try to read and parse `path` as a pep257 configuration file.
+
+        If the configurations were illegal (checked with
+        `self._validate_options`), raises `IllegalConfiguration`.
+
+        Returns (options, should_inherit).
+
+        """
+        parser = RawConfigParser()
+        options = None
+        should_inherit = True
+
+        if parser.read(path) and parser.has_section('pep257'):
+            option_list = dict([(o.dest, o.type or o.action)
+                                for o in self._parser.option_list])
+
+            # First, read the default values
+            new_options, _ = self._parse_args([])
+
+            # Second, parse the configuration
+            pep257_section = 'pep257'
+            for opt in parser.options(pep257_section):
+                if opt == 'inherit':
+                    should_inherit = parser.getboolean(pep257_section, opt)
+                    continue
+
+                if opt.replace('_', '-') not in self.CONFIG_FILE_OPTIONS:
+                    log.warning("Unknown option '{0}' ignored".format(opt))
+                    continue
+
+                normalized_opt = opt.replace('-', '_')
+                opt_type = option_list[normalized_opt]
+                if opt_type in ('int', 'count'):
+                    value = parser.getint(pep257_section, opt)
+                elif opt_type == 'string':
+                    value = parser.get(pep257_section, opt)
+                else:
+                    assert opt_type in ('store_true', 'store_false')
+                    value = parser.getboolean(pep257_section, opt)
+                setattr(new_options, normalized_opt, value)
+
+            # Third, fix the set-options
+            options = self._fix_set_options(new_options)
+
+        if options is not None:
+            if not self._validate_options(options):
+                raise IllegalConfiguration('in file: {0}'.format(path))
+
+        return options, should_inherit
+
+    def _merge_configuration(self, parent_config, child_options):
+        """Merge parent config into the child options.
+
+        The migration process requires an `options` object for the child in
+        order to distinguish between mutually exclusive codes, add-select and
+        add-ignore error codes.
+
+        """
+        # Copy the parent error codes so we won't override them
+        error_codes = copy.deepcopy(parent_config.checked_codes)
+        if self._has_exclusive_option(child_options):
+            error_codes = self._get_exclusive_error_codes(child_options)
+
+        self._set_add_options(error_codes, child_options)
+
+        match = child_options.match \
+            if child_options.match is not None else parent_config.match
+        match_dir = child_options.match_dir \
+            if child_options.match_dir is not None else parent_config.match_dir
+
+        return CheckConfiguration(checked_codes=error_codes,
+                                  match=match,
+                                  match_dir=match_dir)
+
+    def _parse_args(self, args=None, values=None):
+        """Parse the options using `self._parser` and reformat the options."""
+        options, arguments = self._parser.parse_args(args, values)
+        return self._fix_set_options(options), arguments
+
+    @staticmethod
+    def _create_run_config(options):
+        """Create a `RunConfiguration` object from `options`."""
+        values = dict([(opt, getattr(options, opt)) for opt in
+                       RunConfiguration._fields])
+        return RunConfiguration(**values)
+
+    @classmethod
+    def _create_check_config(cls, options, use_dafaults=True):
+        """Create a `CheckConfiguration` object from `options`.
+
+        If `use_dafaults`, any of the match options that are `None` will
+        be replaced with their default value and the default convention will be
+        set for the checked codes.
+
+        """
+        match = cls.DEFAULT_MATCH_RE \
+            if options.match is None and use_dafaults \
+            else options.match
+
+        match_dir = cls.DEFAULT_MATCH_DIR_RE \
+            if options.match_dir is None and use_dafaults \
+            else options.match_dir
+
+        checked_codes = None
+
+        if cls._has_exclusive_option(options) or use_dafaults:
+            checked_codes = cls._get_checked_errors(options)
+
+        return CheckConfiguration(checked_codes=checked_codes,
+                                  match=match, match_dir=match_dir)
+
+    @classmethod
+    def _get_config_file_in_folder(cls, path):
+        """Look for a configuration file in `path`.
+
+        If exists return it's full path, otherwise None.
+
+        """
+        if os.path.isfile(path):
+            path = os.path.dirname(path)
+
+        for fn in cls.PROJECT_CONFIG_FILES:
+            config = RawConfigParser()
+            full_path = os.path.join(path, fn)
+            if config.read(full_path) and config.has_section('pep257'):
+                return full_path
+
+    @staticmethod
+    def _get_exclusive_error_codes(options):
+        """Extract the error codes from the selected exclusive option."""
+        codes = set(ErrorRegistry.get_error_codes())
+        checked_codes = None
+
+        if options.ignore is not None:
+            checked_codes = codes - options.ignore
+        elif options.select is not None:
+            checked_codes = options.select
+        elif options.convention is not None:
+            checked_codes = getattr(conventions, options.convention)
+
+        # To not override the conventions nor the options - copy them.
+        return copy.deepcopy(checked_codes)
+
+    @staticmethod
+    def _set_add_options(checked_codes, options):
+        """Set `checked_codes` by the `add_ignore` or `add_select` options."""
+        checked_codes |= options.add_select
+        checked_codes -= options.add_ignore
+
+    @classmethod
+    def _get_checked_errors(cls, options):
+        """Extract the codes needed to be checked from `options`."""
+        checked_codes = cls._get_exclusive_error_codes(options)
+        if checked_codes is None:
+            checked_codes = cls.DEFAULT_CONVENTION
+
+        cls._set_add_options(checked_codes, options)
+
+        return checked_codes
+
+    @classmethod
+    def _validate_options(cls, options):
+        """Validate the mutually exclusive options.
+
+        Return `True` iff only zero or one of `BASE_ERROR_SELECTION_OPTIONS`
+        was selected.
+
+        """
+        for opt1, opt2 in \
+                itertools.permutations(cls.BASE_ERROR_SELECTION_OPTIONS, 2):
+            if getattr(options, opt1) and getattr(options, opt2):
+                log.error('Cannot pass both {0} and {1}. They are '
+                          'mutually exclusive.'.format(opt1, opt2))
+                return False
+
+        if options.convention and options.convention not in conventions:
+            log.error("Illegal convention '{0}'. Possible conventions: {1}"
+                      .format(options.convention,
+                              ', '.join(conventions.keys())))
+            return False
+        return True
+
+    @classmethod
+    def _has_exclusive_option(cls, options):
+        """Return `True` iff one or more exclusive options were selected."""
+        return any([getattr(options, opt) is not None for opt in
+                    cls.BASE_ERROR_SELECTION_OPTIONS])
+
+    @staticmethod
+    def _fix_set_options(options):
+        """Alter the set options from None/strings to sets in place."""
+        optional_set_options = ('ignore', 'select')
+        mandatory_set_options = ('add_ignore', 'add_select')
+
+        def _get_set(value_str):
+            """Split `value_str` by the delimiter `,` and return a set.
+
+            Removes any occurrences of '' in the set.
+
+            """
+            return set(value_str.split(',')) - set([''])
+
+        for opt in optional_set_options:
+            value = getattr(options, opt)
+            if value is not None:
+                setattr(options, opt, _get_set(value))
+
+        for opt in mandatory_set_options:
+            value = getattr(options, opt)
+            if value is None:
+                value = ''
+
+            if not isinstance(value, Set):
+                value = _get_set(value)
+
+            setattr(options, opt, value)
+
+        return options
+
+    @classmethod
+    def _create_option_parser(cls):
+        """Return an option parser to parse the command line arguments."""
+        from optparse import OptionParser
+
+        parser = OptionParser(version=__version__,
+                              usage='Usage: pep257 [options] [<file|dir>...]')
+
+        option = parser.add_option
+
+        # Run configuration options
+        option('-e', '--explain', action='store_true', default=False,
+               help='show explanation of each error')
+        option('-s', '--source', action='store_true', default=False,
+               help='show source for each error')
+        option('-d', '--debug', action='store_true', default=False,
+               help='print debug information')
+        option('-v', '--verbose', action='store_true', default=False,
+               help='print status information')
+        option('--count', action='store_true', default=False,
+               help='print total number of errors to stdout')
+
+        # Error check options
+        option('--select', metavar='<codes>', default=None,
+               help='choose the basic list of checked errors by '
+                    'specifying which errors to check for (with a list of '
+                    'comma-separated error codes). '
+                    'for example: --select=D101,D202')
+        option('--ignore', metavar='<codes>', default=None,
+               help='choose the basic list of checked errors by '
+                    'specifying which errors to ignore (with a list of '
+                    'comma-separated error codes). '
+                    'for example: --ignore=D101,D202')
+        option('--convention', metavar='<name>', default=None,
+               help='choose the basic list of checked errors by specifying an '
+                    'existing convention. Possible conventions: {0}'
+                    .format(', '.join(conventions)))
+        option('--add-select', metavar='<codes>', default=None,
+               help='amend the list of errors to check for by specifying '
+                    'more error codes to check.')
+        option('--add-ignore', metavar='<codes>', default=None,
+               help='amend the list of errors to check for by specifying '
+                    'more error codes to ignore.')
+
+        # Match clauses
+        option('--match', metavar='<pattern>', default=None,
+               help=("check only files that exactly match <pattern> regular "
+                     "expression; default is --match='{0}' which matches "
+                     "files that don't start with 'test_' but end with "
+                     "'.py'").format(cls.DEFAULT_MATCH_RE))
+        option('--match-dir', metavar='<pattern>', default=None,
+               help=("search only dirs that exactly match <pattern> regular "
+                     "expression; default is --match-dir='{0}', which "
+                     "matches all dirs that don't start with "
+                     "a dot").format(cls.DEFAULT_MATCH_DIR_RE))
+
+        return parser
 
 
-def check(filenames, ignore=()):
+def check(filenames, select=None, ignore=None):
     """Generate PEP 257 errors that exist in `filenames` iterable.
 
-    Skips errors with error-codes defined in `ignore` iterable.
+    Only returns errors with error-codes defined in `checked_codes` iterable.
 
     Example
     -------
-    >>> check(['pep257.py'], ignore=['D100'])
+    >>> check(['pep257.py'], checked_codes=['D100'])
     <generator object check at 0x...>
 
     """
+    if select is not None and ignore is not None:
+        raise IllegalConfiguration('Cannot pass both select and ignore. '
+                                   'They are mutually exclusive.')
+    elif select is not None:
+        checked_codes = select
+    elif ignore is not None:
+        checked_codes = list(set(ErrorRegistry.get_error_codes()) -
+                             set(ignore))
+    else:
+        checked_codes = conventions.pep257
+
     for filename in filenames:
         log.info('Checking file %s.', filename)
         try:
-            with open(filename) as file:
+            with tokenize_open(filename) as file:
                 source = file.read()
             for error in PEP257Checker().check_source(source, filename):
                 code = getattr(error, 'code', None)
-                if code is not None and code not in ignore:
+                if code in checked_codes:
                     yield error
         except (EnvironmentError, AllError):
             yield sys.exc_info()[1]
@@ -488,92 +1223,67 @@ def check(filenames, ignore=()):
             yield SyntaxError('invalid syntax in file %s' % filename)
 
 
-def get_options(args, opt_parser):
-    config = RawConfigParser()
-    parent = tail = args and os.path.abspath(os.path.commonprefix(args))
-    while tail:
-        for fn in PROJECT_CONFIG:
-            full_path = os.path.join(parent, fn)
-            if config.read(full_path):
-                log.info('local configuration: in %s.', full_path)
-                break
-        parent, tail = os.path.split(parent)
+def setup_stream_handlers(conf):
+    """Setup logging stream handlers according to the options."""
+    class StdoutFilter(logging.Filter):
+        def filter(self, record):
+            return record.levelno in (logging.DEBUG, logging.INFO)
 
-    new_options = None
-    if config.has_section('pep257'):
-        option_list = dict([(o.dest, o.type or o.action)
-                            for o in opt_parser.option_list])
-
-        # First, read the default values
-        new_options, _ = opt_parser.parse_args([])
-
-        # Second, parse the configuration
-        pep257_section = 'pep257'
-        for opt in config.options(pep257_section):
-            if opt.replace('_', '-') not in opt_parser.config_options:
-                print("Unknown option '{}' ignored".format(opt))
-                continue
-            normalized_opt = opt.replace('-', '_')
-            opt_type = option_list[normalized_opt]
-            if opt_type in ('int', 'count'):
-                value = config.getint(pep257_section, opt)
-            elif opt_type == 'string':
-                value = config.get(pep257_section, opt)
-            else:
-                assert opt_type in ('store_true', 'store_false')
-                value = config.getboolean(pep257_section, opt)
-            setattr(new_options, normalized_opt, value)
-
-    # Third, overwrite with the command-line options
-    options, _ = opt_parser.parse_args(values=new_options)
-    log.debug("options: %s", options)
-    return options
-
-
-def setup_stream_handler(options):
     if log.handlers:
         for handler in log.handlers:
             log.removeHandler(handler)
-    stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setLevel(logging.WARNING)
-    if options.debug:
-        stream_handler.setLevel(logging.DEBUG)
-    elif options.verbose:
-        stream_handler.setLevel(logging.INFO)
+
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(logging.WARNING)
+    stdout_handler.addFilter(StdoutFilter())
+    if conf.debug:
+        stdout_handler.setLevel(logging.DEBUG)
+    elif conf.verbose:
+        stdout_handler.setLevel(logging.INFO)
     else:
-        stream_handler.setLevel(logging.WARNING)
-    log.addHandler(stream_handler)
+        stdout_handler.setLevel(logging.WARNING)
+    log.addHandler(stdout_handler)
+
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler.setLevel(logging.WARNING)
+    log.addHandler(stderr_handler)
 
 
-def main():
-    opt_parser = get_option_parser()
-    # setup the logger before parsing the config file, so that command line
-    # arguments for debug / verbose will be printed.
-    options, arguments = opt_parser.parse_args()
-    setup_stream_handler(options)
-    # We parse the files before opening the config file, since it changes where
-    # we look for the file.
-    options = get_options(arguments, opt_parser)
-    # Setup the handler again with values from the config file.
-    setup_stream_handler(options)
+def run_pep257():
+    log.setLevel(logging.DEBUG)
+    conf = ConfigurationParser()
+    setup_stream_handlers(conf.get_default_run_configuration())
 
-    collected = collect(arguments or ['.'],
-                        match=re(options.match + '$').match,
-                        match_dir=re(options.match_dir + '$').match)
+    try:
+        conf.parse()
+    except IllegalConfiguration:
+        return INVALID_OPTIONS_RETURN_CODE
+
+    run_conf = conf.get_user_run_configuration()
+
+    # Reset the logger according to the command line arguments
+    setup_stream_handlers(run_conf)
 
     log.debug("starting pep257 in debug mode.")
 
-    Error.explain = options.explain
-    Error.source = options.source
-    collected = list(collected)
-    errors = check(collected, ignore=options.ignore.split(','))
-    code = 0
+    Error.explain = run_conf.explain
+    Error.source = run_conf.source
+
+    errors = []
+    try:
+        for filename, checked_codes in conf.get_files_to_check():
+            errors.extend(check((filename,), select=checked_codes))
+    except IllegalConfiguration:
+        # An illegal configuration file was found during file generation.
+        return INVALID_OPTIONS_RETURN_CODE
+
+    code = NO_VIOLATIONS_RETURN_CODE
     count = 0
     for error in errors:
         sys.stderr.write('%s\n' % error)
-        code = 1
+        code = VIOLATIONS_RETURN_CODE
         count += 1
-    if options.count:
+    if run_conf.count:
         print(count)
     return code
 
@@ -590,7 +1300,6 @@ def check_for(kind, terminal=False):
 
 
 class PEP257Checker(object):
-
     """Checker for PEP 257.
 
     D10x: Missing docstrings
@@ -612,10 +1321,8 @@ class PEP257Checker(object):
                         if error is not None:
                             partition = check.__doc__.partition('.\n')
                             message, _, explanation = partition
-                            if error.message is None:
-                                error.message = message
-                            error.explanation = explanation
-                            error.definition = definition
+                            error.set_context(explanation=explanation,
+                                              definition=definition)
                             yield error
                             if check._terminal:
                                 terminate = True
@@ -645,9 +1352,11 @@ class PEP257Checker(object):
         """
         if (not docstring and definition.is_public or
                 docstring and is_blank(eval(docstring))):
-            codes = {Module: 'D100', Class: 'D101', NestedClass: 'D101',
-                     Method: 'D102', Function: 'D103', NestedFunction: 'D103'}
-            return Error('%s: Docstring missing' % codes[type(definition)])
+            codes = {Module: D100, Class: D101, NestedClass: D101,
+                     Method: (lambda: D105() if is_magic(definition.name)
+                              else D102()),
+                     Function: D103, NestedFunction: D103, Package: D104}
+            return codes[type(definition)]()
 
     @check_for(Definition)
     def check_one_liners(self, definition, docstring):
@@ -662,8 +1371,7 @@ class PEP257Checker(object):
             if len(lines) > 1:
                 non_empty_lines = sum(1 for l in lines if not is_blank(l))
                 if non_empty_lines == 1:
-                    return Error('D200: One-line docstring should not occupy '
-                                 '%s lines' % len(lines))
+                    return D200(len(lines))
 
     @check_for(Function)
     def check_no_blank_before(self, function, docstring):  # def
@@ -681,13 +1389,9 @@ class PEP257Checker(object):
             blanks_before_count = sum(takewhile(bool, reversed(blanks_before)))
             blanks_after_count = sum(takewhile(bool, blanks_after))
             if blanks_before_count != 0:
-                yield Error('D201: No blank lines allowed *before* %s '
-                            'docstring, found %s'
-                            % (function.kind, blanks_before_count))
+                yield D201(blanks_before_count)
             if not all(blanks_after) and blanks_after_count != 0:
-                yield Error('D202: No blank lines allowed *after* %s '
-                            'docstring, found %s'
-                            % (function.kind, blanks_after_count))
+                yield D202(blanks_after_count)
 
     @check_for(Class)
     def check_blank_before_after_class(slef, class_, docstring):
@@ -701,7 +1405,7 @@ class PEP257Checker(object):
         docstring.
 
         """
-        # NOTE: this gives flase-positive in this case
+        # NOTE: this gives false-positive in this case
         # class Foo:
         #
         #     """Docstring."""
@@ -715,16 +1419,16 @@ class PEP257Checker(object):
             blanks_after = list(map(is_blank, after.split('\n')[1:]))
             blanks_before_count = sum(takewhile(bool, reversed(blanks_before)))
             blanks_after_count = sum(takewhile(bool, blanks_after))
+            if blanks_before_count != 0:
+                yield D211(blanks_before_count)
             if blanks_before_count != 1:
-                yield Error('D203: Expected 1 blank line *before* class '
-                            'docstring, found %s' % blanks_before_count)
+                yield D203(blanks_before_count)
             if not all(blanks_after) and blanks_after_count != 1:
-                yield Error('D204: Expected 1 blank line *after* class '
-                            'docstring, found %s' % blanks_after_count)
+                yield D204(blanks_after_count)
 
     @check_for(Definition)
     def check_blank_after_summary(self, definition, docstring):
-        """D205: Blank line missing between one-line summary and description.
+        """D205: Put one blank line between summary line and description.
 
         Multi-line docstrings consist of a summary line just like a one-line
         docstring, followed by a blank line, followed by a more elaborate
@@ -735,8 +1439,11 @@ class PEP257Checker(object):
         """
         if docstring:
             lines = eval(docstring).strip().split('\n')
-            if len(lines) > 1 and not is_blank(lines[1]):
-                return Error()
+            if len(lines) > 1:
+                post_summary_blanks = list(map(is_blank, lines[1:]))
+                blanks_count = sum(takewhile(bool, post_summary_blanks))
+                if blanks_count != 1:
+                    return D205(blanks_count)
 
     @check_for(Definition)
     def check_indent(self, definition, docstring):
@@ -754,13 +1461,12 @@ class PEP257Checker(object):
                 lines = lines[1:]  # First line does not need indent.
                 indents = [leading_space(l) for l in lines if not is_blank(l)]
                 if set(' \t') == set(''.join(indents) + indent):
-                    return Error('D206: Docstring indented with both tabs and '
-                                 'spaces')
-                if (len(indents) > 1 and min(indents[:-1]) > indent
-                        or indents[-1] > indent):
-                    return Error('D208: Docstring is over-indented')
+                    yield D206()
+                if (len(indents) > 1 and min(indents[:-1]) > indent or
+                        indents[-1] > indent):
+                    yield D208()
                 if min(indents) < indent:
-                    return Error('D207: Docstring is under-indented')
+                    yield D207()
 
     @check_for(Definition)
     def check_newline_after_last_paragraph(self, definition, docstring):
@@ -774,8 +1480,16 @@ class PEP257Checker(object):
             lines = [l for l in eval(docstring).split('\n') if not is_blank(l)]
             if len(lines) > 1:
                 if docstring.split("\n")[-1].strip() not in ['"""', "'''"]:
-                    return Error('D209: Put multi-line docstring closing '
-                                 'quotes on separate line')
+                    return D209()
+
+    @check_for(Definition)
+    def check_surrounding_whitespaces(self, definition, docstring):
+        """D210: No whitespaces allowed surrounding docstring text."""
+        if docstring:
+            lines = eval(docstring).split('\n')
+            if lines[0].startswith(' ') or \
+                    len(lines) == 1 and lines[0].endswith(' '):
+                return D210()
 
     @check_for(Definition)
     def check_triple_double_quotes(self, definition, docstring):
@@ -791,13 +1505,14 @@ class PEP257Checker(object):
 
         '''
         if docstring and '"""' in eval(docstring) and docstring.startswith(
-                ("'''", "r'''", "u'''")):
+                ("'''", "r'''", "u'''", "ur'''")):
             # Allow ''' quotes if docstring contains """, because otherwise """
             # quotes could not be expressed inside docstring.  Not in PEP 257.
             return
-        if docstring and not docstring.startswith(('"""', 'r"""', 'u"""')):
+        if docstring and not docstring.startswith(
+                ('"""', 'r"""', 'u"""', 'ur"""')):
             quotes = "'''" if "'''" in docstring[:4] else "'"
-            return Error('D300: Expected """-quotes, got %s-quotes' % quotes)
+            return D300(quotes)
 
     @check_for(Definition)
     def check_backslashes(self, definition, docstring):
@@ -809,8 +1524,9 @@ class PEP257Checker(object):
         '''
         # Just check that docstring is raw, check_triple_double_quotes
         # ensures the correct quotes.
-        if docstring and '\\' in docstring and not docstring.startswith('r'):
-            return Error()
+        if docstring and '\\' in docstring and not docstring.startswith(
+                ('r', 'ur')):
+            return D301()
 
     @check_for(Definition)
     def check_unicode_docstring(self, definition, docstring):
@@ -819,11 +1535,15 @@ class PEP257Checker(object):
         For Unicode docstrings, use u"""Unicode triple-quoted strings""".
 
         '''
+        if definition.module.future_imports['unicode_literals']:
+            return
+
         # Just check that docstring is unicode, check_triple_double_quotes
         # ensures the correct quotes.
         if docstring and sys.version_info[0] <= 2:
-            if not is_ascii(docstring) and not docstring.startswith('u'):
-                return Error()
+            if not is_ascii(docstring) and not docstring.startswith(
+                    ('u', 'ur')):
+                return D302()
 
     @check_for(Definition)
     def check_ends_with_period(self, definition, docstring):
@@ -835,8 +1555,7 @@ class PEP257Checker(object):
         if docstring:
             summary_line = eval(docstring).strip().split('\n')[0]
             if not summary_line.endswith('.'):
-                return Error("D400: First line should end with '.', not %r"
-                             % summary_line[-1])
+                return D400(summary_line[-1])
 
     @check_for(Function)
     def check_imperative_mood(self, function, docstring):  # def context
@@ -852,8 +1571,7 @@ class PEP257Checker(object):
             if stripped:
                 first_word = stripped.split()[0]
                 if first_word.endswith('s') and not first_word.endswith('ss'):
-                    return Error('D401: First line should be imperative: '
-                                 '%r, not %r' % (first_word[:-1], first_word))
+                    return D401(first_word[:-1], first_word)
 
     @check_for(Function)
     def check_no_signature(self, function, docstring):  # def context
@@ -866,8 +1584,7 @@ class PEP257Checker(object):
         if docstring:
             first_line = eval(docstring).strip().split('\n')[0]
             if function.name + '(' in first_line.replace(' ', ''):
-                return Error("D402: First line should not be %s's signature"
-                             % function.kind)
+                return D402()
 
     # Somewhat hard to determine if return value is mentioned.
     # @check(Function)
@@ -883,8 +1600,12 @@ class PEP257Checker(object):
                 return Error()
 
 
-if __name__ == '__main__':
+def main():
     try:
-        sys.exit(main())
+        sys.exit(run_pep257())
     except KeyboardInterrupt:
         pass
+
+
+if __name__ == '__main__':
+    main()
