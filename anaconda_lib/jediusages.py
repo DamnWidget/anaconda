@@ -6,6 +6,7 @@
 """
 
 import sublime
+from functools import partial
 
 
 class JediUsages(object):
@@ -38,20 +39,35 @@ class JediUsages(object):
         else:
             self._show_options(definitions, usages)
 
-    def _jump(self, filename, lineno=None, columno=None):
+    def _jump(self, filename, lineno=None, columno=None, transient=False):
         """Jump to a window
         """
 
         # process jumps from options window
         if type(filename) is int:
             if filename == -1:
+                # restore view
+                view = self.text.view
+                point = self.point
+
+                sublime.active_window().focus_view(view)
+                view.show(point)
+
+                if view.sel()[0] != point:
+                    view.sel().clear()
+                    view.sel().add(point)
+
                 return
 
             filename, lineno, columno = self.options[filename]
 
+        flags = sublime.ENCODED_POSITION
+        if transient:
+            flags |= sublime.TRANSIENT
+
         sublime.active_window().open_file(
             '{}:{}:{}'.format(filename, lineno or 0, columno or 0),
-            sublime.ENCODED_POSITION
+            flags
         )
 
         self._toggle_indicator(lineno, columno)
@@ -75,7 +91,11 @@ class JediUsages(object):
                 return
 
         self.options = defs
-        self.text.view.window().show_quick_panel(options, self._jump)
+        self.point = self.text.view.sel()[0]
+        self.text.view.window().show_quick_panel(
+            options, self._jump,
+            on_highlight=partial(self._jump, transient=True)
+        )
 
     def _toggle_indicator(self, lineno=0, columno=0):
         """Toggle mark indicator for focus the cursor
