@@ -1,8 +1,32 @@
 [
-    {"command": "anaconda_goto", "keys": ["ctrl+alt+g"]},
-    {"command": "anaconda_find_usages", "keys": ["ctrl+alt+f"]},
-    {"command": "anaconda_doc", "keys": ["ctrl+alt+d"]},
-    {"command": "anaconda_auto_format", "keys": ["ctrl+alt+r"]},
-    {"command": "anaconda_run_current_file_tests", "keys": ["ctrl+alt+t"]},
-    {"command": "anaconda_run_current_test", "keys": ["ctrl+alt+shift+t"]}
+	{
+		"command": "anaconda_goto", "keys": ["ctrl+alt+g"], "context": [
+            {"key": "selector", "operator": "equal", "operand": "source.python"}
+        ]
+    },
+	{
+		"command": "anaconda_find_usages", "keys": ["ctrl+alt+f"], "context": [
+            {"key": "selector", "operator": "equal", "operand": "source.python"}
+        ]
+    },
+	{
+		"command": "anaconda_doc", "keys": ["ctrl+alt+d"], "context": [
+            {"key": "selector", "operator": "equal", "operand": "source.python"}
+        ]
+    },
+	{
+		"command": "anaconda_auto_format", "keys": ["ctrl+alt+r"], "context": [
+            {"key": "selector", "operator": "equal", "operand": "source.python"}
+        ]
+    },
+	{
+		"command": "anaconda_run_current_file_tests", "keys": ["ctrl+alt+t"], "context": [
+            {"key": "selector", "operator": "equal", "operand": "source.python"}
+        ]
+    },
+	{
+		"command": "anaconda_run_current_test", "keys": ["ctrl+alt+shift+t"], "context": [
+            {"key": "selector", "operator": "equal", "operand": "source.python"}
+        ]
+    }
 ]
