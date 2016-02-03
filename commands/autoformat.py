@@ -106,6 +106,8 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         if self.code != self.data.get('buffer'):
             region = sublime.Region(0, view.size())
             view.replace(edit, region, self.data.get('buffer'))
+            if get_settings(view, 'auto_formatting'):
+                sublime.set_timeout(lambda: view.run_command("save"), 0)
 
         self.code = None
         self.data = None
