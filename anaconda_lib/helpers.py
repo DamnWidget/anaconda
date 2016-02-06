@@ -152,13 +152,13 @@ def get_settings(view, name, default=None):
 
     plugin_settings = sublime.load_settings('Anaconda.sublime-settings')
 
-    if (name in ('python_interpreter', 'extra_paths')
-            and not ENVIRON_HOOK_INVALID[view.id()]):
+    if (name in ('python_interpreter', 'extra_paths') and
+            not ENVIRON_HOOK_INVALID[view.id()]):
         if view.window() is not None and view.window().folders():
             dirname = view.window().folders()[0]
             while True:
                 environfile = os.path.join(dirname, '.anaconda')
-                if os.path.exists(environfile):
+                if os.path.isfile(environfile):
                     # print("Environ found on %s" % environfile)
                     with open(environfile, 'r') as jsonfile:
                         try:
