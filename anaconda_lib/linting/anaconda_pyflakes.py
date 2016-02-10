@@ -53,10 +53,11 @@ class PyFlakesLinter(linter.Linter):
             lineno = 0
 
         try:
+            fname = ''
+            if filename is not None:
+                fname = filename.encode('utf8') or ''
             code = code.encode('utf8') + b'\n'
-            tree = compile(
-                code, filename.encode('utf8') or '', 'exec', _ast.PyCF_ONLY_AST
-            )
+            tree = compile(code, fname, 'exec', _ast.PyCF_ONLY_AST)
         except (SyntaxError, IndentationError):
             return self._handle_syntactic_error(code, filename)
         except ValueError as error:
