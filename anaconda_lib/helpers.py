@@ -103,8 +103,8 @@ def check_linting(view, mask, code='python'):
     if mask & NOT_SCRATCH and view.is_scratch():
         return False
 
-    if (mask & LINTING_ENABLED
-            and not get_settings(view, 'anaconda_linting', False)):
+    if (mask & LINTING_ENABLED and not
+            get_settings(view, 'anaconda_linting', False)):
         return False
 
     return True
@@ -133,11 +133,12 @@ def create_subprocess(args, **kwargs):
 
     try:
         return subprocess.Popen(args, **kwargs)
-    except:
+    except Exception as e:
         logging.error(
             'Your operating system denied the spawn of {}'
             ' process. Make sure your configured interpreter is a valid python'
-            ' binary executable and is in the PATH'.format(args[0])
+            ' binary executable and is in the PATH\n'
+            'The OS did return {}'.format(args[0], e)
         )
 
 
@@ -152,8 +153,8 @@ def get_settings(view, name, default=None):
 
     plugin_settings = sublime.load_settings('Anaconda.sublime-settings')
 
-    if (name in ('python_interpreter', 'extra_paths')
-            and not ENVIRON_HOOK_INVALID[view.id()]):
+    if (name in ('python_interpreter', 'extra_paths') and not
+            ENVIRON_HOOK_INVALID[view.id()]):
         if view.window() is not None and view.window().folders():
             dirname = view.window().folders()[0]
             while True:
