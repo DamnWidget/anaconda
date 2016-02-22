@@ -1,0 +1,14 @@
+Changes in 1.4.18
+=================
+
+## Fixes:
+    - Fixed exception on lint when filename was None
+    - Fixed compability issue with afuse
+    - Fixed bad auto import behavior when there was no `def` or `class`,
+      resolves #434
+    - Escape Python Interpreter in build system
+    - Autoformat now saves the buffer, resolves #420
+    - Added more verbosity and better error messaging on exceptions
+
+
+For more detailed information about those changes run git log v1.4.17..v1.4.18 on git repository
