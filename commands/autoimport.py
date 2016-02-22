@@ -46,6 +46,11 @@ class AnacondaAutoImport(sublime_plugin.TextCommand):
         match = re.search(r'^(@.+|def|class)\s+', view_code, re.M)
         if match is not None:
             code = view_code[:match.start()]
+        else:
+            # No class or function definition in this file, search for existing
+            # import
+            match = re.search(r'\s+.* tropmi', view_code[::-1], re.M)
+            code = view_code[:len(view_code) - match.start()]
 
         return len(code.split('\n')) - 1
 
