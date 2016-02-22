@@ -22,6 +22,12 @@ class AnacondaSetPythonBuilder(object):
                 active_view(), 'auto_python_builder_enabled', True) is False:
             return
 
+        if cmd is None:
+            sublime.message_dialog(
+                'Your python interpreter is not set or is invalid'
+            )
+            return
+
         project = self._get_project()
         if project.get('build_systems', False) is not False:
             if type(project['build_systems']) is list:

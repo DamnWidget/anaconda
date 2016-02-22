@@ -190,6 +190,15 @@ class LocalWorker(BaseWorker):
             if self.green_light:
                 self.client = AsynClient(self.available_port)
         except Exception as error:
+            logging.error(
+                    'error detected while connecting with JsonServer!'
+                    'python interpreter: {}'
+                    'connecting port: {}'
+                    'check https://github.com/DamnWidget/anaconda/wiki/Connection-Refused-Information'.format(  # noqa
+                        python_interpreter,
+                        self.available_port
+                    )
+            )
             logging.error(error)
             logging.error(get_traceback())
 
