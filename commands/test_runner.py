@@ -44,17 +44,19 @@ class TestMethodMatcher(object):
     """Match a test method under the cursor
     """
 
-    def find_test_path(self, test_file_content, delimeter=TEST_DELIMETER):
+    def find_test_path(self, test_file_content,
+            class_delimeter=TEST_DELIMETER, method_delimeter=TEST_DELIMETER):
         """Try to find the test path, returns None if can't be found
         """
 
         test_class_pos = self.find_test_class(test_file_content)
         if test_class_pos is not None:
             test_class, pos = test_class_pos
+            result = class_delimeter + test_class
             test_method = self.find_test_method(test_file_content[pos:])
             if test_method is not None:
-                return delimeter + test_class + "." + test_method
-            return delimeter + test_class
+                result += method_delimeter + test_method
+            return result
 
     def find_test_method(self, test_file_content):
         """Try to find the test method, returns None if can't be found
@@ -132,11 +134,14 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         """Return back the tests path
         """
 
-        real_path = os.path.relpath(
-            self.view.file_name(), self.test_root).replace(os.sep, '.')
+        real_path = os.path.relpath(self.view.file_name(), self.test_root)
+        if not self.test_filepath_patterns:
+            real_path = real_path.replace(os.sep, '.')
         print(real_path)
         if real_path is not None:
-            return real_path[:-3]
+            if not self.test_filepath_patterns:
+                real_path = real_path[:-3]
+            return real_path
 
         return ""
 
@@ -180,6 +185,12 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         if type(self.after_test) is list:
             self.after_test = sep.join(self.after_test)
         self.test_delimeter = gs(self.view, 'test_delimeter', TEST_DELIMETER)
+        self.test_method_delimeter = gs(
+            self.view, 'test_method_delimeter', TEST_DELIMETER
+        )
+        self.test_filepath_patterns = gs(
+            self.view, 'test_filepath_patterns', False
+        )
         self.output_show_color = gs(self.view, 'test_output_show_color', True)
 
     @virtualenv
@@ -258,7 +269,9 @@ class AnacondaRunCurrentTest(AnacondaRunTestsBase):
             sublime.Region(file_character_start, line_region.end())
         )
         test_name = TestMethodMatcher().find_test_path(
-            text_string, delimeter=self.test_delimeter
+            text_string,
+            class_delimeter=self.test_delimeter,
+            method_delimeter=self.test_method_delimeter
         )
         if test_name is not None:
             return test_path + test_name
