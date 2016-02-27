@@ -53,16 +53,16 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """
 
         constraints = ONLY_CODE | NOT_SCRATCH | LINTING_ENABLED
-        if (check_linting(view, constraints, code=self.lang.lower())
-                and check_linting_behaviour(view, ['always'])):
-            # update the last selected line number
-            self.last_selected_line = -1
-            ANACONDA['LAST_PULSE'] = time.time()
-            ANACONDA['ALREADY_LINTED'] = False
+        if (check_linting(view, constraints, code=self.lang.lower())):
             if not get_settings(view, 'anaconda_linter_persistent', False):
                 erase_lint_marks(view)
-            if self.check_auto_lint:
-                self.lint()
+            if check_linting_behaviour(view, ['always']):
+                # update the last selected line number
+                self.last_selected_line = -1
+                ANACONDA['LAST_PULSE'] = time.time()
+                ANACONDA['ALREADY_LINTED'] = False
+                if self.check_auto_lint:
+                    self.lint()
         else:
             self._erase_marks_if_no_linting(view)
 
