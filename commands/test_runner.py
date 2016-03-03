@@ -14,6 +14,7 @@ from ..anaconda_lib.helpers import get_settings, git_installation, is_python
 DEFAULT_TEST_COMMAND = "nosetests"
 TEST_DELIMETER = "."
 TB_FILE = r'[ ]*File \"(...*?)\", line ([0-9]*)'
+COMMAND_SEPARATOR = "&" if os.name == "nt" else "&"
 
 
 def virtualenv(func):
@@ -32,7 +33,8 @@ def virtualenv(func):
             if os.name != 'posix':
                 cmd = os.path.join(virtualenv, 'Scripts', 'activate')
 
-            command = '{};{};deactivate'.format(cmd, result)
+            command = '{0}{2}{1}{2}deactivate'.format(cmd,result,
+                                                      COMMAND_SEPARATOR)
 
         return command
 
@@ -164,10 +166,7 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         self._save_test_run(command)
 
     def _load_settings(self):
-        sep = ";"
-        if os.name == "nt":
-            sep = "&"
-
+        sep = COMMAND_SEPARATOR
         gs = get_settings
         self.test_root = gs(
             self.view, 'test_root', self.view.window().folders()[0]
@@ -189,9 +188,9 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
 
         command = [self.test_command, self.test_path]
         if self.before_test is not None:
-            command = [self.before_test, ';'] + command
+            command = [self.before_test, COMMAND_SEPARATOR] + command
         if self.after_test is not None:
-            command += [';', self.after_test]
+            command += [COMMAND_SEPARATOR, self.after_test]
 
         print(command)
         return ' '.join(command)
