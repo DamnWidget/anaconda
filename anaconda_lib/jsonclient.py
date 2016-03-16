@@ -13,11 +13,13 @@ import traceback
 
 try:
     import sublime
+except:
+    pass
+
+try:
+    import ujson as json
 except ImportError:
-    try:
-        import ujson as json
-    except ImportError:
-        import json
+    import json
 
 from .callback import Callback
 from .ioloop import EventHandler
