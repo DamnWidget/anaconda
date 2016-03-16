@@ -96,8 +96,8 @@ class Linter:
         iters = re.finditer(kwargs.get('regex'), line_text)
         results = [
             (r.start('underline'), r.end('underline')) for r in iters if (
-                kwargs.get('wordmatch') is None
-                or r.group('underline') == kwargs.get('wordmatch')
+                kwargs.get('wordmatch') is None or
+                r.group('underline') == kwargs.get('wordmatch')
             )
         ]
 
@@ -206,7 +206,8 @@ def add_lint_marks(view, lines, **errors):
             'none': sublime.HIDDEN,
             'fill': None
         }
-        gutter_theme = get_settings(view, 'anaconda_gutter_theme', 'basic')
+        gutter_theme = get_settings(
+            view, 'anaconda_gutter_theme', 'basic').lower()
         package_name = os.path.dirname(__file__).rsplit(os.path.sep, 3)[1]
         ico_path = (
             'Packages/' + package_name + '/anaconda_lib/linting/'
