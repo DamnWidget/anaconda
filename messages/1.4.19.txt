@@ -1,0 +1,11 @@
+Changes in 1.4.19
+=================
+
+## Fixes:
+	- Resolved bad code logic in jsonclient.py, more info in #442
+	- Fixed several PEP8 violations
+	- Emulate pep8 command line behavior to solve #464
+	- Fix type in anaconda's default settings file
+	- Fixed non portable code in tests runner
+
+For more detailed information about those changes run git log v1.4.18..v1.4.19 on git repository
