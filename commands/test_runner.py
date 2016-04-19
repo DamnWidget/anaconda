@@ -14,6 +14,7 @@ from ..anaconda_lib.helpers import get_settings, git_installation, is_python
 DEFAULT_TEST_COMMAND = "nosetests"
 TEST_DELIMETER = "."
 TB_FILE = r'[ ]*File \"(...*?)\", line ([0-9]*)'
+COMMAND_SEPARATOR = "&" if os.name == "nt" else "&"
 
 
 def virtualenv(func):
@@ -32,7 +33,9 @@ def virtualenv(func):
             if os.name != 'posix':
                 cmd = os.path.join(virtualenv, 'Scripts', 'activate')
 
-            command = '{};{};deactivate'.format(cmd, result)
+            command = '{0}{2}{1}{2}deactivate'.format(
+                cmd, result, COMMAND_SEPARATOR
+            )
 
         return command
 
@@ -45,7 +48,8 @@ class TestMethodMatcher(object):
     """
 
     def find_test_path(self, test_file_content,
-            class_delimeter=TEST_DELIMETER, method_delimeter=TEST_DELIMETER):
+                       class_delimeter=TEST_DELIMETER,
+                       method_delimeter=TEST_DELIMETER):
         """Try to find the test path, returns None if can't be found
         """
 
@@ -73,12 +77,12 @@ class TestMethodMatcher(object):
 
         match_classes = [
             (m.group(1), m.end()) for m in
-                re.finditer(r'\s?class\s+(\w+)\s?\(', test_file_content)]
+            re.finditer(r'\s?class\s+(\w+)\s?\(', test_file_content)]
         if match_classes:
             try:
                 return [
                     (c, p) for (c, p) in
-                        match_classes if "Test" in c or "test" in c][-1]
+                    match_classes if "Test" in c or "test" in c][-1]
             except IndexError:
                 return match_classes[-1]
 
@@ -169,10 +173,7 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         self._save_test_run(command)
 
     def _load_settings(self):
-        sep = ";"
-        if os.name == "nt":
-            sep = "&"
-
+        sep = COMMAND_SEPARATOR
         gs = get_settings
         self.test_root = gs(
             self.view, 'test_root', self.view.window().folders()[0]
@@ -200,9 +201,9 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
 
         command = [self.test_command, self.test_path]
         if self.before_test is not None:
-            command = [self.before_test, ';'] + command
+            command = [self.before_test, COMMAND_SEPARATOR] + command
         if self.after_test is not None:
-            command += [';', self.after_test]
+            command += [COMMAND_SEPARATOR, self.after_test]
 
         print(command)
         return ' '.join(command)
