@@ -33,8 +33,9 @@ def virtualenv(func):
             if os.name != 'posix':
                 cmd = os.path.join(virtualenv, 'Scripts', 'activate')
 
-            command = '{0}{2}{1}{2}deactivate'.format(cmd,result,
-                                                      COMMAND_SEPARATOR)
+            command = '{0}{2}{1}{2}deactivate'.format(
+                cmd, result, COMMAND_SEPARATOR
+            )
 
         return command
 
@@ -47,7 +48,8 @@ class TestMethodMatcher(object):
     """
 
     def find_test_path(self, test_file_content,
-            class_delimeter=TEST_DELIMETER, method_delimeter=TEST_DELIMETER):
+                       class_delimeter=TEST_DELIMETER,
+                       method_delimeter=TEST_DELIMETER):
         """Try to find the test path, returns None if can't be found
         """
 
@@ -75,12 +77,12 @@ class TestMethodMatcher(object):
 
         match_classes = [
             (m.group(1), m.end()) for m in
-                re.finditer(r'\s?class\s+(\w+)\s?\(', test_file_content)]
+            re.finditer(r'\s?class\s+(\w+)\s?\(', test_file_content)]
         if match_classes:
             try:
                 return [
                     (c, p) for (c, p) in
-                        match_classes if "Test" in c or "test" in c][-1]
+                    match_classes if "Test" in c or "test" in c][-1]
             except IndexError:
                 return match_classes[-1]
 
