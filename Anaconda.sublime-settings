@@ -150,7 +150,7 @@
             E241 - Fix extraneous whitespace around keywords.
             E242 - Remove extraneous whitespace around operator.
             E251 - Remove whitespace around parameter '=' sign.
-            E261 - Fix spacing after comment hash.
+            E261 - Fix spacing before comment hash.
             E262 - Fix spacing after comment hash.
             E271 - Fix extraneous whitespace around keywords.
             E272 - Fix extraneous whitespace around keywords.
