@@ -93,7 +93,6 @@ class Pep8Linter(linter.Linter):
                     self.file_errors += 1
                     self.total_errors += 1
 
-                    print(code)
                     pep8_error = code.startswith('E')
                     klass = Pep8Error if pep8_error else Pep8Warning
                     messages.append(klass(
@@ -104,7 +103,7 @@ class Pep8Linter(linter.Linter):
 
             params = {'reporter': AnacondaReport}
             if not rcfile:
-                _ignore = ignore + pep8.DEFAULT_IGNORE.split(',')
+                _ignore = ignore
                 params['ignore'] = _ignore
             else:
                 params['config_file'] = os.path.expanduser(rcfile)
