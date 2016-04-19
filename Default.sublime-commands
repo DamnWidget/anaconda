@@ -52,6 +52,10 @@
         "command": "anaconda_goto"
     },
     {
+        "caption": "Anaconda: Goto Python object",
+        "command": "anaconda_goto_python_object"
+    },
+    {
         "caption": "Anaconda: Find object usage",
         "command": "anaconda_find_usages"
     },

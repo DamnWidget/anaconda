@@ -2,7 +2,6 @@
 # This program is Free Software see LICENSE file for details
 
 from .doc import AnacondaDoc
-from .goto import AnacondaGoto
 from .rename import AnacondaRename
 from .mccabe import AnacondaMcCabe
 from .get_lines import AnacondaGetLines
@@ -14,6 +13,9 @@ from .next_lint_error import AnacondaNextLintError
 from .disable_linting import AnacondaDisableLinting
 from .complete_func_args import AnacondaCompleteFuncargs
 from .set_python_interpreter import AnacondaSetPythonInterpreter
+from .goto import (
+    AnacondaGoto, AnacondaGotoPythonObject
+)
 from .test_runner import (
     AnacondaRunCurrentFileTests, AnacondaRunProjectTests,
     AnacondaRunCurrentTest, AnacondaRunLastTest
@@ -26,6 +28,7 @@ from .vagrant import (
 __all__ = [
     'AnacondaDoc',
     'AnacondaGoto',
+    'AnacondaGotoPythonObject',
     'AnacondaRename',
     'AnacondaMcCabe',
     'AnacondaGetLines',
