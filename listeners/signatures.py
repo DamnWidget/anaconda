@@ -60,12 +60,14 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
                 i = data['doc'].split('<br>').index("")
             except ValueError:
                 self.signature = data['doc']
+                self.doc = ''
                 if show_tooltip and show_doc and st_version >= 3070:
                     return self._show_popup(view)
                 return self._show_status(view)
 
             if show_tooltip and show_doc and st_version >= 3070:
                 self.doc = '<br>'.join(data['doc'].split('<br>')[i:])
+                self.doc = self.doc.replace("  ", "&nbsp;&nbsp;")
 
             if not show_tooltip or st_version < 3070:
                 self.signature = data['doc'].splitlines()[2]

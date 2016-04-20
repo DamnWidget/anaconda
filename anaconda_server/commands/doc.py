@@ -3,6 +3,7 @@
 # This program is Free Software see LICENSE file for details
 
 import logging
+import html
 
 from .base import Command
 
@@ -58,6 +59,7 @@ class Doc(Command):
     def _html(self, definition):
         """Generate documentation string in HTML format
         """
+        escaped_doc = html.escape(html.unescape(definition.doc), quote=False)
+        escaped_doc = escaped_doc.replace('\n', '<br>')
 
-        return '{0}\n{1}'.format(
-            definition.full_name, definition.doc.replace('\n', '<br>'))
+        return '{0}\n{1}'.format(definition.full_name, escaped_doc)
