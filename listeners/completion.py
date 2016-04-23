@@ -15,7 +15,7 @@ from ..anaconda_lib.decorators import profile
 JUST_COMPLETED = False
 
 
-class AnacondaComletionEventListener(sublime_plugin.EventListener):
+class AnacondaCompletionEventListener(sublime_plugin.EventListener):
     """Anaconda completion events listener class
     """
 
@@ -84,7 +84,7 @@ class AnacondaComletionEventListener(sublime_plugin.EventListener):
             self.completions = proposals
             self.ready_from_defer = True
 
-            # is the tab key is used to complete just undo the last insertion
+            # if the tab key is used to complete just undo the last insertion
             if active_view().command_history(0)[0] == 'insert_best_completion':
                 if active_view().substr(sublime.Region(
                         active_view().sel()[0].begin() - 5,
