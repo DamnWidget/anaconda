@@ -1,0 +1,10 @@
+Changes in 1.4.20
+=================
+
+## Fixes:
+	- Fixed anaconda not erasing linter marks
+	- Fixed tooltips for function signatures and docstrings which contains
+	  special HTML characters. Fixes #417
+	- Fixed misspelled clas name that was affecting anconda based plugins
+
+For more detailed information about those changes run git log v1.4.19..v1.4.20 on git repository
