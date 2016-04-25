@@ -1,0 +1,6 @@
+Changes in 1.4.21
+=================
+
+## Fixes:
+	- Fixed Python2 support broken after mergin PR #469
+
