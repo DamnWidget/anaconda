@@ -2,8 +2,15 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
+import sys
 import logging
-import html
+
+try:
+    import html
+except ImportError:
+    # python2 faillback
+    import cgi
+    from HTMLParser import HTMLParser
 
 from .base import Command
 
@@ -16,6 +23,7 @@ class Doc(Command):
         self.script = script
         self.html = html
         super(Doc, self).__init__(callback, uid)
+
 
     def run(self):
         """Run the command
@@ -59,7 +67,14 @@ class Doc(Command):
     def _html(self, definition):
         """Generate documentation string in HTML format
         """
-        escaped_doc = html.escape(html.unescape(definition.doc), quote=False)
+
+        if sys.version_info >= (3, 0):
+            escaped_doc = html.escape(
+                html.unescape(definition.doc), quote=False)
+        else:
+            escaped_doc = cgi.escape(
+                HTMLParser.unescape.__func__(HTMLParser, definition.doc))
+
         escaped_doc = escaped_doc.replace('\n', '<br>')
 
         return '{0}\n{1}'.format(definition.full_name, escaped_doc)
