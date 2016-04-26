@@ -512,15 +512,6 @@
     /* This is the delimiter between the module and the class */
     "test_delimeter": ":",
 
-    /* This is the delimiter between the class and the method */
-    "test_method_delimeter": ".",
-
-    /*
-        Uncomment the line below to enable filepath-based test runner
-        patterns like those required for py.test.
-    */
-    // "test_filepath_patterns": true,
-
     /* Uncomment the line below to use a virtualenv for your tests */
     //"test_virtualenv": ""
 
