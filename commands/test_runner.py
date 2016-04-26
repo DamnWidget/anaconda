@@ -14,7 +14,7 @@ from ..anaconda_lib.helpers import get_settings, git_installation, is_python
 DEFAULT_TEST_COMMAND = "nosetests"
 TEST_DELIMETER = "."
 TB_FILE = r'[ ]*File \"(...*?)\", line ([0-9]*)'
-COMMAND_SEPARATOR = "&" if os.name == "nt" else "&"
+COMMAND_SEPARATOR = "&" if os.name == "nt" else ";"
 
 
 def virtualenv(func):
