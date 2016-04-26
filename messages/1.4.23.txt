@@ -1,0 +1,9 @@
+Changes in 1.4.23
+=================
+
+## Rollbacks:
+	- Rollback the rollback that rollback PR #441 (not a joke)
+
+## Fixes
+	- Fixed wrong character to separate commands in Unix, fixes #475
+
