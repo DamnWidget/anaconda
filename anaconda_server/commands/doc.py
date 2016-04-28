@@ -77,7 +77,10 @@ class Doc(Command):
                 html.unescape(definition.doc), quote=False)
         else:
             escaped_doc = cgi.escape(
-                HTMLParser.unescape.__func__(HTMLParser, definition.doc))
+                HTMLParser.unescape.__func__(
+                    HTMLParser, definition.doc.encode('utf8')
+                )
+            )
 
         escaped_doc = escaped_doc.replace('\n', '<br>')
 

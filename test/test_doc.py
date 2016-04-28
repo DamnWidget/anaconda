@@ -10,7 +10,7 @@ sys.path.append('../anaconda_lib')
 import jedi
 
 src = 'def test_src():\n\t"""Test String\n\t"""\n\ntest_src('
-src_escape = 'def test_src():\n\t"""<strong>&nbsp;Espa&nacute;a currency €</strong>"""\n\ntest_src('  # noqa
+src_escape = 'def test_src():\n\t"""<strong>Espa&nacute;a currency €</strong>"""\n\ntest_src('  # noqa
 
 
 class TestDoc(object):
@@ -60,7 +60,11 @@ class TestDoc(object):
     def _check_html_escape(self, kwrgs):
 
         self._common_assertions(kwrgs)
-        assert kwrgs['doc'].strip() == 'test_src\ntest_src()<br><br>&lt;strong&gt;\xa0Espańa currency €&lt;/strong&gt;'  # noqa
+        if sys.version_info >= (3, 0):
+            assert kwrgs['doc'].strip() == 'test_src\ntest_src()<br><br>&lt;strong&gt;Espańa currency €&lt;/strong&gt;'  # noqa
+        else:
+            print(repr(kwrgs['doc']))
+            assert kwrgs['doc'].strip() == 'test_src\ntest_src()<br><br>&lt;strong&gt;Espa&amp;nacute;a currency \xe2\x82\xac&lt;/strong&gt;'  # noqa
 
     def _check_no_definition(self, kwrgs):
 
