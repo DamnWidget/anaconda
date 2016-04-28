@@ -17,17 +17,20 @@ class TestAutoCompletion(object):
 
         from commands.autocomplete import AutoComplete
 
-        def _check(kwrgs):
-            assert kwrgs['success']
-            assert len(kwrgs['completions']) > 0
-            assert kwrgs['completions'][0] == ('abort\tfunction', 'abort')
-            assert kwrgs['uid'] == 0
-
-        cmd = AutoComplete(_check, 0, jedi.Script('import os; os.'))
+        cmd = AutoComplete(self._check, 0, jedi.Script('import os; os.'))
         cmd.run()
 
     def test_autocomplete_handler(self):
 
         from handlers.jedi_handler import JediHandler
-        pass
 
+        data = {'source': 'import os; os.', 'line': 1, 'offset': 14}
+        handler = JediHandler('autocomplete', data, 0, 0, self._check)
+        handler.run()
+
+    def _check(self, kwrgs):
+
+        assert kwrgs['success'] is True
+        assert len(kwrgs['completions']) > 0
+        assert kwrgs['completions'][0] == ('abort\tfunction', 'abort')
+        assert kwrgs['uid'] == 0
