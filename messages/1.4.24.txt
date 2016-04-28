@@ -1,0 +1,8 @@
+Changes in 1.4.24
+=================
+
+## Fixes
+	- Fixed wrong behavior when Python Charmers incomplete html
+	  module it's found in the system by Python2 interreters.
+	  Fixes #476
+
