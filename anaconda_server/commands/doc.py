@@ -5,19 +5,12 @@
 import sys
 import logging
 
-# Old approach:
-# try:
-#     import html
-# except ImportError:
-#     # python2 faillback
-#     import cgi
-#     from HTMLParser import HTMLParser
-
-# New approach:
+# Using a non Pythonic import approach as the incomplete module future.moves.html 
+# from PyCharmers breaks the doc.py logic
 if sys.version_info >= (3, 0):
     import html
 else:
-    # python2 faillback
+    # python2 uses cgi
     import cgi
     from HTMLParser import HTMLParser
 
