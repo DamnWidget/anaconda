@@ -5,12 +5,22 @@
 import sys
 import logging
 
-try:
+# Old approach:
+# try:
+#     import html
+# except ImportError:
+#     # python2 faillback
+#     import cgi
+#     from HTMLParser import HTMLParser
+
+# New approach:
+if sys.version_info >= (3, 0):
     import html
-except ImportError:
+else:
     # python2 faillback
     import cgi
     from HTMLParser import HTMLParser
+
 
 from .base import Command
 
