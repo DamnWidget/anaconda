@@ -28,9 +28,3 @@ class TestJsonServer(object):
         """
 
         cls.server.terminate()
-
-    def test_pollas(self):
-        """Test pollas
-        """
-
-        assert True
