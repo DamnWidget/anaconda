@@ -99,6 +99,7 @@ class PyFlakesLinter(linter.Linter):
             elif (isinstance(
                 error, (
                     pyflakes.messages.RedefinedWhileUnused,
+                    pyflakes.messages.RedefinedInListComp,
                     pyflakes.messages.UndefinedName,
                     pyflakes.messages.UndefinedExport,
                     pyflakes.messages.UndefinedLocal,
