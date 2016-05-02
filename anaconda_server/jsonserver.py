@@ -92,6 +92,10 @@ class JSONHandler(asynchat.async_chat):
             uid = data.pop('uid')
             vid = data.pop('vid', None)
             handler_type = data.pop('handler')
+            if DEBUG_MODE is True:
+                print('Received method: {0}, handler: {1}'.format(
+                    method, handler_type)
+                )
             self.handle_command(handler_type, method, uid, vid, data)
         else:
             logging.error(
@@ -110,6 +114,8 @@ class JSONHandler(asynchat.async_chat):
 
         handler = ANACONDA_HANDLERS.get(
             handler_type, AnacondaHandler.get_handler(handler_type))
+        if DEBUG_MODE is True:
+            print('{0} handler retrieved from registry'.format(handler))
         handler(method, data, uid, vid, self.return_back, DEBUG_MODE).run()
 
 
