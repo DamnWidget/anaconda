@@ -53,9 +53,11 @@ class TestDoc(object):
 
     def _check_html_escape(self, kwrgs):
         self._common_assertions(kwrgs)
-        if sys.version_info >= (3, 0):
+        if sys.version_info >= (3, 4):
+            print(kwrgs['doc'])
             assert kwrgs['doc'].strip() == 'test_src\ntest_src()<br><br>&lt;strong&gt;Espańa currency €&lt;/strong&gt;'  # noqa
-        else:
+
+        if sys.version_info < (3, 0):
             print(repr(kwrgs['doc']))
             assert kwrgs['doc'].strip() == 'test_src\ntest_src()<br><br>&lt;strong&gt;Espa&amp;nacute;a currency \xe2\x82\xac&lt;/strong&gt;'  # noqa
 

@@ -14,6 +14,9 @@ from .base import Command
 # imported, this command just crashes and forces a JsonServer new instance
 if sys.version_info >= (3, 0):
     import html
+    if sys .version_info < (3, 4):
+        import html as cgi
+        from html.parser import HTMLParser
 else:
     # python2 uses cgi
     import cgi
@@ -72,15 +75,21 @@ class Doc(Command):
         """Generate documentation string in HTML format
         """
 
-        if sys.version_info >= (3, 0):
+        if sys.version_info >= (3, 4):
             escaped_doc = html.escape(
                 html.unescape(definition.doc), quote=False)
         else:
-            escaped_doc = cgi.escape(
-                HTMLParser.unescape.__func__(
-                    HTMLParser, definition.doc.encode('utf8')
+            try:
+                escaped_doc = cgi.escape(
+                    HTMLParser.unescape.__func__(
+                        HTMLParser, definition.doc.encode('utf8')
+                    )
                 )
-            )
+            except AttributeError:
+                # Python 3.x < 3.4
+                escaped_doc = cgi.escape(
+                    HTMLParser.unescape(HTMLParser, definition.doc)
+                )
 
         escaped_doc = escaped_doc.replace('\n', '<br>')
 
