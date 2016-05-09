@@ -8,28 +8,23 @@ sys.path.append('../anaconda_lib')
 
 import jedi
 
+from commands.autocomplete import AutoComplete
+from handlers.jedi_handler import JediHandler
+
 
 class TestAutoCompletion(object):
     """Auto completion test suite
     """
 
     def test_autocomplete_command(self):
-
-        from commands.autocomplete import AutoComplete
-
-        cmd = AutoComplete(self._check, 0, jedi.Script('import os; os.'))
-        cmd.run()
+        AutoComplete(self._check, 0, jedi.Script('import os; os.'))
 
     def test_autocomplete_handler(self):
-
-        from handlers.jedi_handler import JediHandler
-
         data = {'source': 'import os; os.', 'line': 1, 'offset': 14}
         handler = JediHandler('autocomplete', data, 0, 0, self._check)
         handler.run()
 
     def _check(self, kwrgs):
-
         assert kwrgs['success'] is True
         assert len(kwrgs['completions']) > 0
         assert kwrgs['completions'][0] == ('abort\tfunction', 'abort')

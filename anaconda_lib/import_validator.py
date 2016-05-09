@@ -47,7 +47,7 @@ class Validator:
             if word in ('from', 'import', 'as'):
                 continue
 
-            offset = module_line.find(word) + len(word) / 2
+            offset = int(module_line.find(word) + len(word) / 2)
             if not Script(
                     module_line, 1, offset, self.filename).goto_assignments():
                 if valid is True:

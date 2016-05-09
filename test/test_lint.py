@@ -26,6 +26,14 @@ def f():
     """This is a docst
     ring"""'''
 
+    _import_validator_code = '''
+import idontexists
+
+
+def main():
+    idontexists('Hello World!')
+    '''
+
     def setUp(self):
         self._settings = {
             'use_pyflakes': False, 'use_pylint': False, 'use_pep257': False,
@@ -66,9 +74,14 @@ def f():
 
     def test_pep257_ignores(self):
         self._settings['use_pep257'] = True
-        self._settings['pep257_ignore'] = ['D100', 'D400', 'D209', 'D205', 'D401']
+        self._settings['pep257_ignore'] = ['D100', 'D400', 'D209', 'D205', 'D401']  # noqa
         handler = PythonLintHandler('lint', None, 0, 0, self._check_pep257_ignores)  # noqa
         handler.lint(self._settings, self._lintable_docstring, '')
+
+    def test_import_validator(self):
+        self._settings['validate_imports'] = True
+        handler = PythonLintHandler('lint', None, 0, 0, self._check_validate_imports)  # noqa
+        handler.lint(self._settings, self._import_validator_code, '')
 
     def _check_pyflakes(self, result):
         assert result['success'] is True
@@ -135,5 +148,15 @@ def f():
     def _check_pep257_ignores(self, result):
         assert result['success'] is True
         assert len(result['errors']) == 0
+        assert result['uid'] == 0
+        assert result['vid'] == 0
+
+    def _check_validate_imports(self, result):
+        assert result['success'] is True
+        assert len(result['errors']) == 1
+        assert result['errors'][0]['raw_error'] == "[E] ImportValidator (801): can't import idontexists"  # noqa
+        assert result['errors'][0]['code'] == 801
+        assert result['errors'][0]['level'] == 'E'
+        assert result['errors'][0]['underline_range'] is True
         assert result['uid'] == 0
         assert result['vid'] == 0

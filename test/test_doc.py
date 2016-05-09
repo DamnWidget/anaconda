@@ -9,6 +9,9 @@ sys.path.append('../anaconda_lib')
 
 import jedi
 
+from commands.doc import Doc
+from handlers.jedi_handler import JediHandler
+
 src = 'def test_src():\n\t"""Test String\n\t"""\n\ntest_src('
 src_escape = 'def test_src():\n\t"""<strong>Espa&nacute;a currency €</strong>"""\n\ntest_src('  # noqa
 
@@ -18,38 +21,29 @@ class TestDoc(object):
     """
 
     def test_doc_command(self):
+        Doc(self._check_html, 0, jedi.Script(src), True)
 
-        from commands.doc import Doc
+    def test_doc_plain(self):
+        Doc(self._check_plain, 0, jedi.Script(src), False)
 
-        cmd = Doc(self._check_html, 0, jedi.Script(src), True)
-        cmd.run()
+    def test_doc_html_escape(self):
+        Doc(self._check_html_escape, 0, jedi.Script(src_escape), True)
 
-        cmd = Doc(self._check_plain, 0, jedi.Script(src), False)
-        cmd.run()
-
-        cmd = Doc(self._check_html_escape, 0, jedi.Script(src_escape), True)
-        cmd.run()
-
-        cmd = Doc(self._check_no_definition, 0, jedi.Script('nothing'), False)
-        cmd.run()
+    def test_doc_no_definiion(self):
+        Doc(self._check_no_definition, 0, jedi.Script('nothing'), False)
 
     def test_doc_handler(self):
-
-        from handlers.jedi_handler import JediHandler
-
         data = {'source': src, 'line': 5, 'offset': 9, 'html': True}
         handler = JediHandler('doc', data, 0, 0, self._check_handler)
         handler.run()
 
     def _check_html(self, kwrgs):
-
         self._common_assertions(kwrgs)
         assert kwrgs['doc'].strip() == (
             "test_src\ntest_src()<br><br>Test String<br>"
         )
 
     def _check_plain(self, kwrgs):
-
         self._common_assertions(kwrgs)
         assert kwrgs['doc'].strip() == "Docstring for {0}\n{1}\n{2}".format(
             'test_src',
@@ -58,7 +52,6 @@ class TestDoc(object):
         )
 
     def _check_html_escape(self, kwrgs):
-
         self._common_assertions(kwrgs)
         if sys.version_info >= (3, 0):
             assert kwrgs['doc'].strip() == 'test_src\ntest_src()<br><br>&lt;strong&gt;Espańa currency €&lt;/strong&gt;'  # noqa
@@ -67,16 +60,13 @@ class TestDoc(object):
             assert kwrgs['doc'].strip() == 'test_src\ntest_src()<br><br>&lt;strong&gt;Espa&amp;nacute;a currency \xe2\x82\xac&lt;/strong&gt;'  # noqa
 
     def _check_no_definition(self, kwrgs):
-
         assert kwrgs['success'] is False
         assert kwrgs['uid'] == 0
         assert kwrgs['doc'] == ''
 
     def _check_handler(self, kwrgs):
-
         self._check_html(kwrgs)
 
     def _common_assertions(self, kwrgs):
-
         assert kwrgs['success'] is True
         assert kwrgs['uid'] == 0
