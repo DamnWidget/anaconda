@@ -15,7 +15,7 @@ class McCabe(Command):
     def __init__(self, callback, uid, vid, mccabe, code, threshold, filename):
         self.vid = vid
         self.code = code
-        self.filename = filename
+        self.filename = filename if filename is not None else ''
         self.threshold = threshold
         self.mccabe = mccabe(self.code, self.filename)
         super(McCabe, self).__init__(callback, uid)
@@ -32,11 +32,12 @@ class McCabe(Command):
                 'vid': self.vid
             })
         except Exception as error:
+            print(error)
             logging.error(error)
             logging.debug(traceback.format_exc().splitlines())
             self.callback({
                 'success': False,
-                'error': error,
+                'error': str(error),
                 'uid': self.uid,
                 'vid': self.vid
             })
