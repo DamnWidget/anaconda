@@ -58,14 +58,14 @@ class AutoPep8(Command):
         args += ['-a'] * settings.get('aggressive', 0)
 
         if len(settings.get('autoformat_ignore', [])) > 0:
-            args += ['--ignore={}'.format(
+            args += ['--ignore={0}'.format(
                 ','.join(settings.get('autoformat_ignore')))]
 
         if len(settings.get('autoformat_select', [])) > 0:
-            args += ['--select={}'.format(
+            args += ['--select={0}'.format(
                 ','.join(settings.get('autoformat_select')))]
 
-        args += ['--max-line-length={}'.format(
+        args += ['--max-line-length={0}'.format(
             settings.get('pep8_max_line_length', 79))]
         args += ['anaconda_rocks']
 
