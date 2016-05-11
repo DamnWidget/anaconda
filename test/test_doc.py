@@ -4,8 +4,6 @@
 # This program is Free Software see LICENSE file for details
 
 import sys
-sys.path.insert(0, '../anaconda_server')
-sys.path.append('../anaconda_lib')
 
 import jedi
 

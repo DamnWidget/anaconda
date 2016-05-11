@@ -4,8 +4,6 @@
 
 import re
 import sys
-sys.path.insert(0, '../anaconda_server')
-sys.path.append('../anaconda_lib')
 
 import jedi
 

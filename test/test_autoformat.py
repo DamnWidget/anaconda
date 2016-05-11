@@ -2,10 +2,6 @@
 # Copyright (C) 2012-2016 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
-import sys
-sys.path.insert(0, '../anaconda_server')
-sys.path.append('../anaconda_lib')
-
 from commands.autoformat import AutoPep8
 from handlers.autoformat_handler import AutoFormatHandler
 
