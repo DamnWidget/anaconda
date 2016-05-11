@@ -1,0 +1,11 @@
+Changes in 1.4.25
+=================
+
+## Tests Suite
+	- Added test suite for JsonServer commands and handlers
+
+## Fixes
+	- Fixed several bugs discovered during tests inclusion
+
+
+For detailed information run git log v1.4.24..v1.4.25 in the git repository
