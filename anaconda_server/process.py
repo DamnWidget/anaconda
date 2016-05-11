@@ -22,8 +22,9 @@ def spawn(args, **kwargs):
 
     try:
         return subprocess.Popen(args, **kwargs)
-    except:
-        logging.error(
-            'Your operating system denied the spawn of {} process'.format(
-                args[0])
-        )
+    except Exception as error:
+        msg = (
+            'Your operating system denied the spawn of {0} process: {1}'
+        ).format(args[0], error)
+        logging.error(msg)
+        raise RuntimeError(msg)
