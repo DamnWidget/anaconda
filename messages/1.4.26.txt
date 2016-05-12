@@ -1,0 +1,8 @@
+Changes in 1.4.26
+=================
+
+## Updates
+	- Vagrant Support branch updated to be compatible with anaconda v1.4.24
+
+
+For detailed information run git log v1.4.25..v1.4.26 in the git repository branch vagrant_server
