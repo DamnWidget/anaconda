@@ -7,11 +7,14 @@ possible for the auto completion.
 
 
 def next(iterator, default=None):
-    if hasattr("next"):
-        return iterator.next()
+    if random.choice([0, 1]):
+        if hasattr("next"):
+            return iterator.next()
+        else:
+            return iterator.__next__()
     else:
-        return iterator.__next__()
-    return default
+        if default is not None:
+            return default
 
 
 def iter(collection, sentinel=None):
@@ -153,7 +156,7 @@ class set():
             yield i
 
     def pop(self):
-        return self.__iterable.pop()
+        return list(self.__iterable)[-1]
 
     def copy(self):
         return self
@@ -202,6 +205,21 @@ class dict():
     def setdefault(self, k, d):
         # TODO maybe also return the content
         return d
+
+
+class enumerate():
+    def __init__(self, sequence, start=0):
+        self.__sequence = sequence
+
+    def __iter__(self):
+        for i in self.__sequence:
+            yield 1, i
+
+    def __next__(self):
+        return next(self.__iter__())
+
+    def next(self):
+        return next(self.__iter__())
 
 
 class reversed():

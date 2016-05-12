@@ -24,10 +24,10 @@ import re
 import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
-import _ast
+import _ast  # noqa
 
-import pep8
-import pyflakes.checker as pyflakes
+import pep8  # noqa
+import pyflakes.checker as pyflakes  # noqa
 
 
 if sys.version_info < (2, 7):
@@ -103,8 +103,6 @@ class Pep8Error(LintError):
             filename, loc, 'W', '[W] PEP 8 (%s): %s', (code, text),
             offset=offset, text=text
         )
-
-
 
 
 class Pep8Warning(LintError):
@@ -307,6 +305,7 @@ class Linter(object):
             elif (isinstance(
                 error, (
                     pyflakes.messages.RedefinedWhileUnused,
+                    pyflakes.messages.RedefinedInListComp,
                     pyflakes.messages.UndefinedName,
                     pyflakes.messages.UndefinedExport,
                     pyflakes.messages.UndefinedLocal,

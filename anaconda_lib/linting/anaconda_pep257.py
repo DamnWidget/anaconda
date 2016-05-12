@@ -32,8 +32,8 @@ class PEP257(object):
                 error_code = getattr(error, 'code', None)
                 if error_code is not None and error_code not in self.ignore:
                     errors.append(self._convert(error))
-        except Exception:
-            pass
+        except Exception as error:
+            print(error)
 
         return errors
 

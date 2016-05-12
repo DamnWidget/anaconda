@@ -53,12 +53,15 @@ class PyFlakesLinter(linter.Linter):
             lineno = 0
 
         try:
+            fname = ''
+            if filename is not None:
+                fname = filename.encode('utf8') or ''
             code = code.encode('utf8') + b'\n'
-            tree = compile(code, filename or '', 'exec', _ast.PyCF_ONLY_AST)
+            tree = compile(code, fname, 'exec', _ast.PyCF_ONLY_AST)
         except (SyntaxError, IndentationError):
             return self._handle_syntactic_error(code, filename)
         except ValueError as error:
-            return [PyFlakesError(filename, FakeLoc(), error.args[0])]
+            return [PyFlakesError(filename, FakeLoc(), 'E', error.args[0]), []]
         else:
             # the file is syntactically valid, check it now
             w = pyflakes.Checker(tree, filename, ignore)
@@ -96,10 +99,10 @@ class PyFlakesLinter(linter.Linter):
             elif (isinstance(
                 error, (
                     pyflakes.messages.RedefinedWhileUnused,
+                    pyflakes.messages.RedefinedInListComp,
                     pyflakes.messages.UndefinedName,
                     pyflakes.messages.UndefinedExport,
                     pyflakes.messages.UndefinedLocal,
-                    pyflakes.messages.Redefined,
                     pyflakes.messages.UnusedVariable)) and
                     error.__class__.__name__ not in explicit_ignore):
 

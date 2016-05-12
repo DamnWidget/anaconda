@@ -45,7 +45,7 @@ class AnacondaHandler(AnacondaHandlerProvider):
             if argument in inspect.getargs(func_code).args:
                 kwargs[argument] = value
 
-        self.callback(command(**kwargs))
+        command(**kwargs)
 
     @classmethod
     def get_handler(cls, handler_type):

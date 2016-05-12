@@ -41,14 +41,15 @@ class Validator:
             return True
 
         error = []
-        error_string = 'can\'t import {}'
+        error_string = 'can\'t import {0}'
         valid = True
         for word in module_line.split():
             if word in ('from', 'import', 'as'):
                 continue
 
-            offset = module_line.find(word) + len(word) / 2
-            if not Script(module_line, 1, offset, self.filename).goto():
+            offset = int(module_line.find(word) + len(word) / 2)
+            if not Script(
+                    module_line, 1, offset, self.filename).goto_assignments():
                 if valid is True:
                     valid = False
                 error.append(word)
@@ -62,7 +63,16 @@ class Validator:
         found = []
         lineno = 1
         buffer_found = []
+        in_docstring = False
         for line in self.source.splitlines():
+            # skip if we detect docstring blocks
+            if not in_docstring:
+                in_docstring = self.__detect_docstring(line)
+            else:
+                if self.__detect_docstring(line):
+                    in_docstring = False
+                else:
+                    continue
             l = line.strip()
             if len(buffer_found) > 0:
                 if ')' in l:
@@ -72,6 +82,8 @@ class Validator:
                 else:
                     buffer_found.append(l)
             else:
+                if self.__detect_docstring(line):
+                    continue
                 if l.startswith('import ') or l.startswith('from '):
                     if '(' in l:
                         buffer_found.append(l.replace('(', '').strip())
@@ -80,3 +92,12 @@ class Validator:
             lineno += 1
 
         return found
+
+    def __detect_docstring(self, line):
+        """Detects if there is a docstring
+        """
+
+        if '"""' in line or "'''" in line:
+            return True
+
+        return False

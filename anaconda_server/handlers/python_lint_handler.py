@@ -52,20 +52,20 @@ class PythonLintHandler(AnacondaHandler):
                 func(settings, code, filename)
 
         if len(self._errors) == 0 and len(self._failures) > 0:
-            return {
+            self.callback({
                 'success': False,
                 'errors': '. '.join([str(e) for e in self._failures]),
                 'uid': self.uid,
                 'vid': self.vid
-            }
+            })
             return
 
-        return {
+        self.callback({
             'success': True,
             'errors': self._errors,
             'uid': self.uid,
             'vid': self.vid
-        }
+        })
 
     def pyflakes(self, settings, code=None, filename=None):
         """Run the PyFlakes linter
@@ -153,8 +153,7 @@ class PythonLintHandler(AnacondaHandler):
         self._linters['pep257'] = settings.get('use_pep257', False)
         self._linters['pep8'] = settings.get('pep8', True)
         self._linters['import_validator'] = settings.get(
-            'validate_imports', False
-        )
+            'validate_imports', False)
 
         # disable pyflakes if pylint is in use
         if self._linters['pylint'] is True:

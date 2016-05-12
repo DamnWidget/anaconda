@@ -31,6 +31,6 @@ __all__ = [
     'AutoPep8',
     'FindUsages',
     'AutoComplete',
-    'ImportValidator'
+    'ImportValidator',
     'CompleteParameters'
 ]

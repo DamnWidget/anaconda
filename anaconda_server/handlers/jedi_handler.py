@@ -33,7 +33,10 @@ class JediHandler(AnacondaHandler):
         """Handle the result from the call and purge in memory jedi cache
         """
 
-        jedi.cache.clear_caches()
+        try:
+            jedi.cache.clear_time_caches()
+        except:
+            jedi.cache.clear_caches()
         self.real_callback(result)
 
     @property
@@ -91,8 +94,8 @@ class JediHandler(AnacondaHandler):
 
         Goto(self.callback, self.uid, self.script)
 
-    def doc(self):
+    def doc(self, html=False):
         """Call doc
         """
 
-        Doc(self.callback, self.uid, self.script)
+        Doc(self.callback, self.uid, self.script, html)

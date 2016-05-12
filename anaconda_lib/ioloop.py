@@ -37,6 +37,7 @@ import time
 import errno
 import socket
 import select
+import logging
 import traceback
 import threading
 
@@ -74,7 +75,8 @@ class IOHandlers(object):
         """Register a new handler
         """
 
-        print('Registering handler with address {}'.format(handler.address))
+        logging.info(
+            'Registering handler with address {}'.format(handler.address))
 
         with self._lock:
             if handler.fileno() not in self._handler_pool:
@@ -274,24 +276,40 @@ def loop():
     """Main event loop
     """
 
+    def restart_poll(error):
+        logging.error(
+            'Unhandled exception in poll, restarting the poll request')
+        logging.error(error)
+        for traceback_line in traceback.format_exc().splitlines():
+            logging.error(traceback_line)
+
+        with IOHandlers()._lock:
+            for handler in IOHandlers()._handler_pool.values():
+                handler.close()
+            IOHandlers()._handler_pool = {}
+
     def inner_loop():
 
         while NOT_TERMINATE:
             try:
                 poll()
                 time.sleep(0.01)
+            except OSError as error:
+                if os.name != 'posix' and error.errno == os.errno.WSAENOTSOCK:
+                    msg = (
+                        'Unfortunately, the Windows socket is in inconsistent'
+                        ' state, restart your sublime text 3. If the problem '
+                        'persist, fill an issue report on:'
+                        '   https://github.com/DamnWidget/anaconda/issues'
+                    )
+                    logging.error(msg)
+                    import sublime
+                    sublime.error_message(msg)
+                    terminate()
+                else:
+                    restart_poll(error)
             except Exception as error:
-                print(
-                    'Unhandled exception in poll, restarting the poll request'
-                )
-                print(error)
-                for traceback_line in traceback.format_exc().splitlines():
-                    print(traceback_line)
-
-                with IOHandlers()._lock:
-                    for handler in IOHandlers()._handler_pool.values():
-                        handler.close()
-                    IOHandlers()._handler_pool = {}
+                restart_poll(error)
 
         # cleanup
         for handler in IOHandlers()._handler_pool.values():

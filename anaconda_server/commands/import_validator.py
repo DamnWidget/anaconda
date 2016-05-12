@@ -52,7 +52,7 @@ class ImportValidator(Command):
                 'lineno': lineno,
                 'offset': 0,
                 'code': 801,
-                'raw_error': '[E] ImportValidator (801): {}'.format(line),
+                'raw_error': '[E] ImportValidator (801): {0}'.format(line),
                 'message': '[E] ImportValidator (%s): %s',
                 'underline_range': True
             })
