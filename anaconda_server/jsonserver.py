@@ -22,10 +22,10 @@ try:
 except ImportError:
     import json
 
-sys.path.insert(
-    0, os.path.join(os.path.dirname(__file__), '../anaconda_lib/jedi'))
+sys.path.insert(0, os.path.join(
+    os.path.split(os.path.split(__file__)[0])[0], 'anaconda_lib'))
 
-import settings as jedi_settings
+from jedi import settings as jedi_settings
 from lib.contexts import json_decode
 from handlers import ANACONDA_HANDLERS
 from lib.anaconda_handler import AnacondaHandler
