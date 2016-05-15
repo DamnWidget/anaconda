@@ -13,13 +13,14 @@ import logging
 from string import Template
 
 from .anaconda_lib import ioloop
-from .anaconda_lib.worker import LOOP_RUNNING
 
 from .commands import *
 from .listeners import *
 
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda works with Sublime Text 3 only')
+
+LOOP_RUNNING = False
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))

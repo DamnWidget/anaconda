@@ -110,3 +110,12 @@ class AsynClient(EventHandler):
             )
         except NameError:
             self.push(bytes('{}\r\n'.format(json.dumps(data)), 'utf8'))
+
+    def __repr__(self):
+        """String representation of the client
+        """
+
+        return '{}:{} ({})'.format(
+            self.address[0], self.address[1],
+            'connected' if self.connected else 'disconnected'
+        )
