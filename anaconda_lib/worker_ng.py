@@ -64,7 +64,7 @@ class Worker(object):
             ).format(
                 self._header,
                 self.processer.last_error.get('error', 'none'),
-                self.processer.last_error.get('recommentation', '')
+                self.processer.last_error.get('recommendation', '')
             )
             logger.error(msg)
             sublime.error_message(msg)
