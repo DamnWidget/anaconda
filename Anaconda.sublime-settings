@@ -86,6 +86,13 @@
         Default python interpreter.
 
         This can (and should) be overridden by project settings
+
+        NOTE: if you want anaconda to lint and complete using a remote
+        python interpreter that runs the anaconda's minserver.py script
+        in a remote machine just use it's address:port as interpreter
+        for example:
+
+        	"python_interpreter": "tcp://my_remote.machine.com:19360"
     */
     "python_interpreter": "python",
 

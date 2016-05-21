@@ -6,14 +6,11 @@ import os
 import sys
 import time
 import socket
-import random
 import logging
-import traceback
 
 import sublime
 
 from .worker_ng import Worker
-from .jsonclient import AsynClient
 from .remoteworker import RemoteChecker
 from .builder.python_builder import AnacondaSetPythonBuilder
 from .helpers import get_settings, active_view, project_name, create_subprocess
@@ -74,7 +71,7 @@ class LocalProcesser(object):
             self.last_error = {
                 'error': (
                     'Anaconda can not spawn a new process with your current '
-                    'configured python interpreter ({} '.format(args[0])
+                    'configured python interpreter ({})'.format(args[0])
                 ),
                 'recommendation': (
                     'Make sure your interpeter is a valid binary and is in '
@@ -170,7 +167,6 @@ class LocalChecker(RemoteChecker):
 
         # if last_error is not empty just return False
         if not not self.last_error:
-            worker.green_light = False
             return False
 
         if not worker.processer.is_healthy():
@@ -180,12 +176,10 @@ class LocalChecker(RemoteChecker):
         timeout = 0
         while not self._status(worker, 0.05):
             if timeout >= 200:
-                worker.green_light = False
                 return False
             time.sleep(0.1)
             timeout += 1
 
-        worker.green_light = True
         return True
 
     def renew_port(self):

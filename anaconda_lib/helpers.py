@@ -13,6 +13,7 @@ import logging
 import functools
 import traceback
 import subprocess
+from urllib.parse import urlparse
 from collections import defaultdict
 
 import sublime
@@ -178,11 +179,14 @@ def get_settings(view, name, default=None):
                             ENVIRON_HOOK_INVALID[view.id()] = True
                             break  # stop loop
                         else:
-                            return data.get(
-                                name,
-                                view.settings().get(name, plugin_settings.get(
-                                    name, default)
-                                )
+                            return sublime.expand_variables(
+                                data.get(
+                                    name,
+                                    view.settings().get(name, plugin_settings.get(
+                                        name, default)
+                                    )
+                                ),
+                                view.window().extract_variables()
                             )
                 else:
                     parts = os.path.split(dirname)
@@ -191,7 +195,11 @@ def get_settings(view, name, default=None):
                     else:
                         break  # stop loop
 
-    return view.settings().get(name, plugin_settings.get(name, default))
+    r = view.settings().get(name, plugin_settings.get(name, default))
+    if name == 'python_interpreter' or name == 'extra_paths':
+        r = sublime.expand_variables(r, view.window().extract_variables())
+
+    return r
 
 
 def active_view():
@@ -199,6 +207,16 @@ def active_view():
     """
 
     return sublime.active_window().active_view()
+
+
+def is_remote_session(view):
+    """Returns True if we are in a remote session
+    """
+
+    if '://' in get_settings(view, 'python_interpreter', 'python'):
+        return True
+
+    return False
 
 
 def prepare_send_data(location, method, handler):

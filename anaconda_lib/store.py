@@ -6,6 +6,8 @@ import sys
 import logging
 import threading
 
+from urllib.parse import urlparse
+
 import sublime
 
 from .info import Repr
@@ -35,24 +37,11 @@ class WorkerStore(object, metaclass=Repr):
         worker = None
         view = active_view()
         python = get_settings(view, 'python_interpreter', 'python')
-        if python.startswith('tcp://'):
-            worker = RemoteWorker()
-        elif python.startswith('vagrant:'):
-            if get_settings(view, 'vagrant_environment') is None:
-                logger.error(
-                    'The configured interpreter is set to vagrant: {} '
-                    'but there is no vagrant configuration.'
-                )
-            else:
-                worker = VagrantWorker()
-        #  elif python.startswith('docker:'):
-            #  if get_settings(view, 'docker_environment') is None:
-                #  logger.error(
-                #      'The configured interpreter is set to docker: {} '
-                #       'but there is no docker configuration.'
-                #  )
-            #  else:
-                #  worker = DockerWorker()
+        scheme, data = cls._extract_scheme_and_data(cls, python)
+        if scheme == 'tcp':
+            worker = RemoteWorker(data)
+        elif scheme == 'vagrant':
+            worker = VagrantWorker(data)
         else:
             worker = LocalWorker()
 
@@ -121,6 +110,7 @@ class WorkerStore(object, metaclass=Repr):
                 worker.reconnecting = True
                 worker.start()
             else:
+                worker._append_context_data(data)
                 worker._execute(callback, **data)
         else:
             worker.start()
@@ -137,3 +127,15 @@ class WorkerStore(object, metaclass=Repr):
         return '{} workers in the store\n\n{}'.format(
             len(cls.__workers), '\n\n'.join(workers_data)
         )
+
+    def _extract_scheme_and_data(self, uri):
+        """Parses the URI for this environment (if any)
+        """
+
+        result = urlparse(uri)
+        scheme = result.scheme
+        data = {'netloc': result.netloc, 'query': result.query}
+        if result.query and '&manual=' in result.query:
+            scheme = 'tcp'
+
+        return scheme, data

@@ -10,9 +10,7 @@ import socket
 import logging
 import asyncore
 import asynchat
-import threading
 import traceback
-import subprocess
 from logging import handlers
 from optparse import OptionParser
 
@@ -26,18 +24,19 @@ sys.path.insert(0, os.path.join(
     os.path.split(os.path.split(__file__)[0])[0], 'anaconda_lib'))
 
 from jedi import settings as jedi_settings
+
+from lib.log import log_directory
 from lib.contexts import json_decode
 from handlers import ANACONDA_HANDLERS
 from lib.anaconda_handler import AnacondaHandler
 
-
-DEBUG_MODE = True
+DEBUG_MODE = False
 logger = logging.getLogger('')
 PY3 = True if sys.version_info >= (3,) else False
 
 
 class JSONHandler(asynchat.async_chat):
-    """Hadnles JSON messages from a client
+    """Handles JSON messages from a client
     """
 
     def __init__(self, sock, server):
@@ -51,7 +50,6 @@ class JSONHandler(asynchat.async_chat):
         """
 
         if data is not None:
-            print(data)
             data = '{0}\r\n'.format(json.dumps(data))
             data = bytes(data, 'utf8') if PY3 else data
 
@@ -79,7 +77,6 @@ class JSONHandler(asynchat.async_chat):
                 return
 
             if data['method'] == 'check':
-                logging.info('Check received')
                 self.return_back(message='Ok', uid=data['uid'])
                 return
 
@@ -94,14 +91,10 @@ class JSONHandler(asynchat.async_chat):
             uid = data.pop('uid')
             vid = data.pop('vid', None)
             handler_type = data.pop('handler')
-            if DEBUG_MODE is True:
-                print('Received method: {0}, handler: {1}'.format(
-                    method, handler_type)
-                )
             self.handle_command(handler_type, method, uid, vid, data)
         else:
             logging.error(
-                'client sent somethinf that I don\'t understand: {0}'.format(
+                'client sent something that I don\'t understand: {0}'.format(
                     data
                 )
             )
@@ -116,8 +109,6 @@ class JSONHandler(asynchat.async_chat):
 
         handler = ANACONDA_HANDLERS.get(
             handler_type, AnacondaHandler.get_handler(handler_type))
-        if DEBUG_MODE is True:
-            print('{0} handler retrieved from registry'.format(handler))
         handler(method, data, uid, vid, self.return_back, DEBUG_MODE).run()
 
 
@@ -168,82 +159,12 @@ class JSONServer(asyncore.dispatcher):
         self.close()
 
 
-class Checker(threading.Thread):
-    """Check that the ST3 PID already exists every delta seconds
-    """
-
-    def __init__(self, server, delta=5):
-        threading.Thread.__init__(self)
-        self.server = server
-        self.delta = delta
-        self.daemon = True
-        self.die = False
-
-    def run(self):
-
-        while not self.die:
-            if time.time() - self.server.last_call > 1800:
-                # is now more than 30 minutes of innactivity
-                self.server.logger.info(
-                    'detected inactivity for more than 30 minutes... '
-                    'shuting down...'
-                )
-                break
-
-            self._check()
-            time.sleep(self.delta)
-
-        self.server.shutdown()
-
-    def _check(self):
-        """Check for the ST3 pid
-        """
-
-        if os.name == 'posix':
-            try:
-                os.kill(int(PID), 0)
-            except OSError:
-                self.server.logger.info(
-                    'process {0} does not exists stopping server...'.format(
-                        PID
-                    )
-                )
-                self.die = True
-        elif os.name == 'nt':
-            # win32com is not present in every Python installation on Windows
-            # we need something that always work so we are forced here to use
-            # the Windows tasklist command and check its output
-            startupinfo = subprocess.STARTUPINFO()
-            try:
-                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            except AttributeError:
-                # some versions of Windows define STARTF_USEWHOWWINDOW
-                # in a separate _suprocess module
-                try:
-                    import _subprocess
-                except ImportError:
-                    self.server.logger.info(
-                        'warning: could not import _subprocess')
-                else:
-                    startupinfo.dwFlags != _subprocess.STARTF_USESHOWWINDOW
-
-            output = subprocess.check_output(
-                ['tasklist', '/FI', 'PID eq {0}'.format(PID)],
-                startupinfo=startupinfo
-            )
-            pid = PID if not PY3 else bytes(PID, 'utf8')
-            if pid not in output:
-                self.server.logger.info(
-                    'process {0} does not exists stopping server...'.format(
-                        PID
-                    )
-                )
-                self.die = True
-
-
 def get_logger(path):
     """Build file logger
     """
+
+    if not os.path.exists(path):
+        os.makedirs(path)
 
     log = logging.getLogger('')
     log.setLevel(logging.DEBUG)
@@ -291,15 +212,15 @@ if __name__ == "__main__":
     )
 
     options, args = opt_parser.parse_args()
-    if len(args) != 2:
-        opt_parser.error('you have to pass a port number and PID')
+    if len(args) != 1:
+        opt_parser.error('you have to pass a port number')
 
     port = int(args[0])
-    PID = args[1]
     if options.project is not None:
         jedi_settings.cache_directory = os.path.join(
             jedi_settings.cache_directory, options.project
         )
+        log_directory = os.path.join(log_directory, options.project)
 
     if not os.path.exists(jedi_settings.cache_directory):
         os.makedirs(jedi_settings.cache_directory)
@@ -309,14 +230,13 @@ if __name__ == "__main__":
             if path not in sys.path:
                 sys.path.insert(0, path)
 
-    logger = get_logger(jedi_settings.cache_directory)
+    logger = get_logger(log_directory)
 
     try:
-        server = JSONServer(('localhost', port))
+        server = JSONServer(('0.0.0.0', port))
         logger.info(
-            'Anaconda Server started in port {0} for '
-            'PID {1} with cache dir {2}{3}'.format(
-                port, PID, jedi_settings.cache_directory,
+            'Anaconda Server started in port {0} with cache dir {1}{2}'.format(
+                port, jedi_settings.cache_directory,
                 ' and extra paths {0}'.format(
                     options.extra_paths
                 ) if options.extra_paths is not None else ''
@@ -328,15 +248,6 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     server.logger = logger
-
-    # start PID checker thread
-    if PID != 'DEBUG':
-        checker = Checker(server, delta=1)
-        checker.start()
-    else:
-        logger.info('Anaconda Server started in DEBUG mode...')
-        print('DEBUG MODE')
-        DEBUG_MODE = True
 
     # start the server
     server.serve_forever()

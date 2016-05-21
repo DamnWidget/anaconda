@@ -2,28 +2,21 @@
 # Copyright (C) 2013 - 2016 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
+import os
 import sys
 import socket
 import logging
 
 import sublime
 
-from ..anaconda_lib import enum
 from .jsonclient import AsynClient
+from .constants import WorkerStatus
 from .decorators import auto_project_switch
+from .helpers import get_settings, active_view, is_remote_session
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.setLevel(logging.WARNING)
-
-
-class WorkerStatus(enum.Enum):
-    """Worker status unique enumeration
-    """
-
-    incomplete = 0
-    healthy = 1
-    faulty = 2
 
 
 class Worker(object):
@@ -57,31 +50,35 @@ class Worker(object):
         """Start the worker and it's services
         """
 
-        if not self.processer.start(self):
-            msg = (
-                '{} processer could not start a new anaconda '
-                'JsonServer with reason: {}\n{}'
-            ).format(
-                self._header,
-                self.processer.last_error.get('error', 'none'),
-                self.processer.last_error.get('recommendation', '')
-            )
-            logger.error(msg)
-            sublime.error_message(msg)
-            self.status = WorkerStatus.faulty
-            return
+        if not get_settings(active_view(), 'jsonserver_debug', False):
+            if not self.processer.start(self):
+                msg = (
+                    '{} processer could not start a new anaconda '
+                    'JsonServer with reason:\n\t{}\n\n{}'
+                ).format(
+                    self._header,
+                    self.processer.last_error.get('error', 'none'),
+                    self.processer.last_error.get('recommendation', '')
+                )
+                logger.error(msg)
+                if self.status != WorkerStatus.faulty:
+                    sublime.error_message(msg)
+                    self.status = WorkerStatus.faulty
+                return
 
         if not self.checker.check(self):
             msg = (
-                '{} initial check failed with reason: {}\n{}'
+                '{} initial check failed with reason:\n\t{}\n\n{}'
             ).format(
                 self._header,
                 self.checker.last_error.get('error', 'none'),
-                self.checker.last_error.get('recommendation', '')
+                self.checker.last_error.get(
+                    'recommendation', 'check jsonserver_debug is not active')
             )
             logger.error(msg)
-            sublime.error_message(msg)
-            self.status = WorkerStatus.faulty
+            if self.status != WorkerStatus.faulty:
+                sublime.error_message(msg)
+                self.status = WorkerStatus.faulty
             return
 
         self.client = AsynClient(self.port, host=self.hostaddr)
@@ -116,3 +113,18 @@ class Worker(object):
         s.settimeout(timeout)
         s.connect((self.hostaddr, self.port))
         return s
+
+    def _append_context_data(self, data):
+        """Append contextual data depending on the worker type
+        """
+
+        view = active_view()
+        if is_remote_session(view):
+            directory_map = self.rc.get('pathmap', {})
+            for local_dir, remote_dir in directory_map.items():
+                if local_dir in os.path.realpath(view.file_name()):
+                    # the directory is mapped on the rmeote machine
+                    data['filename'] = view.file_name().replace(
+                        local_dir, remote_dir
+                    )
+                    break
