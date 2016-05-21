@@ -1,7 +1,8 @@
 # Anaconda
+
+[![Join the chat at https://gitter.im/DamnWidget/anaconda](https://badges.gitter.im/DamnWidget/anaconda.svg)](https://gitter.im/DamnWidget/anaconda?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Anaconda turns your Sublime Text 3 into a full featured Python IDE. Read the plugin documentation on [http://damnwidget.github.io/anaconda](http://damnwidget.github.io/anaconda).
 
-[![Book Status](https://www.gitbook.io/button/status/book/damnwidget/anacondast3-developers-documentation)](https://www.gitbook.io/book/damnwidget/anacondast3-developers-documentation/activity)
 
 ## Getting Started
 Anaconda works out of the box but there are multitude of options and features that you can tune and adapt to your own style or needs.
@@ -61,6 +62,19 @@ Did you found a bug and you know how to fix it? First of all, Thank you very muc
 
 ### Suggesting and Implementing Features
 So you thought of a new killer feature to implement in Anaconda? Great! Open an issue for it and and we will discuss it with you.
+
+### Available plugins for Anaconda
+Anaconda is a plugable architecture platform itself, it means that anaconda can be extended to offer rich IDE like features to other languages, I created other extensions that brings
+anaconda capabilities to other languages, the complete list of them can be shown below
+
+| Language | Web Site | Package Control | Status |
+| --- | --- | --- | --- |
+| **Go** | https://github.com/DamnWidget/anaconda_go | No | Discontinued, you should be using GoSublime |
+| **Rust** | https://github.com/DamnWidget/anaconda_rust | Yes | Active |
+| **PHP** | https://github.com/DamnWidget/anaconda_php | Yes | Active |
+
+Would you like to see your language empowered by anaconda? Use `anaconda_rust` or `anaconda_php` as templates and bring your language to life with anaconda's plugable architecture.
+
 
 ### Donations
 Please donate to help keep this project alive.
