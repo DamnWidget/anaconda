@@ -25,9 +25,10 @@ except ImportError:
 sys.path.insert(0, os.path.join(
     os.path.split(os.path.split(__file__)[0])[0], 'anaconda_lib'))
 
-from jedi import settings as jedi_settings
+from lib.log import log_directory
 from lib.contexts import json_decode
 from handlers import ANACONDA_HANDLERS
+from jedi import settings as jedi_settings
 from lib.anaconda_handler import AnacondaHandler
 
 
@@ -245,6 +246,9 @@ def get_logger(path):
     """Build file logger
     """
 
+    if not os.path.exists(path):
+        os.makedirs(path)
+
     log = logging.getLogger('')
     log.setLevel(logging.DEBUG)
     hdlr = handlers.RotatingFileHandler(
@@ -300,6 +304,7 @@ if __name__ == "__main__":
         jedi_settings.cache_directory = os.path.join(
             jedi_settings.cache_directory, options.project
         )
+        log_directory = os.path.join(log_directory, options.project)
 
     if not os.path.exists(jedi_settings.cache_directory):
         os.makedirs(jedi_settings.cache_directory)
@@ -309,7 +314,7 @@ if __name__ == "__main__":
             if path not in sys.path:
                 sys.path.insert(0, path)
 
-    logger = get_logger(jedi_settings.cache_directory)
+    logger = get_logger(log_directory)
 
     try:
         server = JSONServer(('localhost', port))
