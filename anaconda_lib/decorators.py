@@ -66,6 +66,30 @@ def auto_project_switch(func):
     return wrapper
 
 
+def auto_project_switch_ng(func):
+    """If auto_project_switch is set tries to switch/reconnects workers
+    """
+
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+
+        if self.status != WorkerStatus.healthy:
+            return
+
+        view = sublime.active_window().active_view()
+        project_switch = get_settings(view, 'auto_project_switch', False)
+        if project_switch:
+            python_interpreter = get_settings(view, 'python_interpreter')
+            if python_interpreter != self.interepeter.raw_interpreter:
+                print('anacondaST3: Project or interpreter switch detected...')
+                self.on_python_interpreter_switch(python_interpreter)
+                return
+
+        func(self, *args, **kwargs)
+
+    return wrapper
+
+
 def timeit(logger):
     """Decorator for timeit timeit timeit
     """

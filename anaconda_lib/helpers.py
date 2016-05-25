@@ -13,7 +13,6 @@ import logging
 import functools
 import traceback
 import subprocess
-from urllib.parse import urlparse
 from collections import defaultdict
 
 import sublime
@@ -182,8 +181,10 @@ def get_settings(view, name, default=None):
                             return sublime.expand_variables(
                                 data.get(
                                     name,
-                                    view.settings().get(name, plugin_settings.get(
-                                        name, default)
+                                    view.settings().get(
+                                        name, plugin_settings.get(
+                                            name, default
+                                        )
                                     )
                                 ),
                                 view.window().extract_variables()
@@ -213,7 +214,7 @@ def is_remote_session(view):
     """Returns True if we are in a remote session
     """
 
-    if '://' in get_settings(view, 'python_interpreter', 'python'):
+    if '://' in get_interpreter(view):
         return True
 
     return False
@@ -336,3 +337,17 @@ def valid_languages(**kwargs):
     ]
 
     return ['python'] + languages
+
+
+def get_interpreter(view):
+    """Return back the python interpreter configured for the given view
+    """
+
+    return get_settings(view, 'python_interpreter', 'python')
+
+
+def debug_enabled(view):
+    """Returns True if the debug is enable
+    """
+
+    return get_settings(active_view(), 'jsonserver_debug', False) is True

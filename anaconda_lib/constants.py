@@ -12,3 +12,4 @@ class WorkerStatus(enum.Enum):
     incomplete = 0
     healthy = 1
     faulty = 2
+    quiting = 3
