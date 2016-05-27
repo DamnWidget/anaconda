@@ -31,7 +31,7 @@ class Worker(object):
         """Start the worker
         """
 
-        if not debug_enabled:
+        if not debug_enabled(active_view()):
             if self.process is None:
                 Log.fatal('Worker process is None!!')
                 return
@@ -40,7 +40,7 @@ class Worker(object):
                 msg = (
                     '{} process can not start a new anaconda JsonServer '
                     'in the operating system because:\n\n{}\n\n{}'.format(
-                        self.process.error, self.process.tip
+                        self.process, self.process.error, self.process.tip
                     )
                 )
                 Log.error(msg)
@@ -52,9 +52,10 @@ class Worker(object):
         if not self.check():
             msg = (
                 '{} initial check failed because:\n\n{}\n\n{}'.format(
-                    self.error, self.tip
+                    self, self.error, self.tip
                 )
             )
+
             Log.error(msg)
             if self.status != WorkerStatus.faulty:
                 sublime.error_message(msg)
@@ -62,7 +63,7 @@ class Worker(object):
             return
 
         host, port = self.interpreter.host, self.interpreter.port
-        self.client = AsynClient(port, host=host)
+        self.client = AsynClient(int(port), host=host)
         self.status = WorkerStatus.healthy
 
     def stop(self):
@@ -81,7 +82,7 @@ class Worker(object):
         """
 
         self.interpreter = Interpreter(raw_interpreter)
-        self.process.interpreter(self.interpreter)
+        self.process.interpreter = self.interpreter
 
     @auto_project_switch_ng
     def _execute(self, callback, **data):
@@ -96,7 +97,7 @@ class Worker(object):
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(timeout)
-        s.connect((self.interpreter.host, self.interpreter.port))
+        s.connect((self.interpreter.host, int(self.interpreter.port)))
         return s
 
     def _append_context_data(self, data):
@@ -105,7 +106,10 @@ class Worker(object):
 
         view = active_view()
         if is_remote_session(view):
-            directory_map = self.rc.get('pathmap', {})
+            directory_map = self.interpreter.pathmap
+            if directory_map is None:
+                return
+
             for local_dir, remote_dir in directory_map.items():
                 # the directory os mapped on the remote machine
                 data['filename'] = view.file_name().replace(
@@ -125,7 +129,6 @@ class Worker(object):
             self.error = 'connection to {}:{} timed out after {}s'.format(
                 self.interpreter.host, self.interpreter.port, timeout
             )
-            self.status = WorkerStatus.faulty
             return False
         except socket.error as error:
             if error.errno == errno.ECONNREFUSED:
@@ -134,7 +137,6 @@ class Worker(object):
                 )
             else:
                 self.error = 'unexpected exception: {}'.format(error)
-            self.status = WorkerStatus.faulty
             return False
 
         return True

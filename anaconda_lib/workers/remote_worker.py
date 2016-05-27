@@ -2,6 +2,7 @@
 # Copyright (C) 2013 - 2016 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
+from ..logger import Log
 from .worker import Worker
 from ..helpers import project_name
 from ..constants import WorkerStatus
@@ -37,18 +38,30 @@ class RemoteWorker(Worker):
         """This method is called when there is a python interpreter change
         """
 
+        def _fire_worker():
+            # just fire this workewr, is not useful anymore
+            self.stop()
+            self.status = WorkerStatus.quiting
+            Log.info('Firing worker {}...'.format(self))
+
         if self.interpreter.project_name is not None:
             if project_name() != self.interpreter.project_name:
                 self.renew_interpreter(raw_python_interpreter)
                 # check if our interpeeter is not remote anymore
                 if not self.interpreter.for_remote:
-                    # just fire this worker, it's not useful anymore
-                    self.stop()
-                    self.status = WorkerStatus.quiting
-                    return
+                    _fire_worker()
 
                 self.reconnecting = True
                 self.stop()
+
+        if self.interpreter.raw_interpreter != raw_python_interpreter:
+            # check if our interpreter is not remote anymore
+            self.renew_interpreter(raw_python_interpreter)
+            if not self.interpreter.for_remote:
+                return _fire_worker()
+
+            self.reconnecting = True
+            self.stop()
 
     def _status(self, timeout=2):
         """Check the socker status and returnn True if is operable

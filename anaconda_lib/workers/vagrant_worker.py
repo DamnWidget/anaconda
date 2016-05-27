@@ -3,12 +3,14 @@
 # This program is Free Software see LICENSE file for details
 
 import time
-import subprocess
+
+import sublime
 
 from .worker import Worker
 from ..helpers import project_name
 from ..constants import WorkerStatus
-from ..vagrant import VagrantMachineGlobalInfo
+from ..progress_bar import ProgressBar
+from ..vagrant import VagrantMachineGlobalInfo, VagrantStartMachine
 
 
 class VagrantWorker(Worker):
@@ -24,13 +26,16 @@ class VagrantWorker(Worker):
         """Start the vagrant worker
         """
 
-        if not self.check():
+        if not self.check_config():
             return False
+
+        if hasattr(self, 'reconnecting') and self.reconnecting:
+            self.interpreter.renew_port()
 
         return super(VagrantWorker, self).start()
 
-    def check(self):
-        """Perform required checks to conclude if it's safe to operate
+    def check_config(self):
+        """Check the configuration looks fine
         """
 
         if self.interpreter.network is None:
@@ -58,32 +63,68 @@ class VagrantWorker(Worker):
             )
             return False
 
-        python = self.interpreter.interpreter
-        try:
-            subprocess.call([python, '-V'])
-        except FileNotFoundError:
-            self.error = (
-                'mode is not set as manual but the configured python '
-                'interpreter {} path does not exists'.format(python)
+        if not self._check_status():
+
+            self.error = 'vagrant machine {} is not running'.format(
+                self.interpreter.machine)
+            self.tip = 'Start the vagrant machine'
+
+            start_now = sublime.ok_cancel_dialog(
+                '{} virtual machine is not running, do you want to start it '
+                'now (it may take a while)?'.format(
+                    self.interpreter.machine), 'Start Now'
             )
-            self.tip = 'Use a valid python interpreter'
+            if start_now:
+                sublime.active_window().run_command(
+                    'show_panel', {'panel': 'console', 'toggle': False})
+                try:
+                    messages = {
+                        'start': 'Starting {} VM, please wait...'.format(
+                            self.interpreter.machine
+                        ),
+                        'end': 'Done!',
+                        'fail': 'Machine {} could not be started'.format(
+                            self.interpreter.machine
+                        ), 'timeout': ''
+                    }
+                    pbar = ProgressBar(messages)
+                    VagrantStartMachine(
+                        self.interpreter.machine, self.interpreter.vagrant_root
+                    )
+                except RuntimeError as error:
+                    pbar.terminate(status=pbar.Status.FAILURE)
+                    sublime.error_message(str(error))
+                    return False
+                else:
+                    pbar.terminate()
+                    sublime.message_dialog('Machine {} started.'.format(
+                        self.interpreter.machine
+                    ))
+                    return self.check()
+
             return False
 
-        if self.interpreter.manual is not None:
+        return True
+
+    def check(self):
+        """Perform required checks to conclude if it's safe to operate
+        """
+
+        if self.interpreter.manual is None:
             if not self.process.healthy:
                 self.error = self.process.error
                 self.tip = self.process.tip
                 return False
 
-        if not self._check_status():
-            return False
-
-        timeout = 0
+        start = time.time()
         while not self._status():
-            if timeout >= 200:
+            if time.time() - start >= 2:  # 2s
+                self.error = "can't connect to the minserver on {}:{}".format(
+                    self.interpreter.host, self.interpreter.port
+                )
+                self.tip = 'check your vagrant machine is running'
                 return False
             time.sleep(0.1)
-            timeout += 1
 
         return True
 
@@ -138,6 +179,7 @@ class VagrantWorker(Worker):
             return False
 
         self.interpreter.machine_id = vagrant_info.machine_id
+        self.interpreter.vagrant_root = vagrant_info.directory
         return vagrant_info.status == 'running'
 
     def _status(self, timeout=0.5):

@@ -37,7 +37,7 @@ class Market(object, metaclass=Repr):
         """
 
         with self._lock:
-            if self._worker_pool(window_id) is None:
+            if self._worker_pool.get(window_id) is None:
                 self._worker_pool[window_id] = worker
             else:
                 Log.warning(
@@ -58,16 +58,13 @@ class Market(object, metaclass=Repr):
         """Remote a worker from the workers market
         """
 
-        worker = self._worker_pool(window_id, None)
+        worker = self._worker_pool.pop(window_id, None)
         if worker is None:
             Log.error(
                 'tried to remove a worker that is not part of the workers '
                 'market for window {}. Skipping'.format(window_id)
             )
             return
-
-        # stop the worker
-        worker.stop()
 
     @classmethod
     def execute(cls, callback, **data):
@@ -83,13 +80,17 @@ class Market(object, metaclass=Repr):
             sublime.set_timeout_async(lambda: _start_worker(wk, cb, **d), 5000)
 
         window_id = sublime.active_window().id()
-        worker = cls.get(window_id)
+        worker = cls.get(cls, window_id)
         if worker is None:
             # hire a new worker
-            worker = cls.hire()
-            cls.add(worker)
+            worker = cls.hire(cls)
+            cls.add(cls, window_id, worker)
 
         if worker.status == WorkerStatus.faulty:
+            return
+
+        if worker.status == WorkerStatus.quiting:
+            cls.fire(cls, window_id)
             return
 
         if worker.client is not None:
@@ -102,9 +103,7 @@ class Market(object, metaclass=Repr):
                 worker._execute(callback, **data)
                 if worker.status == WorkerStatus.quiting:
                     # that means that we need to let the worker go
-                    cls.fire(window_id)
-                    # try again
-                    Market.execute(callback, **data)
+                    cls.fire(cls, window_id)
         else:
             _start_worker(worker, callback, **data)
 
@@ -113,10 +112,10 @@ class Market(object, metaclass=Repr):
         """Alias for get
         """
 
-        return cls.get(window_id)
+        return cls.get(cls, window_id)
 
     @classmethod
-    def __repr__(cls):
+    def _repr(cls):
         """Returns a representation of the Market
         """
 

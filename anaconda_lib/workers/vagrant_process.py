@@ -67,15 +67,6 @@ class VagrantProcess(object):
 
         return True
 
-    def stop(self):
-        """Stop the vagrant process (if no manual mode is enabled)
-        """
-
-        if not self.interpreter.manual:
-            if self._process is not None and self._process.poll() is None:
-                self._process.kill()
-                self._process = None
-
     def _up_already(self):
         """Return True if the minserver is running already on guest
         """
@@ -96,7 +87,7 @@ class VagrantProcess(object):
         """
 
         script_file = self._compose_script_file()
-        paths = self._compose_extra_paths
+        paths = self._compose_extra_paths()
         cmd = 'vagrant ssh {} -c "{}"'.format(
             self.interpreter.machine_id,
             '{} {} -p {}{} {}'.format(
@@ -115,13 +106,14 @@ class VagrantProcess(object):
         """Compose the script file location using the interpreter context
         """
 
-        target_os = self.interpreter.os.lower()
+        target_os = self.interpreter.os
+        target_os = 'posix' if target_os is None else target_os.lower()
         sep = '\\' if target_os == 'windows' else '/'
         shared = self.interpreter.shared
         if shared is None:
             shared = '/anaconda' if target_os == 'posix' else 'C:\\anaconda'
 
-        return '{0}{1}anaconda_server(1)minserer.py'.format(shared, sep)
+        return '{0}{1}anaconda_server{1}minserver.py'.format(shared, sep)
 
     def _compose_extra_paths(self):
         """Compose extra paths (if any) using the CV context

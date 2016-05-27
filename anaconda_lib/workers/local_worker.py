@@ -6,6 +6,7 @@ import time
 
 import sublime
 
+from ..logger import Log
 from .worker import Worker
 from ..helpers import project_name
 from ..constants import WorkerStatus
@@ -29,12 +30,11 @@ class LocalWorker(Worker):
             self.tip = self.process.tip
             return False
 
-        timeout = 0
+        start = time.time()
         while not self._status(0.05):
-            if timeout >= 200:
+            if time.time() - start >= 1:  # 1s
                 return False
             time.sleep(0.1)
-            timeout += 1
 
         return True
 
@@ -42,7 +42,7 @@ class LocalWorker(Worker):
         """Start the worker
         """
 
-        self._update_python_builder(self)
+        self._update_python_builder()
         if self.reconnecting:
             self.interpreter.renew_port()
 
@@ -73,6 +73,7 @@ class LocalWorker(Worker):
             self.renew_interpreter(raw_python_interpreter)
             if not self.interpreter.for_local:
                 # just fire this worker, it's not useful anymore
+                Log.info('Firing worker {}...'.format(self))
                 self.stop()
                 self.status = WorkerStatus.quiting
                 return

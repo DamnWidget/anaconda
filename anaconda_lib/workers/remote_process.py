@@ -7,8 +7,9 @@ class StubProcess(object):
     """Self descriptive class name, right?
     """
 
-    def __init__(self):
+    def __init__(self, interpreter):
         self._process = None
+        self._interpreter = None
 
     def start(self):
         """Just returns True and does nothing

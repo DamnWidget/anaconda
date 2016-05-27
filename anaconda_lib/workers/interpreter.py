@@ -83,7 +83,7 @@ class Interpreter(object):
         self.__extract_port(view)
         self.__extract_paths(view)
         self.__extract_python_interpreter(view)
-        self.__extract_script_file()
+        self.__extract_script()
 
         args = [self.python, '-B', self.script_file, '-p', self.project_name]
         args.append(str(self.port))
@@ -104,14 +104,14 @@ class Interpreter(object):
         """
 
         self.__data['host'] = 'localhost'
-        if debug_enabled:
+        if debug_enabled(view):
             port = get_settings(view, 'jsonserver_debug_port', 999)
             self.__data['port'] = port
             return
 
         s = socket.socket()
         s.bind(('', 0))
-        self.__data['port'] = s.getsocketname()[1]
+        self.__data['port'] = s.getsockname()[1]
         s.close()
 
     def __extract_paths(self, view):
@@ -157,7 +157,7 @@ class Interpreter(object):
         """
 
         self.__data['script_file'] = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
             'anaconda_server', 'jsonserver.py'
         )
 
@@ -204,7 +204,7 @@ class Interpreter(object):
                     VagrantMachineGlobalInfo(self.machine).machine_id, self.dev
                 ).ip_address
             }
-            self.__data['host'] = _vagrant_hosts(self.network)
+            self.__data['host'] = _vagrant_hosts[self.network]
 
         pathmap = {}
         for map_data in self.__data.get('pathmap', []):
