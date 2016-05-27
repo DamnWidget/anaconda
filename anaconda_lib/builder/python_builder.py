@@ -7,7 +7,7 @@ from string import Template
 
 import sublime
 
-from ..helpers import get_settings, active_view
+from ..helpers import get_settings, active_view, is_remote_session
 
 
 class AnacondaSetPythonBuilder(object):
@@ -18,8 +18,11 @@ class AnacondaSetPythonBuilder(object):
         """Updates the project and adds/modifies the build system
         """
 
-        if get_settings(
-                active_view(), 'auto_python_builder_enabled', True) is False:
+        view = active_view()
+        if get_settings(view, 'auto_python_builder_enabled', True) is False:
+            return
+
+        if is_remote_session(view):
             return
 
         if cmd is None:
