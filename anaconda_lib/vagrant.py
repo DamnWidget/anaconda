@@ -6,6 +6,7 @@ import os
 import threading
 import subprocess
 
+from .logger import Log
 from .contexts import vagrant_root
 from .helpers import create_subprocess
 
@@ -206,4 +207,28 @@ class VagrantMachineGlobalInfo(object):
             if data[1].decode('utf8') == machine:
                 self.machine_id = data[0].decode('utf8')
                 self.status = data[3].decode('utf8')
+                self.directory = data[4].decode('utf8')
                 break
+
+
+class VagrantStartMachine(object):
+    """Start a vagrant machine using it's global ID
+    """
+
+    def __init__(self, machine, directory):
+        with vagrant_root(directory):
+            args = ('vagrant', 'up', machine)
+            p = create_subprocess(
+                args, stdout=PIPE, stderr=PIPE, cwd=os.getcwd())
+            if p is None:
+                raise RuntimeError('vagrant command not found')
+
+            output, err = p.communicate()
+            Log.info(output.decode('utf8'))
+            if err:
+                # check if the machine is running using global stats
+                info = VagrantMachineGlobalInfo(machine)
+                if info.status != 'running':
+                    raise RuntimeError(err)
+
+                Log.error(err.decode('utf8'))
