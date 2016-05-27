@@ -80,7 +80,7 @@ def auto_project_switch_ng(func):
         project_switch = get_settings(view, 'auto_project_switch', False)
         if project_switch:
             python_interpreter = get_settings(view, 'python_interpreter')
-            if python_interpreter != self.interepeter.raw_interpreter:
+            if python_interpreter != self.interpreter.raw_interpreter:
                 print('anacondaST3: Project or interpreter switch detected...')
                 self.on_python_interpreter_switch(python_interpreter)
                 return
