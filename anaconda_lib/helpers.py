@@ -178,17 +178,18 @@ def get_settings(view, name, default=None):
                             ENVIRON_HOOK_INVALID[view.id()] = True
                             break  # stop loop
                         else:
-                            return sublime.expand_variables(
-                                data.get(
-                                    name,
-                                    view.settings().get(
-                                        name, plugin_settings.get(
-                                            name, default
-                                        )
-                                    )
-                                ),
-                                view.window().extract_variables()
+                            r = data.get(
+                                name, view.settings().get(
+                                    name, plugin_settings.get(name, default)
+                                )
                             )
+                            w = view.Window()
+                            if w is not None:
+                                return sublime.expand_variables(
+                                    r, w.extract_variables()
+                                )
+
+                            return r
                 else:
                     parts = os.path.split(dirname)
                     if len(parts[1]) > 0:
@@ -198,7 +199,9 @@ def get_settings(view, name, default=None):
 
     r = view.settings().get(name, plugin_settings.get(name, default))
     if name == 'python_interpreter' or name == 'extra_paths':
-        r = sublime.expand_variables(r, view.window().extract_variables())
+        w = view.window()
+        if w is not None:
+            r = sublime.expand_variables(r, w.extract_variables())
 
     return r
 
