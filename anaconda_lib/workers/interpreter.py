@@ -66,14 +66,14 @@ class Interpreter(object):
 
         return self.__project_name
 
-    def renew_port(self):
-        """Renew port for local workers
+    def renew_interpreter(self):
+        """Renew the whole intrepreter
         """
 
         if not self.for_local:
             return
 
-        self.__extract_port(active_view())
+        self.__prepare_local_interpreter()
 
     def __prepare_local_interpreter(self):
         """Prepare data for the local interpreter if scheme is lcoal

@@ -65,6 +65,8 @@ class Worker(object):
         host, port = self.interpreter.host, self.interpreter.port
         self.client = AsynClient(int(port), host=host)
         self.status = WorkerStatus.healthy
+        if hasattr(self, 'reconnecting') and self.reconnecting:
+            self.reconnecting = False
 
     def stop(self):
         """Stop the worker

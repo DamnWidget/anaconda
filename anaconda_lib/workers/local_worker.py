@@ -44,7 +44,7 @@ class LocalWorker(Worker):
 
         self._update_python_builder()
         if self.reconnecting:
-            self.interpreter.renew_port()
+            self.interpreter.renew_interpreter()
 
         super(LocalWorker, self).start()
 
