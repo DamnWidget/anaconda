@@ -22,10 +22,12 @@ except ImportError:
 
 try:
     import sublime
-    from .helpers import get_settings, project_name
+    from .helpers import get_settings, project_name, is_remote_session
 except ImportError:
     # we just imported the file from jsonserver so we don't need get_settings
     pass
+
+from .constants import WorkerStatus
 
 
 def auto_project_switch(func):
@@ -35,30 +37,55 @@ def auto_project_switch(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
 
-        if not self.green_light:
+        if self.status != WorkerStatus.healthy:
             return
+
+        def reconnect(proc):
+            proc.kill()
+            self.reconnecting = True
+            self.start()
 
         view = sublime.active_window().active_view()
         auto_project_switch = get_settings(view, 'auto_project_switch', False)
-        python_interpreter = get_settings(view, 'python_interpreter')
 
-        # expand ~/ in the python_interpreter path
-        python_interpreter = os.path.expanduser(python_interpreter)
+        # expand user and shell vars
+        python_interpreter = os.path.expandvars(
+            os.path.expanduser(get_settings(view, 'python_interpreter')))
 
-        # expand $shell vars in the python_interpreter path
-        python_interpreter = os.path.expandvars(python_interpreter)
+        process = self.processer._process
+        if auto_project_switch and not is_remote_session(view) and \
+                hasattr(self, 'project_name') and \
+                (project_name() != self.project_name or
+                    process.args[0] != python_interpreter):
 
-        if (
-            auto_project_switch and hasattr(self, 'project_name') and (
-                project_name() != self.project_name
-                or self.process.args[0] != python_interpreter)
-        ):
-                print('Project or iterpreter switch detected...')
-                self.process.kill()
-                self.reconnecting = True
-                self.start()
+            print('Project or iterpreter switch detected...')
+            reconnect(process)
         else:
             func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def auto_project_switch_ng(func):
+    """If auto_project_switch is set tries to switch/reconnects workers
+    """
+
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+
+        if self.status != WorkerStatus.healthy:
+            return
+
+        view = sublime.active_window().active_view()
+        project_switch = get_settings(view, 'auto_project_switch', False)
+        if project_switch:
+            python_interpreter = get_settings(view, 'python_interpreter')
+            if python_interpreter != self.interpreter.raw_interpreter:
+                print('anacondaST3: Project or interpreter switch detected...')
+                self.on_python_interpreter_switch(python_interpreter)
+                return
+
+        func(self, *args, **kwargs)
 
     return wrapper
 

@@ -178,12 +178,18 @@ def get_settings(view, name, default=None):
                             ENVIRON_HOOK_INVALID[view.id()] = True
                             break  # stop loop
                         else:
-                            return data.get(
-                                name,
-                                view.settings().get(name, plugin_settings.get(
-                                    name, default)
+                            r = data.get(
+                                name, view.settings().get(
+                                    name, plugin_settings.get(name, default)
                                 )
                             )
+                            w = view.Window()
+                            if w is not None:
+                                return sublime.expand_variables(
+                                    r, w.extract_variables()
+                                )
+
+                            return r
                 else:
                     parts = os.path.split(dirname)
                     if len(parts[1]) > 0:
@@ -191,7 +197,13 @@ def get_settings(view, name, default=None):
                     else:
                         break  # stop loop
 
-    return view.settings().get(name, plugin_settings.get(name, default))
+    r = view.settings().get(name, plugin_settings.get(name, default))
+    if name == 'python_interpreter' or name == 'extra_paths':
+        w = view.window()
+        if w is not None:
+            r = sublime.expand_variables(r, w.extract_variables())
+
+    return r
 
 
 def active_view():
@@ -199,6 +211,16 @@ def active_view():
     """
 
     return sublime.active_window().active_view()
+
+
+def is_remote_session(view):
+    """Returns True if we are in a remote session
+    """
+
+    if '://' in get_interpreter(view):
+        return True
+
+    return False
 
 
 def prepare_send_data(location, method, handler):
@@ -318,3 +340,17 @@ def valid_languages(**kwargs):
     ]
 
     return ['python'] + languages
+
+
+def get_interpreter(view):
+    """Return back the python interpreter configured for the given view
+    """
+
+    return get_settings(view, 'python_interpreter', 'python')
+
+
+def debug_enabled(view):
+    """Returns True if the debug is enable
+    """
+
+    return get_settings(active_view(), 'jsonserver_debug', False) is True

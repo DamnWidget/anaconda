@@ -3,6 +3,11 @@
 # Anaconda
 Anaconda turns your Sublime Text 3 into a full featured Python IDE. Read the plugin documentation on [http://damnwidget.github.io/anaconda](http://damnwidget.github.io/anaconda).
 
+## Build Status
+
+| Component | Travis CI |
+| --- | --- | --- |
+| **JsonServer** | [![Build Status](https://travis-ci.org/DamnWidget/anaconda.svg?branch=master)](https://travis-ci.org/DamnWidget/anaconda) |
 
 ## Getting Started
 Anaconda works out of the box but there are multitude of options and features that you can tune and adapt to your own style or needs.

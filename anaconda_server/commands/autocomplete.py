@@ -34,10 +34,12 @@ class AutoComplete(Command):
                 'success': True, 'completions': data, 'uid': self.uid
             })
         except Exception as error:
-            logging.error('The underlying Jedi library as raised an exception')
+            msg = 'The underlying Jedi library as raised an exception'
+            logging.error(msg)
             logging.error(error)
+            print(traceback.format_exc())
             if DEBUG_MODE:
-                logging.debug(traceback.format_exc().splitlines())
+                logging.debug(traceback.format_exc())
 
             self.callback({
                 'success': False, 'error': str(error), 'uid': self.uid
