@@ -6,6 +6,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.typing import Dict, Any
 from ..anaconda_lib.callback import Callback
 from ..anaconda_lib.helpers import (
     get_settings, active_view, prepare_send_data, is_python
@@ -19,7 +20,7 @@ class AnacondaCompleteFuncargs(sublime_plugin.TextCommand):
     This is directly ported fronm SublimeJEDI
     """
 
-    def run(self, edit, characters=''):
+    def run(self, edit: sublime.Edit, characters: str ='') -> None:
         if not get_settings(self.view, 'complete_parameters', False):
             return
 
@@ -38,13 +39,13 @@ class AnacondaCompleteFuncargs(sublime_plugin.TextCommand):
         callback = Callback(on_success=self.insert_snippet)
         Worker().execute(callback, **data)
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Determine if this command is enabled or not
         """
 
         return is_python(self.view)
 
-    def _insert_characters(self, edit):
+    def _insert_characters(self, edit: sublime.Edit) -> None:
         """
         Insert autocomplete character with closed pair
         and update selection regions
@@ -65,7 +66,7 @@ class AnacondaCompleteFuncargs(sublime_plugin.TextCommand):
 
             self.view.sel().add(sublime.Region(position, position))
 
-    def insert_snippet(self, data):
+    def insert_snippet(self, data: Dict[str, Any]) -> None:
         """Insert the snippet in the buffer
         """
 

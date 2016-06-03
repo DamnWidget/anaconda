@@ -14,11 +14,11 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
     """Jump to the next lint error on the page
     """
 
-    def run(self):
+    def run(self) -> None:
         self.jump(self._harvest_next())
         update_statusbar(self.window.active_view())
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Determines if the command is enabled
         """
 
@@ -35,7 +35,7 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
 
         return False
 
-    def jump(self, lineno=None):
+    def jump(self, lineno: int = None) -> None:
         """Jump to a line in the view buffer
         """
 
@@ -49,7 +49,7 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
 
         self.window.active_view().show_at_center(pt)
 
-    def _harvest_next(self):
+    def _harvest_next(self) -> int:
         """Harvest the next error that we find and return it back
         """
 
@@ -62,11 +62,11 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
             for line, _ in ANACONDA[error_type].get(vid, {}).items():
                 lines.add(int(line))
 
-        lines = sorted(list(lines))
+        lines = set(sorted(lines))
         if not len(lines):
             return None
 
-        if cur_line and lines[-1] > cur_line:
-            lines = [l for l in lines if l > cur_line]
+        if cur_line and list(lines)[-1] > cur_line:
+            lines_list = [l for l in lines if l > cur_line]
 
-        return lines[0]
+        return lines_list[0]

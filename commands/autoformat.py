@@ -9,6 +9,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.typing import Dict, Any
 from ..anaconda_lib.progress_bar import ProgressBar
 from ..anaconda_lib.helpers import get_settings, is_python, get_window_view
 from ..anaconda_lib.jsonclient import Callback
@@ -20,7 +21,7 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
 
     data = None
 
-    def run(self, edit):
+    def run(self, edit: sublime.Edit) -> None:
         if self.data is not None:
             self.replace(edit)
             return
@@ -79,17 +80,17 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         except:
             logging.error(traceback.format_exc())
 
-    def on_failure(self, *args, **kwargs):
+    def on_failure(self, *args: Any, **kwargs: Any) -> None:
         self.pbar.terminate(status=self.pbar.Status.FAILURE)
         self.view.set_read_only(False)
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Determine if this command is enabled or not
         """
 
         return is_python(self.view, True)
 
-    def get_data(self, data):
+    def get_data(self, data: Dict[str, Any]) -> None:
         """Collect the returned data from autopep8
         """
 
@@ -98,7 +99,7 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         self.view.set_read_only(False)
         self.view.run_command('anaconda_auto_format')
 
-    def replace(self, edit):
+    def replace(self, edit: sublime.Edit) -> None:
         """Replace the old code with what autopep8 gave to us
         """
 

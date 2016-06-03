@@ -11,6 +11,7 @@ from ..anaconda_lib.helpers import (
     completion_is_disabled
 )
 from ..anaconda_lib.decorators import profile
+from ..anaconda_lib.typing import Dict, List, Tuple, Any
 
 JUST_COMPLETED = False
 
@@ -19,11 +20,11 @@ class AnacondaCompletionEventListener(sublime_plugin.EventListener):
     """Anaconda completion events listener class
     """
 
-    completions = []
+    completions = []  # type: List[Tuple[str]]
     ready_from_defer = False
 
     @profile
-    def on_query_completions(self, view, prefix, locations):
+    def on_query_completions(self, view: sublime.View, prefix: str, locations: List[Tuple[int]]) -> Tuple[List[Tuple[str]], int]:  # noqa
         """Sublime Text autocompletion event handler
         """
 
@@ -56,7 +57,7 @@ class AnacondaCompletionEventListener(sublime_plugin.EventListener):
 
         Worker().execute(self._complete, **data)
 
-    def on_modified(self, view):
+    def on_modified(self, view: sublime.View) -> None:
         """Called after changes has been made to a view.
         """
 
@@ -75,7 +76,7 @@ class AnacondaCompletionEventListener(sublime_plugin.EventListener):
                 view.sel()[0].begin() - 7, view.sel()[0].end())) == 'import ':
             self._run_auto_complete()
 
-    def _complete(self, data):
+    def _complete(self, data: Dict[str, Any]) -> None:
 
         proposals = data['completions'] if data['success'] else []
 
@@ -93,7 +94,7 @@ class AnacondaCompletionEventListener(sublime_plugin.EventListener):
 
             self._run_auto_complete()
 
-    def _run_auto_complete(self):
+    def _run_auto_complete(self) -> None:
         """Efectively call autocomplete using the ST API
         """
 
