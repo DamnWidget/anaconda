@@ -86,7 +86,8 @@ class Interpreter(object):
         self.__extract_script()
 
         args = [self.python, '-B', self.script_file, '-p', self.project_name]
-        args.append(str(self.port))
+        if self.port is not None:
+            args.append(str(self.port))
         if len(self.paths) > 0:
             paths = [p for p in self.paths if os.path.exists(p)]
             args.extend(['-e', ','.join(paths)])
@@ -103,16 +104,22 @@ class Interpreter(object):
         """Extract the port to connect to
         """
 
-        self.__data['host'] = 'localhost'
+        if sublime.platform == 'windows':
+            self.__data['host'] = 'localhost'
+        else:
+            self.__data['host'] = self.__get_unix_domain_socket()
+            return
+
         if debug_enabled(view):
             port = get_settings(view, 'jsonserver_debug_port', 999)
             self.__data['port'] = port
             return
 
-        s = socket.socket()
-        s.bind(('', 0))
-        self.__data['port'] = s.getsockname()[1]
-        s.close()
+        if sublime.platform == 'windows':
+            s = socket.socket()
+            s.bind(('', 0))
+            self.__data['port'] = s.getsockname()[1]
+            s.close()
 
     def __extract_paths(self, view):
         """Extract a list of paths to be added to jedi
@@ -159,6 +166,25 @@ class Interpreter(object):
         self.__data['script_file'] = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
             'anaconda_server', 'jsonserver.py'
+        )
+
+    def __get_unix_domain_socket(self):
+        """Compound the Unix domain socket path
+        """
+
+        if sublime.platform() == 'windows':
+            return 'localhost'
+
+        socketpath = {
+            'linux': os.path.join('~', '.local', 'share', 'anaconda', 'run'),
+            'osx': os.path.join(
+                '~', 'Library', 'Application Support', 'Anaconda'),
+        }
+
+        return os.path.expanduser(os.path.join(
+            socketpath[sublime.platform()],
+            self.project_name,
+            'anaconda.sock')
         )
 
     def __parse_raw_interpreter(self):

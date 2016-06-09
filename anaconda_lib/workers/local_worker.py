@@ -95,14 +95,22 @@ class LocalWorker(Worker):
         """Check the socket status, returns True if it is operable
         """
 
+        check = 'that you can connect to your localhost'
+        addr = '("localhost", {})'.format(self.interpreter.port)
+        if sublime.platform != 'windows':
+            check = (
+                'that the Unix Domain Socket file {} exists and that you can '
+                'connect to it'
+            ).format(self.interpreter.host)
+            addr = self.interpreter.host
+
         self.tip = (
             'check that there is Python process executing the anaconda '
             'jsonserver.py script running in your system. If there is, check '
-            'that you can connect to your localhost writing the following '
-            'script in your Sublime Text 3 console:\n\n'
-            'import socket;socket.socket(socket.AF_INET, socket.SOCK_STTREAM).'
-            'connect(("localhost", {}))\n\n'
-            'Note: the port is the first number of the Python process '
-            'that you found earlier'.format(self.interpreter.port)
+            '{} writing the following script in your Sublime Text 3 console:'
+            '\n\nimport socket; socket.socket(socket.AF_INET, '
+            'socket.SOCK_STREAM).connect({})\n\n'.format(
+                check, addr,
+            )
         )
         return super(LocalWorker, self)._status(timeout)

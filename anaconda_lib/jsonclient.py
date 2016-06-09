@@ -8,6 +8,7 @@
 
 import sys
 import uuid
+import socket
 import logging
 import traceback
 
@@ -35,7 +36,13 @@ class AsynClient(EventHandler):
     """
 
     def __init__(self, port, host='localhost'):
-        EventHandler.__init__(self, (host, port))
+        if port == 0:
+            # use an Unix Socket Domain
+            EventHandler.__init__(
+                self, host, socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
+        else:
+            EventHandler.__init__(self, (host, port))
+
         self.callbacks = {}
         self.rbuffer = []
 

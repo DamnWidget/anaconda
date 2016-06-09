@@ -27,6 +27,14 @@ class Worker(object):
         self.process = WorkerProcess(interpreter).take()
         self.client = None
 
+    @property
+    def unix_socket(self):
+        """Determine if we use an Unix Socket
+        """
+
+        for_local = self.interpreter.for_local
+        return for_local and sublime.platform() != 'windows'
+
     def start(self):
         """Start the worker
         """
@@ -63,6 +71,8 @@ class Worker(object):
             return
 
         host, port = self.interpreter.host, self.interpreter.port
+        if self.unix_socket:
+            port = 0
         self.client = AsynClient(int(port), host=host)
         self.status = WorkerStatus.healthy
         if hasattr(self, 'reconnecting') and self.reconnecting:
@@ -102,6 +112,15 @@ class Worker(object):
         s.connect((self.interpreter.host, int(self.interpreter.port)))
         return s
 
+    def _get_service_unix_socket(self, timeout=0.05):
+        """Helper function that returns a unix socket to JsonServer process
+        """
+
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        s.connect(self.interpreter.host)
+        return s
+
     def _append_context_data(self, data):
         """Append contextual data depending on the worker type
         """
@@ -123,8 +142,13 @@ class Worker(object):
         """Check the socket status, return True if it is operable
         """
 
+        service_func = {
+            True: self._get_service_unix_socket,
+            False: self._get_service_socket
+        }
+
         try:
-            s = self._get_service_socket(timeout)
+            s = service_func[self.unix_socket](timeout)
             s.close()
             self.error = False
         except socket.timeout:
@@ -134,9 +158,14 @@ class Worker(object):
             return False
         except socket.error as error:
             if error.errno == errno.ECONNREFUSED:
-                self.error = 'can not connect to {} in port {}'.format(
-                    self.interpreter.host, self.interpreter.port
-                )
+                if self.unix_socket:
+                    self.error = 'can not connect to {}'.format(
+                        self.interpreter.host
+                    )
+                else:
+                    self.error = 'can not connect to {} in port {}'.format(
+                        self.interpreter.host, self.interpreter.port
+                    )
             else:
                 self.error = 'unexpected exception: {}'.format(error)
             return False

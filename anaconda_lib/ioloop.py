@@ -101,6 +101,7 @@ class EventHandler(object):
         self.address = address
         self.outbuffer = b''
         self.inbuffer = b''
+        self.sock = sock
         if sock is None:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
