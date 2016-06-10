@@ -244,3 +244,9 @@ class Interpreter(object):
             pathmap[local_path] = remote_path
 
         self.__data['pathmap'] = pathmap
+
+    def __repr__(self):
+        """String representation
+        """
+
+        return ' '.join(self.arguments[0])
