@@ -11,15 +11,17 @@ logpath = {
     'windows': os.path.join(os.getenv('APPDATA') or '~', 'Anaconda', 'Logs')
 }
 
+log_directory = os.path.expanduser(
+    logpath.get(platform.system().lower())
+)
+
 socketpath = {
     'linux': os.path.join('~', '.local', 'share', 'anaconda', 'run'),
     'darwin': os.path.join('~', 'Library', 'Application Support', 'Anaconda'),
 }
 
-log_directory = os.path.expanduser(
-    logpath.get(platform.system().lower())
-)
-
-socket_directory = os.path.expanduser(
-    socketpath.get(platform.system().lower())
-)
+socket_directory = None
+if platform.system().lower() != 'windows':
+    socket_directory = os.path.expanduser(
+        socketpath.get(platform.system().lower())
+    )

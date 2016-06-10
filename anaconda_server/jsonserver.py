@@ -131,7 +131,7 @@ class JSONServer(asyncore.dispatcher):
     if os.name == 'nt':
         address_family = socket.AF_INET
     else:
-        address_familty = socket.AF_UNIX
+        address_family = socket.AF_UNIX
     socket_type = socket.SOCK_STREAM
 
     def __init__(self, address, handler=JSONHandler):
@@ -139,7 +139,7 @@ class JSONServer(asyncore.dispatcher):
         self.handler = handler
 
         asyncore.dispatcher.__init__(self)
-        self.create_socket(self.address_familty, self.socket_type)
+        self.create_socket(self.address_family, self.socket_type)
         self.last_call = time.time()
 
         self.bind(self.address)
