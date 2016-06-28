@@ -65,6 +65,10 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
                     return
                 if show_tooltip and show_doc and st_version >= 3070:
                     return self._show_popup(view)
+                lines = self.signature.splitlines()
+                if len(lines) < 3:
+                    return
+                self.signature = lines[2]
                 return self._show_status(view)
 
             if show_tooltip and show_doc and st_version >= 3070:
@@ -72,6 +76,7 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
                 self.doc = self.doc.replace("  ", "&nbsp;&nbsp;")
 
             if not show_tooltip or st_version < 3070:
+                print('not show_tooltip', data['doc'])
                 self.signature = data['doc'].splitlines()[2]
             else:
                 self.signature = '<br>&nbsp;&nbsp;&nbsp;&nbsp;'.join(
