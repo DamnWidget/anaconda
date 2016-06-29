@@ -40,22 +40,27 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
                 location = (location[0], location[1] - 1)
 
             data = prepare_send_data(location, 'doc', 'jedi')
-            if int(sublime.version()) >= 3070:
-                data['html'] = get_settings(
-                    view, 'enable_signatures_tooltip', False)
-            Worker().execute(partial(self.prepare_data, view), **data)
+            use_tooltips = get_settings(
+                view, 'enable_signatures_tooltip', True
+            )
+            st_version = int(sublime.version())
+            if st_version >= 3070:
+                data['html'] = use_tooltips
+
+            currying = partial(self.prepare_data_status, view)
+            if use_tooltips and st_version >= 3070:
+                currying = partial(self.prepare_data_tooltip, view)
+            Worker().execute(currying, **data)
         except Exception as error:
             logging.error(error)
 
-    def prepare_data(self, view, data):
-        """Prepare the returned data
+    def prepare_data_tooltip(self, view, data):
+        """Prepare the returned data for tooltips
         """
 
-        st_version = int(sublime.version())
-        show_tooltip = get_settings(view, 'enable_signatures_tooltip', True)
-        show_doc = get_settings(view, 'merge_signatures_and_doc', True)
-        if (data['success'] and 'No docstring'
-                not in data['doc'] and data['doc'] != 'list\n'):
+        merge_doc = get_settings(view, 'merge_signatures_and_doc')
+        if (data['success'] and 'No docstring' not
+                in data['doc'] and data['doc'] != 'list\n'):
             try:
                 i = data['doc'].split('<br>').index("")
             except ValueError:
@@ -63,35 +68,37 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
                 self.doc = ''
                 if self._signature_excluded(self.signature):
                     return
-                if show_tooltip and show_doc and st_version >= 3070:
-                    return self._show_popup(view)
-                lines = self.signature.splitlines()
-                if len(lines) < 3:
-                    return
-                self.signature = lines[2]
-                return self._show_status(view)
+                return self._show_popup(view)
 
-            if show_tooltip and show_doc and st_version >= 3070:
-                self.doc = '<br>'.join(data['doc'].split('<br>')[i:])
-                self.doc = self.doc.replace("  ", "&nbsp;&nbsp;")
+            if merge_doc:
+                self.doc = '<br>'.join(data['doc'].split('<br>')[i:]).replace(
+                    "  ", "&nbsp;&nbsp;")
 
-            if not show_tooltip or st_version < 3070:
-                print('not show_tooltip', data['doc'])
-                self.signature = data['doc'].splitlines()[2]
-            else:
-                self.signature = '<br>&nbsp;&nbsp;&nbsp;&nbsp;'.join(
-                    data['doc'].split('<br>')[0:i])
-            if self.signature is not None and self.signature != '':
+            self.signature = '<br>&nbsp;&nbsp;&nbsp;&nbsp;'.join(
+                data['doc'].split('<br>')[0:i])
+            if self.signature is not None and self.signature != "":
                 if not self._signature_excluded(self.signature):
-                    if show_tooltip:
-                        return self._show_popup(view)
+                    return self._show_popup(view)
 
-                    return self._show_status(view)
-
-        if st_version >= 3070:
-            if view.is_popup_visible():
+        if view.is_popup_visible():
                 view.hide_popup()
         view.erase_status('anaconda_doc')
+
+    def prepare_data_status(self, view, data):
+        """Prepare the returned data for status
+        """
+
+        if (data['success'] and 'No docstring' not
+                in data['doc'] and data['doc'] != 'list\n'):
+            self.signature = data['doc']
+            if self._signature_excluded(self.signature):
+                return
+            try:
+                self.signature = self.signature.splitlines()[2]
+            except KeyError:
+                return
+
+            return self._show_status(view)
 
     def _show_popup(self, view):
         """Show message in a popup if sublime text version is >= 3070
