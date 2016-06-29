@@ -1,0 +1,8 @@
+Changes in 1.4.27
+=================
+
+## Fixes
+	- Fixed problem with signatures feture being corrupted by tooltips, resolves #499
+
+
+For detailed information run git log v1.4.26..v1.4.27 in the git repository
