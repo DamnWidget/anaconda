@@ -16,7 +16,7 @@ class AnacondaGoto(sublime_plugin.TextCommand):
     """Jedi GoTo a Python defunition for Sublime Text
     """
 
-    def run(self, edit):
+    def run(self, edit: sublime.Edit) -> None:
         try:
             location = self.view.rowcol(self.view.sel()[0].begin())
             data = prepare_send_data(location, 'goto', 'jedi')
@@ -24,7 +24,7 @@ class AnacondaGoto(sublime_plugin.TextCommand):
         except:
             pass
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Determine if this command is enabled or not
         """
 
@@ -35,7 +35,7 @@ class AnacondaGotoPythonObject(sublime_plugin.TextCommand):
     """Open prompt asking for Python path and JediGoto
     """
 
-    def input_package(self, package):
+    def input_package(self, package: str) -> None:
         splitted = package.strip().split('.')
         if len(splitted) == 1:
             import_command = 'import %s' % splitted[0]
@@ -45,7 +45,7 @@ class AnacondaGotoPythonObject(sublime_plugin.TextCommand):
             )
         self.goto_python_object(import_command)
 
-    def goto_python_object(self, import_command):
+    def goto_python_object(self, import_command: str) -> None:
         try:
             data = {
                 'filename': '',
@@ -59,7 +59,7 @@ class AnacondaGotoPythonObject(sublime_plugin.TextCommand):
         except:
             raise
 
-    def run(self, edit):
+    def run(self, edit: sublime.Edit) -> None:
         sublime.active_window().show_input_panel(
             'Provide object path:', '',
             self.input_package, None, None

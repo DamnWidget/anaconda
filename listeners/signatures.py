@@ -10,6 +10,7 @@ import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.tooltips import Tooltip
+from ..anaconda_lib.typing import Dict, Tuple, Any
 from ..anaconda_lib.helpers import prepare_send_data, is_python, get_settings
 
 
@@ -17,14 +18,14 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
     """Signatures on status bar event listener class
     """
 
-    doc = None
+    doc = None  # type: str
     signature = None
     exclude = (
         'None', 'NoneType', 'str', 'int', 'float', 'True',
         'False', 'in', 'or', 'and', 'bool'
     )
 
-    def on_modified(self, view):
+    def on_modified(self, view: sublime.View) -> None:
         """Called after changes has been made to a view
         """
 
@@ -47,7 +48,7 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
         except Exception as error:
             logging.error(error)
 
-    def prepare_data(self, view, data):
+    def prepare_data(self, view: sublime.View, data: Dict[str, Any]) -> Any:
         """Prepare the returned data
         """
 
@@ -88,7 +89,7 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
                 view.hide_popup()
         view.erase_status('anaconda_doc')
 
-    def _show_popup(self, view):
+    def _show_popup(self, view: sublime.View) -> None:
         """Show message in a popup if sublime text version is >= 3070
         """
 
@@ -103,7 +104,7 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
         Tooltip(css).show_tooltip(
             view, display_tooltip, content, partial(self._show_status, view))
 
-    def _show_status(self, view):
+    def _show_status(self, view: sublime.View) -> None:
         """Show message in the view status bar
         """
 
@@ -111,7 +112,7 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
             'anaconda_doc', 'Anaconda: {}'.format(self.signature)
         )
 
-    def _signature_excluded(self, signature):
+    def _signature_excluded(self, signature: str) -> Tuple[str]:
         """Whether to supress displaying information for the given signature.
         """
 

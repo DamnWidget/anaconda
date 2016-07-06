@@ -13,13 +13,13 @@ class AnacondaDisableLinting(sublime_plugin.WindowCommand):
     """Disable the linting for the current buffer
     """
 
-    def run(self):
+    def run(self) -> None:
         if self.window.active_view().file_name() is not None:
             ANACONDA['DISABLED'].append(self.window.active_view().file_name())
 
         erase_lint_marks(self.window.active_view())
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Determines if the command is enabled
         """
 

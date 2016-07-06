@@ -16,7 +16,7 @@ class AnacondaFindUsages(sublime_plugin.TextCommand):
     """Jedi find usages for Sublime Text
     """
 
-    def run(self, edit):
+    def run(self, edit: sublime_plugin.sublime.Edit) -> None:
         try:
             location = active_view().rowcol(self.view.sel()[0].begin())
             data = prepare_send_data(location, 'usages', 'jedi')
@@ -27,7 +27,7 @@ class AnacondaFindUsages(sublime_plugin.TextCommand):
         except:
             pass
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Determine if this command is enabled or not
         """
 

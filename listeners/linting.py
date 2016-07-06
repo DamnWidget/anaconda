@@ -7,6 +7,7 @@ import time
 import sublime
 import sublime_plugin
 
+from ..anaconda_lib.typing import Callable, Dict, Any
 from ..anaconda_lib.helpers import (
     check_linting, get_settings, check_linting_behaviour,
     ONLY_CODE, NOT_SCRATCH, LINTING_ENABLED, is_code
@@ -23,14 +24,14 @@ class BackgroundLinter(sublime_plugin.EventListener):
 
     check_auto_lint = False
 
-    def __init__(self, lang='Python', linter=run_linter):
+    def __init__(self, lang: str='Python', linter: Callable=run_linter) -> None:  # noqa
         super(BackgroundLinter, self).__init__()
         self.lang = lang
         self.run_linter = linter
         self.last_selected_line = -1
         sublime.set_timeout(self.lint, 1000)
 
-    def lint(self):
+    def lint(self) -> None:
         view = sublime.active_window().active_view()
         if get_settings(view, 'anaconda_linting_behaviour') != 'always':
             if not self.check_auto_lint:
@@ -46,7 +47,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
 
         sublime.set_timeout(lambda: self.lint(), int(delay * 1000))
 
-    def on_modified(self, view):
+    def on_modified(self, view: sublime.View) -> None:
         """
         Called after changes have been made to a view.
         Runs in a separate thread, and does not block the application.
@@ -69,7 +70,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
         else:
             self._erase_marks_if_no_linting(view)
 
-    def on_load(self, view):
+    def on_load(self, view: sublime.View) -> None:
         """Called after load a file
         """
 
@@ -80,7 +81,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
         else:
             self._erase_marks_if_no_linting(view)
 
-    def on_pre_close(self, view):
+    def on_pre_close(self, view: sublime.View) -> None:
         """Called when the view is about to be closed
         """
 
@@ -88,7 +89,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
         for severity in ['VIOLATIONS', 'WARNINGS', 'ERRORS']:
             ANACONDA[severity][view.id()] = {}
 
-    def on_post_save(self, view):
+    def on_post_save(self, view: sublime.View) -> None:
         """Called post file save event
         """
 
@@ -103,14 +104,14 @@ class BackgroundLinter(sublime_plugin.EventListener):
         else:
             self._erase_marks_if_no_linting(view)
 
-    def _show_errors_list(self, parse_results, data):
+    def _show_errors_list(self, parse_results: Callable[[Dict[str, Any]], None], data: Dict[str, Any]) -> None:  # noqa
         """Hook the parser_results callback and append some functions
         """
 
         parse_results(data)
         sublime.active_window().run_command('anaconda_get_lines')
 
-    def on_activated(self, view):
+    def on_activated(self, view: sublime.View) -> None:
         """Called when a view gain the focus
         """
 
@@ -122,7 +123,7 @@ class BackgroundLinter(sublime_plugin.EventListener):
         else:
             self._erase_marks_if_no_linting(view)
 
-    def on_selection_modified(self, view):
+    def on_selection_modified(self, view: sublime.View) -> None:
         """Called on selection modified
         """
 
@@ -137,14 +138,14 @@ class BackgroundLinter(sublime_plugin.EventListener):
             self.last_selected_line = last_selected_line
             update_statusbar(view)
 
-    def _erase_marks_if_no_linting(self, view):
+    def _erase_marks_if_no_linting(self, view: sublime.View) -> None:
         """Erase the anaconda marks if linting is disabled
         """
 
         if not check_linting(view, LINTING_ENABLED, code=self.lang.lower()):
             self._erase_marks(view)
 
-    def _erase_marks(self, view):
+    def _erase_marks(self, view: sublime.View) -> None:
         """Just a wrapper for erase_lint_marks
         """
 

@@ -27,7 +27,7 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.setLevel(logging.DEBUG)
 
 
-def plugin_loaded():
+def plugin_loaded() -> None:
     """Called directly from sublime on plugin load
     """
 
@@ -49,7 +49,7 @@ def plugin_loaded():
         ioloop.loop()
 
 
-def plugin_unloaded():
+def plugin_unloaded() -> None:
     """Called directly from sublime on plugin unload
     """
 

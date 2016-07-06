@@ -24,6 +24,7 @@ except ImportError:
 
 from .callback import Callback
 from .ioloop import EventHandler
+from .typing import Callable, Any
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -35,7 +36,7 @@ class AsynClient(EventHandler):
     """Asynchronous JSON connection to anaconda server
     """
 
-    def __init__(self, port, host='localhost'):
+    def __init__(self, port: int, host: str='localhost') -> None:
         if port == 0:
             # use an Unix Socket Domain
             EventHandler.__init__(
@@ -46,19 +47,19 @@ class AsynClient(EventHandler):
         self.callbacks = {}
         self.rbuffer = []
 
-    def ready_to_write(self):
+    def ready_to_write(self) -> bool:
         """I am ready to send some data?
         """
 
         return True if self.outbuffer else False
 
-    def handle_read(self, data):
+    def handle_read(self, data: bytes) -> None:
         """Called when data is ready to be read
         """
 
         self.rbuffer.append(data)
 
-    def add_callback(self, callback):
+    def add_callback(self, callback: Callable) -> str:
         """Add a new callback to the callbacks dictionary
 
         The hex representation of the callback's uuid4 is used as index. In
@@ -74,13 +75,13 @@ class AsynClient(EventHandler):
         self.callbacks[hexid] = callback
         return hexid
 
-    def pop_callback(self, hexid):
+    def pop_callback(self, hexid: str) -> Callable:
         """Remove and return a callback callable from the callback dictionary
         """
 
         return self.callbacks.pop(hexid)
 
-    def process_message(self):
+    def process_message(self) -> None:
         """Called when a full line has been read from the socket
         """
 
@@ -90,7 +91,7 @@ class AsynClient(EventHandler):
         try:
             data = sublime.decode_value(message.decode('utf8'))
         except (NameError, ValueError):
-            data = json.loads(message.replace('\t', ' ' * 8).decode('utf8'))
+            data = json.loads(message.replace(b'\t', b' ' * 8).decode('utf8'))
 
         callback = self.pop_callback(data.pop('uid'))
         if callback is None:
@@ -106,7 +107,7 @@ class AsynClient(EventHandler):
             for traceback_line in traceback.format_exc().splitlines():
                 logging.error(traceback_line)
 
-    def send_command(self, callback, **data):
+    def send_command(self, callback: Callable, **data: Any) -> None:
         """Send the given command that should be handled bu the given callback
         """
         data['uid'] = self.add_callback(callback)
