@@ -104,7 +104,7 @@ class Interpreter(object):
         """Extract the port to connect to
         """
 
-        if sublime.platform == 'windows':
+        if sublime.platform() == 'windows':
             self.__data['host'] = 'localhost'
         else:
             self.__data['host'] = self.__get_unix_domain_socket()
@@ -115,7 +115,7 @@ class Interpreter(object):
             self.__data['port'] = port
             return
 
-        if sublime.platform == 'windows':
+        if sublime.platform() == 'windows':
             s = socket.socket()
             s.bind(('', 0))
             self.__data['port'] = s.getsockname()[1]
@@ -193,6 +193,9 @@ class Interpreter(object):
 
         urldata = urlparse(self.__raw_interpreter)
         self.__data['scheme'] = urldata.scheme if urldata.scheme else 'local'
+        if len(self.__data['scheme']) == 1:
+            self.__data['scheme'] = 'local'
+
         if self.for_local:
             # we are set up for local return now and do our thing
             return self.__prepare_local_interpreter()
