@@ -25,16 +25,10 @@ class Goto(Command):
             data = None
             success = False
         else:
-            # we use a set here to avoid duplicated data
-            try:
-                data = {(i.module_path, i.line, i.column + 1)
-                        for i in definitions if not i.in_builtin_module()}
-            except:
-                # comprehension sets not allowed Python < 2.7
-                data = set([(i.module_path, i.line, i.column + 1)
-                            for i in definitions if not i.in_builtin_module()])
-            finally:
-                success = True
+            # we use a set here to avoid duplication
+            data = set([(i.module_path, i.line, i.column + 1)
+                        for i in definitions if not i.in_builtin_module()])
+            success = True
 
         self.callback(
             {'success': success, 'goto': list(data), 'uid': self.uid})
