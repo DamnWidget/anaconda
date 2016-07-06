@@ -1,0 +1,8 @@
+Changes in 1.4.28
+=================
+
+## Fixes
+	- Fixed dupes in Goto Definition command, resolves #497
+
+
+For detailed information run git log v1.4.27..v1.4.28 in the git repository
