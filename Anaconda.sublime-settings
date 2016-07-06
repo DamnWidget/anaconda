@@ -437,6 +437,65 @@
     "validate_imports": false,
 
     /*
+    	MyPy
+
+    	Set the following options as true to enable MyPy checker
+    */
+    "mypy": false,
+
+    /*
+    	MyPy Silent Imports
+
+    	If true don't follow imports to .py files
+    */
+    "mypy_silent_imports": false,
+
+    /*
+    	MyPy Almost Silent
+
+		As Silent Imports but report the imports as errors
+    */
+    "mypy_almost_silent": false,
+
+    /*
+    	MyPy py2
+
+    	Use Python 2 mode
+    */
+    "mypy_py2": false,
+
+    /*
+    	MyPy Disallow Untyped Calls
+
+    	Disallow calling functions without type annotations from
+    	functions with type annotations
+    */
+    "mypy_disallow_untyped_calls": false,
+
+    /*
+    	MyPy Disallow Untyped Defs
+
+    	Disallow defining functions without type annotations or
+    	with incomplete type annotations
+    */
+    "mypy_disallow_untyped_defs": false,
+
+	/*
+		MyPy Check Untyped Defs
+
+		Type check the interior of functions without type annotations
+	*/
+	"mypy_check_untyped_defs": false,
+
+	/*
+		MyPy Custom Typing
+
+		Use a custom typing module
+		Note: Uncoment to enable
+	*/
+	// "mypy_custom_typing": "",
+
+    /*
         Debug and development options
 
         Use those options only for debugging and development purposes, they can

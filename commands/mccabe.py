@@ -8,7 +8,7 @@ import sublime_plugin
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.typing import Dict, Any
 from ..anaconda_lib.callback import Callback
-from ..anaconda_lib.helpers import get_settings, active_view
+from ..anaconda_lib.helpers import get_settings
 
 
 class AnacondaMcCabe(sublime_plugin.WindowCommand):
@@ -22,7 +22,7 @@ class AnacondaMcCabe(sublime_plugin.WindowCommand):
         data = {
             'code': code,
             'threshold': get_settings(view, 'mccabe_threshold', 7),
-            'filename': active_view().file_name(),
+            'filename': view.file_name(),
             'method': 'mccabe',
             'handler': 'qa'
         }
