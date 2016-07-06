@@ -29,7 +29,7 @@ class Goto(Command):
             try:
                 data = {(i.module_path, i.line, i.column + 1)
                         for i in definitions if not i.in_builtin_module()}
-            except SyntaxError:
+            except:
                 # comprehension sets not allowed Python < 2.7
                 data = set([(i.module_path, i.line, i.column + 1)
                             for i in definitions if not i.in_builtin_module()])
