@@ -69,7 +69,7 @@ anaconda capabilities to other languages, the complete list of them can be shown
 
 | Language | Web Site | Package Control | Status |
 | --- | --- | --- | --- |
-| **Go** | https://github.com/DamnWidget/anaconda_go | No | Discontinued, you should be using GoSublime |
+| **Go** | https://github.com/DamnWidget/anaconda_go | No | Under heavy development |
 | **Rust** | https://github.com/DamnWidget/anaconda_rust | Yes | Active |
 | **PHP** | https://github.com/DamnWidget/anaconda_php | Yes | Active |
 
