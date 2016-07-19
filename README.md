@@ -1,6 +1,8 @@
 [![Join the chat at https://gitter.im/DamnWidget/anaconda](https://badges.gitter.im/DamnWidget/anaconda.svg)](https://gitter.im/DamnWidget/anaconda?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/DamnWidget/anaconda.svg?branch=master)](https://travis-ci.org/DamnWidget/anaconda)
 
 # Anaconda
+[![Pledgie][pledgie-donate-image]][pledgie-donate-link]
+
 Anaconda turns your Sublime Text 3 into a full featured Python IDE. Read the plugin documentation on [http://damnwidget.github.io/anaconda](http://damnwidget.github.io/anaconda).
 
 
@@ -80,13 +82,12 @@ Would you like to see your language empowered by anaconda? Use `anaconda_rust` o
 Please donate to help keep this project alive.
 
 [![PayPal][paypal-donate-image]][paypal-donate-link]
-[![Flatter][flatter-image]][flatter-link]
 
 [license]: https://raw.githubusercontent.com/DamnWidget/anaconda/master/LICENSE
 [Completion-Rules]: https://raw.githubusercontent.com/DamnWidget/anaconda/master/Completion%20Rules.tmPreferences
 [dev-docs]: http://damnwidget.gitbooks.io/anacondast3-developers-documentation/
 [paypal-donate-image]: https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif
 [paypal-donate-link]: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=KP7PAHR962UGG&lc=US&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted
-[flatter-image]: https://api.flattr.com/button/flattr-badge-large.png
-[flatter-link]: http://flattr.com/thing/1765332/DamnWidgetanaconda-on-GitHub
+[pledgie-donate-image]: https://pledgie.com/campaigns/32230.png?skin_name=chrome
+[pledgie-donate-link]: https://pledgie.com/campaigns/32230
 [tooltips-dark-image]: http://damnwidget.github.io/anaconda/img/tooltips.png
