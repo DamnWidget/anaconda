@@ -1,0 +1,23 @@
+
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+
+                                     The Sublime Text 3 Python IDE
+
+
+Welcome to anaconda, the Sublime Text 3 Python IDE. We hope you enjoy it :)
+
+Anaconda works fine out of the box but you can configure it to totally adapt
+it to your needs or style.
+
+For a complete guide of use and configuration take a look at:
+
+	http://damnwidget.github.io/anaconda/
+
+Please, consider donating to maintain this project alive:
+
+	https://pledgie.com/campaigns/32230
+
