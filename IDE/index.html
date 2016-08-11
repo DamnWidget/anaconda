@@ -17,8 +17,8 @@
  
 <meta property="og:type" content="article"/>
 <meta property="og:description" content=""/>
-<meta property="og:title" content="A Powerful IDE : spf13.com"/>
-<meta property="og:site_name" content="spf13 is Steve Francia"/>
+<meta property="og:title" content="A Powerful IDE"/>
+<meta property="og:site_name" content="AnacondaST3"/>
 <meta property="og:image" content="" />
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:width" content="" />
@@ -765,58 +765,60 @@ setting the configuration option <code>auto_formatting</code> as <code>true</cod
 <p>Autoformat can handle the following list of errors:</p>
 
 <blockquote>
-<p>E101 - Reindent all lines.<br>
-E111 - Reindent all lines.<br>
-E121 - Fix indentation to be a multiple of four.<br>
-E122 - Add absent indentation for hanging indentation.<br>
-E123 - Align closing bracket to match opening bracket.<br>
-E124 - Align closing bracket to match visual indentation.<br>
-E125 - Indent to distinguish line from next logical line.<br>
-E126 - Fix over-indented hanging indentation.<br>
-E127 - Fix visual indentation.<br>
-E128 - Fix visual indentation.<br>
-E129 - Indent to distinguish line from next logical line.<br>
-E201 - Remove extraneous whitespace.<br>
-E202 - Remove extraneous whitespace.<br>
-E203 - Remove extraneous whitespace.<br>
-E211 - Remove extraneous whitespace.<br>
-E221 - Fix extraneous whitespace around keywords.<br>
-E222 - Fix extraneous whitespace around keywords.<br>
-E223 - Fix extraneous whitespace around keywords.<br>
-E224 - Remove extraneous whitespace around operator.<br>
-E225 - Fix missing whitespace around operator.<br>
-E226 - Fix missing whitespace around operator.<br>
-E227 - Fix missing whitespace around operator.<br>
-E228 - Fix missing whitespace around operator.<br>
-E231 - Add missing whitespace.<br>
-E241 - Fix extraneous whitespace around keywords.<br>
-E242 - Remove extraneous whitespace around operator.<br>
-E251 - Remove whitespace around parameter &lsquo;=&rsquo; sign.<br>
-E261 - Fix spacing after comment hash.<br>
-E262 - Fix spacing after comment hash.<br>
-E271 - Fix extraneous whitespace around keywords.<br>
-E272 - Fix extraneous whitespace around keywords.<br>
-E273 - Fix extraneous whitespace around keywords.<br>
-E274 - Fix extraneous whitespace around keywords.<br>
-E301 - Add missing blank line.<br>
-E302 - Add missing 2 blank lines.<br>
-E303 - Remove extra blank lines.<br>
-E304 - Remove blank line following function decorator.<br>
-E401 - Put imports on separate lines.<br>
-E501 - Try to make lines fit within &ndash;max-line-length characters.<br>
-E502 - Remove extraneous escape of newline.<br>
-E701 - Put colon-separated compound statement on separate lines.<br>
-E702 - Put semicolon-separated compound statement on separate lines.<br>
-E703 - Put semicolon-separated compound statement on separate lines.<br>
-E711 - Fix comparison with None.<br>
-E712 - Fix comparison with boolean.<br>
-W191 - Reindent all lines.<br>
-W291 - Remove trailing whitespace.<br>
-W293 - Remove trailing whitespace on blank line.<br>
-W391 - Remove trailing blank lines.<br>
+<p>E101 - indentation contains mixed spaces and tabs.<br>
+E111 - indentation is not a multiple of four.<br>
+E121 - continuation line under-indented for hanging indent.<br>
+E122 - continuation line missing indentation or outdented.<br>
+E123 - closing bracket does not match indentation of opening bracket’s line.<br>
+E124 - closing bracket does not match visual indentation.<br>
+E125 - continuation line with same indent as next logical line.<br>
+E126 - continuation line over-indented for hanging indent.<br>
+E127 - continuation line over-indented for visual indent.<br>
+E128 - continuation line under-indented for visual indent.<br>
+E129 - visually indented line with same indent as next logical line.<br>
+E201 - whitespace after ‘(‘.<br>
+E202 - whitespace before ‘)‘.<br>
+E203 - whitespace before ‘:’.<br>
+E211 - whitespace before ‘(‘.<br>
+E221 - multiple spaces before operator.<br>
+E222 - multiple spaces after operator.<br>
+E223 - tab before operator.<br>
+E224 - tab after operator.<br>
+E225 - missing whitespace around operator.<br>
+E226 - missing whitespace around arithmetic operator.<br>
+E227 - missing whitespace around bitwise or shift operator.<br>
+E228 - missing whitespace around modulo operator.<br>
+E231 - missing whitespace after ‘,’, ‘;’, or ‘:’.<br>
+E241 - multiple spaces after ‘,’.<br>
+E242 - tab after ‘,’.<br>
+E251 - unexpected spaces around keyword / parameter equals<br>
+E261 - at least two spaces before inline comment.<br>
+E262 - inline comment should start with ‘# ‘.<br>
+E271 - multiple spaces after keyword.<br>
+E272 - multiple spaces before keyword.<br>
+E273 - tab after keyword.<br>
+E274 - tab before keyword.<br>
+E301 - expected 1 blank line, found 0.<br>
+E302 - expected 2 blank lines, found 0.<br>
+E303 - too many blank lines.<br>
+E304 - blank lines found after function decorator.<br>
+E401 - multiple imports on one line.<br>
+E501 - line too long (> 79 characters).<br>
+E502 - the backslash is redundant between brackets.<br>
+E701 - multiple statements on one line (colon).<br>
+E702 - multiple statements on one line (semicolon).<br>
+E703 - statement ends with a semicolon.<br>
+E711 - comparison to None should be ‘if cond is None:’.<br>
+E712 - comparison to True should be ‘if cond is True:’ or ‘if cond:’.<br>
+W191 - indentation contains tabs.<br>
+W291 - trailing whitespace.<br>
+W293 - blank line contains whitespace.<br>
+W391 - blank line at end of file.<br>
 E26  - Format block comments.<br>
-W6   - Fix various deprecated code (via lib2to3).<br>
-W602 - Fix deprecated form of raising exception.<br></p>
+W6   - fix various deprecated code (via lib2to3).<br>
+W602 - deprecated form of raising exception.<br>
+W603 - ‘<>’ is deprecated, use ‘!=’.<br>
+W604 - backticks are deprecated, use ‘repr()’<br></p>
 </blockquote>
 
 <p><br><br></p>
