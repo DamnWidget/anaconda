@@ -3,6 +3,7 @@ import sys
 import contextlib
 import functools
 import re
+from itertools import chain
 from ast import literal_eval
 
 from jedi._compatibility import unicode, reraise
@@ -127,21 +128,24 @@ def source_to_unicode(source, encoding=None):
             # UTF-8 byte-order mark
             return 'utf-8'
 
-        first_two_lines = re.match(r'(?:[^\n]*\n){0,2}', str(source)).group(0)
-        possible_encoding = re.search(r"coding[=:]\s*([-\w.]+)",
+        first_two_lines = re.match(br'(?:[^\n]*\n){0,2}', source).group(0)
+        possible_encoding = re.search(br"coding[=:]\s*([-\w.]+)",
                                       first_two_lines)
         if possible_encoding:
             return possible_encoding.group(1)
         else:
             # the default if nothing else has been set -> PEP 263
-            return encoding if encoding is not None else 'iso-8859-1'
+            return encoding if encoding is not None else 'utf-8'
 
     if isinstance(source, unicode):
         # only cast str/bytes
         return source
 
+    encoding = detect_encoding()
+    if not isinstance(encoding, unicode):
+        encoding = unicode(encoding, 'utf-8', 'replace')
     # cast to unicode by default
-    return unicode(source, detect_encoding(), 'replace')
+    return unicode(source, encoding, 'replace')
 
 
 def splitlines(string):
@@ -152,3 +156,14 @@ def splitlines(string):
     Also different: Returns ``['']`` for an empty string input.
     """
     return re.split('\n|\r\n', string)
+
+
+def unite(iterable):
+    """Turns a two dimensional array into a one dimensional."""
+    return set(chain.from_iterable(iterable))
+
+
+def to_list(func):
+    def wrapper(*args, **kwargs):
+        return list(func(*args, **kwargs))
+    return wrapper

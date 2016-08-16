@@ -51,13 +51,13 @@ class JediHandler(AnacondaHandler):
         """Generate an usable Jedi Script
         """
 
-        # if self.debug is True:
-        #     logging.debug(
-        #         'jedi_script called with the following parameters '
-        #         'source: {0}\nline: {1} offset {2}, filename: {3}'.format(
-        #             source, line, offset, filename
-        #         )
-        #     )
+        if self.debug is True:
+            logging.debug(
+                'jedi_script called with the following parameters '
+                'source: {0}\nline: {1} offset {2}, filename: {3}'.format(
+                    source, line, offset, filename
+                )
+            )
 
         return jedi.Script(source, int(line), int(offset), filename, encoding)
 

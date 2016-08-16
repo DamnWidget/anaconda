@@ -4,6 +4,7 @@ import traceback
 import sublime
 import sublime_plugin
 
+from ..anaconda_lib.typing import Dict, Any
 from ..anaconda_lib.helpers import is_python
 from ..anaconda_lib.builder.python_builder import AnacondaSetPythonBuilder
 
@@ -11,7 +12,7 @@ from ..anaconda_lib.builder.python_builder import AnacondaSetPythonBuilder
 class AnacondaSetPythonInterpreter(sublime_plugin.TextCommand):
     """Sets or modifies the Venv of the current project"""
 
-    def run(self, edit):
+    def run(self, edit: sublime.Edit) -> None:
         try:
             sublime.active_window().show_input_panel(
                 "Python Path:", self.get_current_interpreter_path(),
@@ -20,7 +21,7 @@ class AnacondaSetPythonInterpreter(sublime_plugin.TextCommand):
         except:
             logging.error(traceback.format_exc())
 
-    def update_interpreter_settings(self, venv_path):
+    def update_interpreter_settings(self, venv_path: str) -> None:
         """Updates the project and adds/modifies the Venv path"""
         project_data = self.get_project_data()
 
@@ -51,22 +52,22 @@ class AnacondaSetPythonInterpreter(sublime_plugin.TextCommand):
                 venv_path
             )
 
-    def save_project_data(self, data):
+    def save_project_data(self, data: Dict[str, Any]) -> None:
         """Saves the provided data to the project settings"""
         sublime.active_window().set_project_data(data)
         sublime.status_message("Python path is set successfuly")
 
-    def get_project_data(self):
+    def get_project_data(self) -> Dict[str, Any]:
         """Return the project data for the current window"""
         return sublime.active_window().project_data()
 
-    def get_current_interpreter_path(self):
+    def get_current_interpreter_path(self) -> str:
         """Returns the current path from the settings if possible"""
         try:
             return self.get_project_data()['settings']['python_interpreter']
         except:
             return ''
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Check this plug in is enabled"""
         return is_python(self.view)

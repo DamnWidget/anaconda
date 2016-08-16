@@ -13,8 +13,9 @@ from import_validator import Validator
 from linting.anaconda_pep8 import Pep8Linter
 from lib.anaconda_handler import AnacondaHandler
 from linting.anaconda_pyflakes import PyFlakesLinter
+from linting.anaconda_mypy import MyPy as AnacondaMyPy
 from linting.anaconda_pep257 import PEP257 as AnacondaPep257
-from commands import PyFlakes, PEP257, PEP8, PyLint, ImportValidator
+from commands import PyFlakes, PEP257, PEP8, PyLint, ImportValidator, MyPy
 
 try:
     from linting.anaconda_pylint import PyLinter
@@ -112,6 +113,13 @@ class PythonLintHandler(AnacondaHandler):
         lint = Validator
         ImportValidator(self._merge, self.uid, self.vid, lint, code, filename)
 
+    def mypy(self, settings, code=None, filename=None):
+        """Run the mypy linter
+        """
+
+        lint = AnacondaMyPy
+        MyPy(self._merge, self.uid, self.vid, lint, code, filename, settings)
+
     def _normalize(self, settings, data):
         """Normalize pylint data before to merge
         """
@@ -151,6 +159,7 @@ class PythonLintHandler(AnacondaHandler):
         self._linters['pyflakes'] = settings.get('use_pyflakes', True)
         self._linters['pylint'] = settings.get('use_pylint', False)
         self._linters['pep257'] = settings.get('use_pep257', False)
+        self._linters['mypy'] = settings.get('use_mypy', False)
         self._linters['pep8'] = settings.get('pep8', True)
         self._linters['import_validator'] = settings.get(
             'validate_imports', False)

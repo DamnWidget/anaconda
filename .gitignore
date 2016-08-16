@@ -43,3 +43,6 @@ Main.sublime-menu
 
 # don't track .disabled_views
 .disabled_views
+
+# mypy cache
+.mypy_cache/

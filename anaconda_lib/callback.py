@@ -15,6 +15,7 @@ from functools import partial
 import sublime
 
 from ..anaconda_lib import enum
+from .typing import Callable, Any, Union
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -49,14 +50,13 @@ class Callback(object):
         once should result in a RuntimeError raising
     """
 
-    def __init__(self,
-                 on_success=None, on_failure=None, on_timeout=None, timeout=0):
+    def __init__(self, on_success: Callable=None, on_failure: Callable=None, on_timeout: Callable=None, timeout: Union[int, float]=0) -> None:  # noqa
         self._lock = RLock()
-        self._timeout = 0
-        self.uid = uuid.uuid4()
+        self._timeout = 0  # type: Union[int, float]
+        self.uid = uuid.uuid4()  # type: uuid.UUID
         self.waiting_for_timeout = False
-        self._status = CallbackStatus.unfired
-        self.callbacks = {'succeeded': on_success, 'failed': on_failure}
+        self._status = CallbackStatus.unfired  # type: enum.Enum
+        self.callbacks = {'succeeded': on_success, 'failed': on_failure}  # type: Dict[str, Callable]  # noqa
         if on_timeout is not None and callable(on_timeout):
             self.callbacks['timed_out'] = on_timeout
 
@@ -64,7 +64,7 @@ class Callback(object):
         if on_timeout is not None and timeout > 0:
             self.initialize_timeout()
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """This is called directly form the JSONClient when receive a message
         """
 
@@ -73,13 +73,13 @@ class Callback(object):
             return self._fire_callback(*args, **kwargs)
 
     @property
-    def id(self):
+    def id(self) -> uuid.UUID:
         """Return back the callback id
         """
         return self.uid
 
     @property
-    def hexid(self):
+    def hexid(self) -> str:
         """Return back the callback hexadecimal id
         """
         return self.uid.hex
@@ -91,7 +91,7 @@ class Callback(object):
         return self._timeout
 
     @timeout.setter
-    def timeout(self, value):
+    def timeout(self, value: Union[int, float]) -> None:
         """Set the timeout, take sure its an interger or float value
         """
 
@@ -101,13 +101,13 @@ class Callback(object):
         self._timeout = value
 
     @property
-    def status(self):
+    def status(self) -> enum.Enum:
         """Return the callback status
         """
         return self.status
 
     @status.setter
-    def status(self, status):
+    def status(self, status: CallbackStatus) -> None:
         """Set the callback status, it can be set only once.
 
         This function is Thread Safe
@@ -140,16 +140,16 @@ class Callback(object):
                         'Status {} does not exists!'.format(status)
                     )
 
-    def initialize_timeout(self):
+    def initialize_timeout(self) -> None:
         """Initialize the timeouts if any
         """
 
-        def _timeout_callback(*args, **kwargs):
+        def _timeout_callback(*args: Any, **kwargs: Any) -> None:
             """Defualt timeout callback dummy method, can be overriden
             """
             raise RuntimeError('Timeout occurred on {}'.format(self.hexid))
 
-        def _on_timeout(func, *args, **kwargs):
+        def _on_timeout(func: Callable, *args: Any, **kwargs: Any) -> None:
             """We need this wrapper to don't call timeout by accident
             """
             if self._status is CallbackStatus.unfired:
@@ -163,7 +163,7 @@ class Callback(object):
                 partial(_on_timeout, callback), self.timeout * 1000
             )
 
-    def on(self, success=None, error=None, timeout=None):
+    def on(self, success: Callable=None, error: Callable=None, timeout: Callable=None) -> None:  # noqa
         """Another (more semantic) way to initialize the callback object
         """
 
@@ -178,7 +178,7 @@ class Callback(object):
                 self.callbacks['timed_out'] = timeout
                 self.initialize_timeout()
 
-    def _infere_status_from_data(self, *args, **kwargs):
+    def _infere_status_from_data(self, *args: Any, **kwargs: Any) -> None:
         """
         Set the status based on extracting a code from the callback data.
         Supports two protocols checked in the followin order:
@@ -196,11 +196,11 @@ class Callback(object):
         else:
             self.status = 'succeeded'  # almost safe, trust me
 
-    def _fire_callback(self, *args, **kwargs):
+    def _fire_callback(self, *args: Any, **kwargs: Any) -> Any:
         """Fire the right calback based on the status
         """
 
-        def _panic(*args, **kwargs):
+        def _panic(*args: Any, **kwargs: Any) -> None:
             """Just called on panic situations
             """
 

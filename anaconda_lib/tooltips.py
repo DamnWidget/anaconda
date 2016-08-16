@@ -10,18 +10,19 @@ from string import Template
 import sublime
 
 from .helpers import get_settings
+from .typing import Callable, Union, Dict
 
 
 class Tooltip(object):
     """Just a wrapper around Sublime Text 3 tooltips
     """
 
-    themes = {}
-    tooltips = {}
+    themes = {}  # type: Dict[str, bytes]
+    tooltips = {}  # type: Dict[str, str]
     loaded = False
     basesize = 75
 
-    def __init__(self, theme):
+    def __init__(self, theme: str) -> None:
         self.theme = theme
 
         if int(sublime.version()) < 3070:
@@ -32,7 +33,7 @@ class Tooltip(object):
             self._load_tooltips()
             Tooltip.loaded = True
 
-    def show_tooltip(self, view, tooltip, content, fallback):
+    def show_tooltip(self, view: sublime.View, tooltip: str, content: Dict[str, str], fallback: Callable) -> None:  # noqa
         """Generates and display a tooltip or pass execution to fallback
         """
 
@@ -50,7 +51,7 @@ class Tooltip(object):
 
         return view.show_popup(text, **kwargs)
 
-    def _generate(self, tooltip, content):
+    def _generate(self, tooltip: str, content: Dict[str, str]) -> Union[Dict[str, str], None]:  # noqa
         """Generate a tooltip with the given text
         """
 
@@ -68,7 +69,7 @@ class Tooltip(object):
             )
             return None
 
-    def _load_tooltips(self):
+    def _load_tooltips(self) -> None:
         """Load tooltips templates from anaconda tooltips templates
         """
 
@@ -81,7 +82,7 @@ class Tooltip(object):
                 tpldata = '<style>${{css}}</style>{}'.format(tplfile.read())
                 self.tooltips[tplname] = Template(tpldata)
 
-    def _load_css_themes(self):
+    def _load_css_themes(self) -> None:
         """
         Load any css theme found in the anaconda CSS themes directory
         or in the User/Anaconda.themes directory
@@ -104,7 +105,7 @@ class Tooltip(object):
                     self._load_css(css_file)
                 )
 
-    def _load_css(self, css_file):
+    def _load_css(self, css_file: str) -> str:
         """Load a css file
         """
 

@@ -41,6 +41,7 @@ class Doc(Command):
             definitions = self.script.goto_definitions()
         except Exception as error:
             logging.debug(error)
+            logging.debug(self.script)
             definitions = []
 
         if not definitions:

@@ -11,6 +11,7 @@ from ..anaconda_lib.helpers import (
     completion_is_disabled
 )
 from ..anaconda_lib.decorators import profile
+from ..anaconda_lib.typing import Dict, List, Tuple, Any
 
 JUST_COMPLETED = False
 
@@ -19,11 +20,11 @@ class AnacondaCompletionEventListener(sublime_plugin.EventListener):
     """Anaconda completion events listener class
     """
 
-    completions = []
+    completions = []  # type: List[Tuple[str]]
     ready_from_defer = False
 
     @profile
-    def on_query_completions(self, view, prefix, locations):
+    def on_query_completions(self, view: sublime.View, prefix: str, locations: List[Tuple[int]]) -> Tuple[List[Tuple[str]], int]:  # noqa
         """Sublime Text autocompletion event handler
         """
 
@@ -56,7 +57,7 @@ class AnacondaCompletionEventListener(sublime_plugin.EventListener):
 
         Worker().execute(self._complete, **data)
 
-    def on_modified(self, view):
+    def on_modified(self, view: sublime.View) -> None:
         """Called after changes has been made to a view.
         """
 
@@ -75,25 +76,30 @@ class AnacondaCompletionEventListener(sublime_plugin.EventListener):
                 view.sel()[0].begin() - 7, view.sel()[0].end())) == 'import ':
             self._run_auto_complete()
 
-    def _complete(self, data):
+    def _complete(self, data: Dict[str, Any]) -> None:
 
+        view = active_view()
         proposals = data['completions'] if data['success'] else []
 
         if proposals:
-            active_view().run_command("hide_auto_complete")
+            if int(sublime.version()) >= 3103 and view.is_auto_complete_visible():  # noqa
+                view.run_command("hide_auto_complete")
+            else:
+                view.run_command("hide_auto_complete")
+
             self.completions = proposals
             self.ready_from_defer = True
 
             # if the tab key is used to complete just undo the last insertion
-            if active_view().command_history(0)[0] == 'insert_best_completion':
-                if active_view().substr(sublime.Region(
-                        active_view().sel()[0].begin() - 5,
-                        active_view().sel()[0].end())) == 'self.':
-                    active_view().run_command('undo')
+            if view.command_history(0)[0] == 'insert_best_completion':
+                if view.substr(sublime.Region(
+                        view.sel()[0].begin() - 5,
+                        view.sel()[0].end())) == 'self.':
+                    view.run_command('undo')
 
             self._run_auto_complete()
 
-    def _run_auto_complete(self):
+    def _run_auto_complete(self) -> None:
         """Efectively call autocomplete using the ST API
         """
 
