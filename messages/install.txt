@@ -1,0 +1,16 @@
+
+
+
+														  |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+
+Thank you for install anaconda. If you have any feedback or encounter
+any problem you can talk with us at: https://gitter.im/DamnWidget/anaconda
+
+If you like this package, please, consider to make a donation to maintain
+the project alive in: https://pledgie.com/campaigns/32230
