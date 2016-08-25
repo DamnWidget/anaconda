@@ -55,7 +55,8 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
         except Exception as error:
             logging.error(error)
 
-    def prepare_data_tooltip(self, view: sublime.View, data: Dict[str, Any]) -> Any:  # noqa
+    def prepare_data_tooltip(
+            self, view: sublime.View, data: Dict[str, Any]) -> Any:
         """Prepare the returned data for tooltips
         """
 
@@ -85,7 +86,8 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
                 view.hide_popup()
         view.erase_status('anaconda_doc')
 
-    def prepare_data_status(self, view: sublime.View, data: Dict[str, Any]) -> Any:  # noqa
+    def prepare_data_status(
+            self, view: sublime.View, data: Dict[str, Any]) -> Any:
         """Prepare the returned data for status
         """
 
