@@ -11,13 +11,11 @@ from jedi._compatibility import unicode, use_metaclass
 from jedi import settings
 from jedi import common
 from jedi.parser import tree
-from jedi.parser.utils import load_parser
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
-from jedi.evaluate.compiled import mixed
 from jedi.api import keywords
 from jedi.evaluate.finder import filter_definition_names
 
@@ -150,7 +148,7 @@ class BaseDefinition(object):
         if isinstance(stripped, er.InstanceElement):
             stripped = stripped.var
 
-        if isinstance(stripped, (compiled.CompiledObject, mixed.MixedObject)):
+        if isinstance(stripped, compiled.CompiledObject):
             return stripped.api_type()
         elif isinstance(stripped, iterable.Array):
             return 'instance'
@@ -324,7 +322,7 @@ class BaseDefinition(object):
         elif self._definition.isinstance(tree.Import):
             return imports.ImportWrapper(self._evaluator, self._name).follow()
         else:
-            return set([self._definition])
+            return [self._definition]
 
     @property
     @memoize_default()
@@ -333,32 +331,24 @@ class BaseDefinition(object):
         Raises an ``AttributeError``if the definition is not callable.
         Otherwise returns a list of `Definition` that represents the params.
         """
-        followed = list(self._follow_statements_imports())
+        followed = self._follow_statements_imports()
         if not followed or not hasattr(followed[0], 'py__call__'):
             raise AttributeError()
         followed = followed[0]  # only check the first one.
 
-        if followed.type in ('funcdef', 'lambda'):
+        if followed.type == 'funcdef':
             if isinstance(followed, er.InstanceElement):
                 params = followed.params[1:]
             else:
                 params = followed.params
         elif followed.isinstance(er.compiled.CompiledObject):
             params = followed.params
-        elif isinstance(followed, er.Class):
+        else:
             try:
                 sub = followed.get_subscope_by_name('__init__')
                 params = sub.params[1:]  # ignore self
             except KeyError:
                 return []
-        elif isinstance(followed, er.Instance):
-            try:
-                sub = followed.get_subscope_by_name('__call__')
-                params = sub.params[1:]  # ignore self
-            except KeyError:
-                return []
-        else:
-            return []
         return [_Param(self._evaluator, p.name) for p in params]
 
     def parent(self):
@@ -369,58 +359,39 @@ class BaseDefinition(object):
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)
 
-    def get_line_code(self, before=0, after=0):
-        """
-        Returns the line of code where this object was defined.
-
-        :param before: Add n lines before the current line to the output.
-        :param after: Add n lines after the current line to the output.
-
-        :return str: Returns the line(s) of code or an empty string if it's a
-                     builtin.
-        """
-        if self.in_builtin_module():
-            return ''
-
-        path = self._definition.get_parent_until().path
-        parser = load_parser(path)
-        lines = common.splitlines(parser.source)
-
-        line_nr = self._name.start_pos[0]
-        start_line_nr = line_nr - before
-        return '\n'.join(lines[start_line_nr:line_nr + after + 1])
-
 
 class Completion(BaseDefinition):
     """
     `Completion` objects are returned from :meth:`api.Script.completions`. They
     provide additional information about a completion.
     """
-    def __init__(self, evaluator, name, stack, like_name_length):
+    def __init__(self, evaluator, name, needs_dot, like_name_length):
         super(Completion, self).__init__(evaluator, name)
 
+        self._needs_dot = needs_dot
         self._like_name_length = like_name_length
-        self._stack = stack
 
         # Completion objects with the same Completion name (which means
         # duplicate items in the completion)
         self._same_name_completions = []
 
     def _complete(self, like_name):
+        dot = '.' if self._needs_dot else ''
         append = ''
         if settings.add_bracket_after_function \
                 and self.type == 'Function':
             append = '('
 
-        if isinstance(self._definition, tree.Param) and self._stack is not None:
-            node_names = list(self._stack.get_node_names(self._evaluator.grammar))
-            if 'trailer' in node_names and 'argument' not in node_names:
-                append += '='
+        if settings.add_dot_after_module:
+            if isinstance(self._definition, tree.Module):
+                append += '.'
+        if isinstance(self._definition, tree.Param):
+            append += '='
 
         name = str(self._name)
         if like_name:
             name = name[self._like_name_length:]
-        return name + append
+        return dot + name + append
 
     @property
     def complete(self):
@@ -478,7 +449,7 @@ class Completion(BaseDefinition):
                 followed = self._follow_statements_imports()
                 if followed:
                     # TODO: Use all of the followed objects as input to Documentation.
-                    definition = list(followed)[0]
+                    definition = followed[0]
 
         if raw:
             return _Help(definition).raw()
@@ -658,11 +629,11 @@ class CallSignature(Definition):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, executable_name, bracket_start_pos, index, key_name_str):
+    def __init__(self, evaluator, executable_name, call_stmt, index, key_name):
         super(CallSignature, self).__init__(evaluator, executable_name)
         self._index = index
-        self._key_name_str = key_name_str
-        self._bracket_start_pos = bracket_start_pos
+        self._key_name = key_name
+        self._call_stmt = call_stmt
 
     @property
     def index(self):
@@ -670,9 +641,9 @@ class CallSignature(Definition):
         The Param index of the current call.
         Returns None if the index cannot be found in the curent call.
         """
-        if self._key_name_str is not None:
+        if self._key_name is not None:
             for i, param in enumerate(self.params):
-                if self._key_name_str == param.name:
+                if self._key_name == param.name:
                     return i
             if self.params and self.params[-1]._name.get_definition().stars == 2:
                 return i
@@ -694,7 +665,7 @@ class CallSignature(Definition):
         The indent of the bracket that is responsible for the last function
         call.
         """
-        return self._bracket_start_pos
+        return self._call_stmt.end_pos
 
     @property
     def call_name(self):

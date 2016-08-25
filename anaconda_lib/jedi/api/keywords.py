@@ -1,8 +1,9 @@
 import pydoc
 import keyword
 
-from jedi._compatibility import is_py3, is_py35
+from jedi._compatibility import is_py3
 from jedi import common
+from jedi.evaluate import compiled
 from jedi.evaluate.helpers import FakeName
 from jedi.parser.tree import Leaf
 try:
@@ -12,12 +13,7 @@ except ImportError:
     import pydoc_topics
 
 if is_py3:
-    if is_py35:
-        # in python 3.5 async and await are not proper keywords, but for
-        # completion pursposes should as as though they are
-        keys = keyword.kwlist + ["async", "await"]
-    else:
-        keys = keyword.kwlist
+    keys = keyword.kwlist
 else:
     keys = keyword.kwlist + ['None', 'False', 'True']
 
@@ -33,9 +29,8 @@ def has_inappropriate_leaf_keyword(pos, module):
 
     return False
 
-
 def completion_names(evaluator, stmt, pos, module):
-    keyword_list = all_keywords(evaluator)
+    keyword_list = all_keywords()
 
     if not isinstance(stmt, Leaf) or has_inappropriate_leaf_keyword(pos, module):
         keyword_list = filter(
@@ -45,19 +40,19 @@ def completion_names(evaluator, stmt, pos, module):
     return [keyword.name for keyword in keyword_list]
 
 
-def all_keywords(evaluator, pos=(0, 0)):
-    return set([Keyword(evaluator, k, pos) for k in keys])
+def all_keywords(pos=(0,0)):
+    return set([Keyword(k, pos) for k in keys])
 
 
-def keyword(evaluator, string, pos=(0, 0)):
+def keyword(string, pos=(0,0)):
     if string in keys:
-        return Keyword(evaluator, string, pos)
+        return Keyword(string, pos)
     else:
         return None
 
 
-def get_operator(evaluator, string, pos):
-    return Keyword(evaluator, string, pos)
+def get_operator(string, pos):
+    return Keyword(string, pos)
 
 
 keywords_only_valid_as_leaf = (
@@ -67,12 +62,10 @@ keywords_only_valid_as_leaf = (
 
 
 class Keyword(object):
-    type = 'completion_keyword'
-
-    def __init__(self, evaluator, name, pos):
+    def __init__(self, name, pos):
         self.name = FakeName(name, self, pos)
         self.start_pos = pos
-        self.parent = evaluator.BUILTINS
+        self.parent = compiled.builtin
 
     def get_parent_until(self):
         return self.parent

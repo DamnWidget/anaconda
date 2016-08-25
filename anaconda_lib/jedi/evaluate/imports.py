@@ -20,9 +20,9 @@ from itertools import chain
 from jedi._compatibility import find_module, unicode
 from jedi import common
 from jedi import debug
+from jedi import cache
 from jedi.parser import fast
 from jedi.parser import tree
-from jedi.parser.utils import save_parser, load_parser, parser_cache
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi import settings
@@ -68,49 +68,56 @@ class ImportWrapper(tree.Base):
 
     @memoize_default()
     def follow(self, is_goto=False):
-        module = self._evaluator.wrap(self._import.get_parent_until())
-        import_path = self._import.path_for_name(self._name)
-        from_import_name = None
+        if self._evaluator.recursion_detector.push_stmt(self._import):
+            # check recursion
+            return []
+
         try:
-            from_names = self._import.get_from_names()
-        except AttributeError:
-            # Is an import_name
-            pass
-        else:
-            if len(from_names) + 1 == len(import_path):
-                # We have to fetch the from_names part first and then check
-                # if from_names exists in the modules.
-                from_import_name = import_path[-1]
-                import_path = from_names
+            module = self._evaluator.wrap(self._import.get_parent_until())
+            import_path = self._import.path_for_name(self._name)
+            from_import_name = None
+            try:
+                from_names = self._import.get_from_names()
+            except AttributeError:
+                # Is an import_name
+                pass
+            else:
+                if len(from_names) + 1 == len(import_path):
+                    # We have to fetch the from_names part first and then check
+                    # if from_names exists in the modules.
+                    from_import_name = import_path[-1]
+                    import_path = from_names
 
-        importer = Importer(self._evaluator, tuple(import_path),
-                            module, self._import.level)
+            importer = Importer(self._evaluator, tuple(import_path),
+                                module, self._import.level)
 
-        types = importer.follow()
+            types = importer.follow()
 
-        #if self._import.is_nested() and not self.nested_resolve:
-        #    scopes = [NestedImportModule(module, self._import)]
+            #if self._import.is_nested() and not self.nested_resolve:
+            #    scopes = [NestedImportModule(module, self._import)]
 
-        if from_import_name is not None:
-            types = set(chain.from_iterable(
-                self._evaluator.find_types(t, unicode(from_import_name),
-                                           is_goto=is_goto)
-                for t in types))
+            if from_import_name is not None:
+                types = list(chain.from_iterable(
+                    self._evaluator.find_types(t, unicode(from_import_name),
+                                               is_goto=is_goto)
+                    for t in types))
 
-            if not types:
-                path = import_path + [from_import_name]
-                importer = Importer(self._evaluator, tuple(path),
-                                    module, self._import.level)
-                types = importer.follow()
+                if not types:
+                    path = import_path + [from_import_name]
+                    importer = Importer(self._evaluator, tuple(path),
+                                        module, self._import.level)
+                    types = importer.follow()
+                    # goto only accepts `Name`
+                    if is_goto:
+                        types = [s.name for s in types]
+            else:
                 # goto only accepts `Name`
                 if is_goto:
-                    types = set(s.name for s in types)
-        else:
-            # goto only accepts `Name`
-            if is_goto:
-                types = set(s.name for s in types)
+                    types = [s.name for s in types]
 
-        debug.dbg('after import: %s', types)
+            debug.dbg('after import: %s', types)
+        finally:
+            self._evaluator.recursion_detector.pop_stmt()
         return types
 
 
@@ -194,24 +201,23 @@ class Importer(object):
                 base = []
             if level > len(base):
                 path = module.py__file__()
-                if path is not None:
-                    import_path = list(import_path)
-                    for i in range(level):
-                        path = os.path.dirname(path)
-                    dir_name = os.path.basename(path)
-                    # This is not the proper way to do relative imports. However, since
-                    # Jedi cannot be sure about the entry point, we just calculate an
-                    # absolute path here.
-                    if dir_name:
-                        import_path.insert(0, dir_name)
-                    else:
-                        _add_error(self._evaluator, import_path[-1])
-                        import_path = []
-                        # TODO add import error.
-                        debug.warning('Attempted relative import beyond top-level package.')
+                import_path = list(import_path)
+                for i in range(level):
+                    path = os.path.dirname(path)
+                dir_name = os.path.basename(path)
+                # This is not the proper way to do relative imports. However, since
+                # Jedi cannot be sure about the entry point, we just calculate an
+                # absolute path here.
+                if dir_name:
+                    import_path.insert(0, dir_name)
+                else:
+                    _add_error(self._evaluator, import_path[-1])
+                    import_path = []
+                    # TODO add import error.
+                    debug.warning('Attempted relative import beyond top-level package.')
             else:
                 # Here we basically rewrite the level to 0.
-                import_path = tuple(base) + tuple(import_path)
+                import_path = tuple(base) + import_path
         self.import_path = import_path
 
     @property
@@ -242,7 +248,7 @@ class Importer(object):
     @memoize_default(NO_DEFAULT)
     def follow(self):
         if not self.import_path:
-            return set()
+            return []
         return self._do_import(self.import_path, self.sys_path_with_modifications())
 
     def _do_import(self, import_path, sys_path):
@@ -265,7 +271,7 @@ class Importer(object):
 
         module_name = '.'.join(import_parts)
         try:
-            return set([self._evaluator.modules[module_name]])
+            return [self._evaluator.modules[module_name]]
         except KeyError:
             pass
 
@@ -274,25 +280,28 @@ class Importer(object):
             # the module cache.
             bases = self._do_import(import_path[:-1], sys_path)
             if not bases:
-                return set()
+                return []
             # We can take the first element, because only the os special
             # case yields multiple modules, which is not important for
             # further imports.
-            parent_module = list(bases)[0]
+            base = bases[0]
 
             # This is a huge exception, we follow a nested import
             # ``os.path``, because it's a very important one in Python
             # that is being achieved by messing with ``sys.modules`` in
             # ``os``.
             if [str(i) for i in import_path] == ['os', 'path']:
-                return self._evaluator.find_types(parent_module, 'path')
+                return self._evaluator.find_types(base, 'path')
 
             try:
-                paths = parent_module.py__path__()
+                # It's possible that by giving it always the sys path (and not
+                # the __path__ attribute of the parent, we get wrong results
+                # and nested namespace packages don't work.  But I'm not sure.
+                paths = base.py__path__(sys_path)
             except AttributeError:
                 # The module is not a package.
                 _add_error(self._evaluator, import_path[-1])
-                return set()
+                return []
             else:
                 debug.dbg('search_module %s in paths %s', module_name, paths)
                 for path in paths:
@@ -306,9 +315,8 @@ class Importer(object):
                         module_path = None
                 if module_path is None:
                     _add_error(self._evaluator, import_path[-1])
-                    return set()
+                    return []
         else:
-            parent_module = None
             try:
                 debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
                 # Override the sys.path. It works only good that way.
@@ -322,39 +330,27 @@ class Importer(object):
             except ImportError:
                 # The module is not a package.
                 _add_error(self._evaluator, import_path[-1])
-                return set()
+                return []
 
         source = None
         if is_pkg:
             # In this case, we don't have a file yet. Search for the
             # __init__ file.
-            if module_path.endswith(('.zip', '.egg')):
-                source = module_file.loader.get_source(module_name)
-            else:
-                module_path = get_init_path(module_path)
+            module_path = get_init_path(module_path)
         elif module_file:
             source = module_file.read()
             module_file.close()
 
-        if module_file is None and not module_path.endswith(('.py', '.zip', '.egg')):
-            module = compiled.load_module(self._evaluator, module_path)
+        if module_file is None and not module_path.endswith('.py'):
+            module = compiled.load_module(module_path)
         else:
-            module = _load_module(self._evaluator, module_path, source, sys_path, parent_module)
-
-        if module is None:
-            # The file might raise an ImportError e.g. and therefore not be
-            # importable.
-            return set()
+            module = _load_module(self._evaluator, module_path, source, sys_path)
 
         self._evaluator.modules[module_name] = module
-        return set([module])
+        return [module]
 
     def _generate_name(self, name):
-        # Create a pseudo import to be able to follow them.
-        name = helpers.FakeName(name)
-        imp = helpers.FakeImport(name, parent=self.module)
-        name.parent = imp
-        return name
+        return helpers.FakeName(name, parent=self.module)
 
     def _get_module_names(self, search_path=None):
         """
@@ -402,7 +398,7 @@ class Importer(object):
 
                 # namespace packages
                 if isinstance(scope, tree.Module) and scope.path.endswith('__init__.py'):
-                    paths = scope.py__path__()
+                    paths = scope.py__path__(self.sys_path_with_modifications())
                     names += self._get_module_names(paths)
 
                 if only_modules:
@@ -435,26 +431,22 @@ class Importer(object):
         return names
 
 
-def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module=None):
+def _load_module(evaluator, path=None, source=None, sys_path=None):
     def load(source):
         dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
-        if path is not None and path.endswith(('.py', '.zip', '.egg')) \
-                and dotted_path not in settings.auto_import_modules:
+        if path is not None and path.endswith('.py') \
+                and not dotted_path in settings.auto_import_modules:
             if source is None:
                 with open(path, 'rb') as f:
                     source = f.read()
         else:
-            return compiled.load_module(evaluator, path)
+            return compiled.load_module(path)
         p = path
         p = fast.FastParser(evaluator.grammar, common.source_to_unicode(source), p)
-        save_parser(path, p)
-        from jedi.evaluate.representation import ModuleWrapper
-        return ModuleWrapper(evaluator, p.module, parent_module)
+        cache.save_parser(path, p)
+        return p.module
 
-    if sys_path is None:
-        sys_path = evaluator.sys_path
-
-    cached = load_parser(path)
+    cached = cache.load_parser(path)
     module = load(source) if cached is None else cached.module
     module = evaluator.wrap(module)
     return module
@@ -475,7 +467,7 @@ def get_modules_containing_name(evaluator, mods, name):
     """
     def check_python_file(path):
         try:
-            return parser_cache[path].parser.module
+            return cache.parser_cache[path].parser.module
         except KeyError:
             try:
                 return check_fs(path)
@@ -502,9 +494,7 @@ def get_modules_containing_name(evaluator, mods, name):
         paths = set(settings.additional_dynamic_modules)
         for p in mod_paths:
             if p is not None:
-                # We need abspath, because the seetings paths might not already
-                # have been converted to absolute paths.
-                d = os.path.dirname(os.path.abspath(p))
+                d = os.path.dirname(p)
                 for entry in os.listdir(d):
                     if entry not in mod_paths:
                         if entry.endswith('.py'):

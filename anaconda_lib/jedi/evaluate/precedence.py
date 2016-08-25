@@ -6,7 +6,8 @@ import operator
 from jedi._compatibility import unicode
 from jedi.parser import tree
 from jedi import debug
-from jedi.evaluate.compiled import CompiledObject, create, builtin_from_name
+from jedi.evaluate.compiled import (CompiledObject, create, builtin,
+                                    keyword_from_value, true_obj, false_obj)
 from jedi.evaluate import analysis
 
 # Maps Python syntax to the operator module.
@@ -22,19 +23,16 @@ COMPARISON_OPERATORS = {
 }
 
 
-def literals_to_types(evaluator, result):
+def _literals_to_types(evaluator, result):
     # Changes literals ('a', 1, 1.0, etc) to its type instances (str(),
     # int(), float(), etc).
-    new_result = set()
-    for typ in result:
-        if is_literal(typ):
+    for i, r in enumerate(result):
+        if is_literal(r):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
-            cls = builtin_from_name(evaluator, typ.name.value)
-            new_result |= evaluator.execute(cls)
-        else:
-            new_result.add(typ)
-    return new_result
+            cls = builtin.get_by_name(r.name.get_code())
+            result[i] = evaluator.execute(cls)[0]
+    return list(set(result))
 
 
 def calculate_children(evaluator, children):
@@ -66,21 +64,21 @@ def calculate_children(evaluator, children):
 
 
 def calculate(evaluator, left_result, operator, right_result):
-    result = set()
+    result = []
     if not left_result or not right_result:
         # illegal slices e.g. cause left/right_result to be None
-        result = (left_result or set()) | (right_result or set())
-        result = literals_to_types(evaluator, result)
+        result = (left_result or []) + (right_result or [])
+        result = _literals_to_types(evaluator, result)
     else:
         # I don't think there's a reasonable chance that a string
         # operation is still correct, once we pass something like six
         # objects.
         if len(left_result) * len(right_result) > 6:
-            result = literals_to_types(evaluator, left_result | right_result)
+            result = _literals_to_types(evaluator, left_result + right_result)
         else:
             for left in left_result:
                 for right in right_result:
-                    result |= _element_calculate(evaluator, left, operator, right)
+                    result += _element_calculate(evaluator, left, operator, right)
     return result
 
 
@@ -96,7 +94,7 @@ def factor_calculate(evaluator, types, operator):
             value = typ.py__bool__()
             if value is None:  # Uncertainty.
                 return
-            yield create(evaluator, not value)
+            yield keyword_from_value(not value)
         else:
             yield typ
 
@@ -132,21 +130,21 @@ def _element_calculate(evaluator, left, operator, right):
     if operator == '*':
         # for iterables, ignore * operations
         if isinstance(left, iterable.Array) or is_string(left):
-            return set([left])
+            return [left]
         elif isinstance(right, iterable.Array) or is_string(right):
-            return set([right])
+            return [right]
     elif operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):
-            return set([create(evaluator, left.obj + right.obj)])
+            return [create(evaluator, left.obj + right.obj)]
         elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
-            return set([iterable.MergedArray(evaluator, (left, right))])
+            return [iterable.MergedArray(evaluator, (left, right))]
     elif operator == '-':
         if l_is_num and r_is_num:
-            return set([create(evaluator, left.obj - right.obj)])
+            return [create(evaluator, left.obj - right.obj)]
     elif operator == '%':
         # With strings and numbers the left type typically remains. Except for
         # `int() % float()`.
-        return set([left])
+        return [left]
     elif operator in COMPARISON_OPERATORS:
         operation = COMPARISON_OPERATORS[operator]
         if isinstance(left, CompiledObject) and isinstance(right, CompiledObject):
@@ -155,14 +153,12 @@ def _element_calculate(evaluator, left, operator, right):
             right = right.obj
 
         try:
-            result = operation(left, right)
+            return [keyword_from_value(operation(left, right))]
         except TypeError:
             # Could be True or False.
-            return set([create(evaluator, True), create(evaluator, False)])
-        else:
-            return set([create(evaluator, result)])
+            return [true_obj, false_obj]
     elif operator == 'in':
-        return set()
+        return []
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
@@ -175,4 +171,4 @@ def _element_calculate(evaluator, left, operator, right):
         analysis.add(evaluator, 'type-error-operation', operator,
                      message % (left, right))
 
-    return set([left, right])
+    return [left, right]
