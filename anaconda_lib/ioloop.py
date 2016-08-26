@@ -41,6 +41,8 @@ import logging
 import traceback
 import threading
 
+from .typing import List, Tuple, Any  # noqa
+
 NOT_TERMINATE = True
 
 
@@ -48,18 +50,18 @@ class IOHandlers(object):
     """Class that register and unregister IOHandler
     """
 
-    _shared_state = {}
+    _shared_state = {}  # type: Dict[Any, Any]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__dict__ = IOHandlers._shared_state
         if hasattr(self, 'instanced') and self.instanced is True:
             return
 
-        self._handler_pool = {}
+        self._handler_pool = {}  # type: Dict[int, EventHandler]
         self._lock = threading.Lock()
-        self.instanced = True
+        self.instanced = True  # type: bool
 
-    def ready_to_read(self):
+    def ready_to_read(self) -> List['EventHandler']:
         """Return back all the handlers that are ready to read
         """
 
@@ -95,12 +97,13 @@ class EventHandler(object):
     """Event handler class
     """
 
-    def __init__(self, address, sock=None):
+    def __init__(self, address: Tuple[str, int], sock: socket.socket=None) -> None:  # noqa
         self._write_lock = threading.RLock()
         self._read_lock = threading.RLock()
         self.address = address
         self.outbuffer = b''
         self.inbuffer = b''
+        self.sock = sock
         if sock is None:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -109,17 +112,17 @@ class EventHandler(object):
         self.sock.setblocking(False)
         IOHandlers().register(self)
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self in IOHandlers()._handler_pool.values():
             IOHandlers().unregister(self)
 
-    def fileno(self):
+    def fileno(self) -> int:
         """Return the associated file descriptor
         """
 
         return self.sock.fileno()
 
-    def send(self):
+    def send(self) -> int:
         """Send outgoing data
         """
 
@@ -152,7 +155,7 @@ class EventHandler(object):
                     else:
                         raise
 
-    def recv(self):
+    def recv(self) -> None:
         """Receive some data
         """
 
@@ -196,37 +199,37 @@ class EventHandler(object):
                     self.handle_read(self.inbuffer)
                     self.inbuffer = b''
 
-    def push(self, data):
+    def push(self, data: bytes) -> None:
         """Push some bytes into the write buffer
         """
 
         self.outbuffer += data
 
-    def handle_read(self, data):
+    def handle_read(self, data: bytes) -> None:
         """Handle data readign from select
         """
 
         raise RuntimeError('You have to implement this method')
 
-    def process_message(self):
+    def process_message(self) -> None:
         """Process the full message
         """
 
         raise RuntimeError('You have to implement this method')
 
-    def ready_to_read(self):
+    def ready_to_read(self) -> bool:
         """This handler is ready to read
         """
 
         return True
 
-    def ready_to_write(self):
+    def ready_to_write(self) -> bool:
         """This handler is ready to write
         """
 
         return True
 
-    def close(self):
+    def close(self) -> None:
         """Close the socket and unregister the handler
         """
 
@@ -237,11 +240,11 @@ class EventHandler(object):
         self.connected = False
 
 
-def poll():
+def poll() -> None:
     """Poll the select
     """
 
-    recv = send = []
+    recv = send = []  # type: List[bytes]
     try:
         if os.name != 'posix':
             if IOHandlers()._handler_pool:
@@ -272,11 +275,11 @@ def poll():
         handler.send()
 
 
-def loop():
+def loop() -> None:
     """Main event loop
     """
 
-    def restart_poll(error):
+    def restart_poll(error: Exception) -> None:
         logging.error(
             'Unhandled exception in poll, restarting the poll request')
         logging.error(error)
@@ -288,7 +291,7 @@ def loop():
                 handler.close()
             IOHandlers()._handler_pool = {}
 
-    def inner_loop():
+    def inner_loop() -> None:
 
         while NOT_TERMINATE:
             try:
@@ -318,7 +321,7 @@ def loop():
     threading.Thread(target=inner_loop).start()
 
 
-def terminate():
+def terminate() -> None:
     """Terminate the loop
     """
 
@@ -326,7 +329,7 @@ def terminate():
     NOT_TERMINATE = False
 
 
-def restart():
+def restart() -> None:
     """Restart the loop
     """
 

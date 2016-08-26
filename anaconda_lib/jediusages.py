@@ -8,6 +8,8 @@
 import sublime
 from functools import partial
 
+from .typing import Union, Dict
+
 
 class JediUsages(object):
     """Work with Jedi definitions
@@ -16,7 +18,7 @@ class JediUsages(object):
     def __init__(self, text):
         self.text = text
 
-    def process(self, usages=False, data=None):
+    def process(self, usages: bool=False, data: Dict =None) -> None:
         """Process the definitions
         """
 
@@ -39,7 +41,8 @@ class JediUsages(object):
         else:
             self._show_options(definitions, usages)
 
-    def _jump(self, filename, lineno=None, columno=None, transient=False):
+    def _jump(self, filename: Union[int, str], lineno: int =None,
+              columno: int =None, transient: bool =False) -> None:
         """Jump to a window
         """
 
@@ -72,7 +75,7 @@ class JediUsages(object):
 
         self._toggle_indicator(lineno, columno)
 
-    def _show_options(self, defs, usages):
+    def _show_options(self, defs: Union[str, Dict], usages: bool) -> None:
         """Show a dropdown quickpanel with options to jump
         """
 
@@ -97,7 +100,7 @@ class JediUsages(object):
             on_highlight=partial(self._jump, transient=True)
         )
 
-    def _toggle_indicator(self, lineno=0, columno=0):
+    def _toggle_indicator(self, lineno: int =0, columno: int =0) -> None:
         """Toggle mark indicator for focus the cursor
         """
 

@@ -9,6 +9,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.typing import Dict, Any
 from ..anaconda_lib.callback import Callback
 from ..anaconda_lib.helpers import prepare_send_data, is_python
 
@@ -17,9 +18,9 @@ class AnacondaRename(sublime_plugin.TextCommand):
     """Rename the word under the cursor to the given one in its total scope
     """
 
-    data = None
+    data = None  # type: Dict[str, Any]
 
-    def run(self, edit):
+    def run(self, edit: sublime.Edit) -> None:
         if self.data is None:
             try:
                 location = self.view.word(self.view.sel()[0].begin())
@@ -33,27 +34,27 @@ class AnacondaRename(sublime_plugin.TextCommand):
         else:
             self.rename(edit)
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Determine if this command is enabled or not
         """
 
         return is_python(self.view)
 
-    def input_replacement(self, replacement):
+    def input_replacement(self, replacement: str) -> None:
         location = self.view.rowcol(self.view.sel()[0].begin())
         data = prepare_send_data(location, 'rename', 'jedi')
         data['directories'] = sublime.active_window().folders()
         data['new_word'] = replacement
         Worker().execute(Callback(on_success=self.store_data), **data)
 
-    def store_data(self, data):
+    def store_data(self, data: Dict[str, Any]) -> None:
         """Just store the data an call the command again
         """
 
         self.data = data
         self.view.run_command('anaconda_rename')
 
-    def rename(self, edit):
+    def rename(self, edit: sublime.Edit) -> None:
         """Rename in the buffer
         """
 

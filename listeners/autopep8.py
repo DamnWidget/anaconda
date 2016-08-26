@@ -11,7 +11,7 @@ class AnacondaAutoformatPEP8EventListener(sublime_plugin.EventListener):
     """Anaconda AutoPEP8 formatter event listener class
     """
 
-    def on_pre_save(self, view):
+    def on_pre_save(self, view: sublime_plugin.sublime.View) -> None:
         """Called just before the file is going to be saved
         """
 

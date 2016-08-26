@@ -8,6 +8,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.helpers import is_python
+from ..anaconda_lib.typing import Tuple, Any  # noqa
 from ..anaconda_lib.linting.sublime import ANACONDA
 
 
@@ -15,9 +16,9 @@ class AnacondaAutoImport(sublime_plugin.TextCommand):
     """Execute auto import for undefined names
     """
 
-    def run(self, edit):
+    def run(self, edit: sublime.Edit) -> None:
 
-        self.data = None
+        self.data = None  # type: List[str]
         location = self.view.rowcol(self.view.sel()[0].begin())
         if not self._detected_undefined_name(location):
             sublime.message_dialog(
@@ -27,13 +28,13 @@ class AnacondaAutoImport(sublime_plugin.TextCommand):
         for name in self.data:
             self.insert_import(edit, name)
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Determine if this command is enabled or not
         """
 
         return is_python(self.view, True)
 
-    def insert_import(self, edit, name):
+    def insert_import(self, edit: sublime.Edit, name: str) -> None:
         iline = self._guess_insertion_line()
         import_str = 'import {name}\n\n\n'.format(name=name)
         current_lines = self.view.lines(sublime.Region(0, self.view.size()))
@@ -41,7 +42,7 @@ class AnacondaAutoImport(sublime_plugin.TextCommand):
 
         self.view.insert(edit, import_point, import_str)
 
-    def _guess_insertion_line(self):
+    def _guess_insertion_line(self) -> int:
         view_code = self.view.substr(sublime.Region(0, self.view.size()))
         match = re.search(r'^(@.+|def|class)\s+', view_code, re.M)
         if match is not None:
@@ -54,7 +55,7 @@ class AnacondaAutoImport(sublime_plugin.TextCommand):
 
         return len(code.split('\n')) - 1
 
-    def _detected_undefined_name(self, location):
+    def _detected_undefined_name(self, location: Tuple[int]) -> bool:
         vid = self.view.id()
         errors_mapping = {0: 'ERRORS', 1: 'WARNINGS', 2: 'VIOLATIONS'}
         for i, error_type in errors_mapping.items():

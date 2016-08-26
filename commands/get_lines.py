@@ -5,6 +5,7 @@
 import sublime
 import sublime_plugin
 
+from ..anaconda_lib.typing import Dict, Any
 from ..anaconda_lib.helpers import get_settings
 from ..anaconda_lib.helpers import valid_languages
 from ..anaconda_lib.linting.sublime import ANACONDA
@@ -14,14 +15,14 @@ class AnacondaGetLines(sublime_plugin.WindowCommand):
     """Get a quickpanel with all the errors and lines ready to jump to them
     """
 
-    def run(self):
-        errors = {}
+    def run(self) -> None:
+        errors = {}  # type: Dict[int, str]
         self._harvest_errors(errors, 'ERRORS')
         self._harvest_errors(errors, 'WARNINGS')
         self._harvest_errors(errors, 'VIOLATIONS')
 
         if len(errors) > 0:
-            self.options = []
+            self.options = []  # type: List[List[str]]
             for line, error_strings in errors.items():
 
                 for msg in error_strings:
@@ -29,7 +30,7 @@ class AnacondaGetLines(sublime_plugin.WindowCommand):
 
             self.window.show_quick_panel(self.options, self._jump)
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Determines if the command is enabled
         """
 
@@ -46,7 +47,7 @@ class AnacondaGetLines(sublime_plugin.WindowCommand):
 
         return False
 
-    def _harvest_errors(self, harvester, error_type):
+    def _harvest_errors(self, harvester: Dict[str, Any], error_type: str) -> None:  # noqa
         vid = self.window.active_view().id()
         for line, error_strings in ANACONDA[error_type].get(vid, {}).items():
             if line not in harvester:
@@ -55,7 +56,7 @@ class AnacondaGetLines(sublime_plugin.WindowCommand):
             for error in error_strings:
                 harvester[line].append(error)
 
-    def _jump(self, item):
+    def _jump(self, item: int) -> None:
         """Jump to a line in the view buffer
         """
 

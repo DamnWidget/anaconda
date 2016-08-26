@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [ "$#" -lt 1 ]; then
+	echo "Syntax: ${0} python_interpeter <port> <project_name> [extra_paths,]"
+	exit 1
+fi
+
+PYTHON=$1
+PORT=$2
+PROJECT=$3
+EXTRA_PATHS=$4
+
+${PYTHON} "/opt/anaconda/anaconda_server/minserver.py" -p ${PROJECT:="anaconda"} -e ${EXTRA_PATHS:="`pwd`"} ${PORT:="19360"} &
+sleep 2
+tail -f ~/.local/share/anaconda/logs/${PROJECT:="anaconda"}/anaconda_jsonserver.log

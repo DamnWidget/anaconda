@@ -1,0 +1,131 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+
+Anaconda v2.0.0
+===============
+
+This is the new major release of AnacondaST3 Python IDE. Many things had been
+changed, rewritten and/or redesigned for this release.
+
+Redesigns
+=========
+
+This is a non exhaustive list of the redesigns for the package
+
+### Refactor
+
+Some parts of the package had been refactored and MyPy annotations had been
+added to all the runtime (part of the package that runs in ST3 context) python
+files.
+
+### Workers
+
+The anaconda's workers (workers are objects that get a request from the ST3
+events system and send it using an asynchronous custom JSON TCP protocol client
+to the anaconda's `jsonserver` for processing and register callbacks that get
+fired when a response is received or on a timeout) have been completely
+redesigned and rewritten to support remote anaconda servers running in a
+different machine than the ST3 application is running itself.
+
+The change above allow us to connect anaconda's ST3 runtime with any anaconda's
+`jsonserver` (`minserver` really) over any TCP connection that makes possible
+to support a new `Docker` worker and improve the already existent `Vagrant`
+worker.
+
+The worker-client architecture has been improved in order to minimize ST3
+slowdowns when there is some problem with the `jsonserver` or with the
+configured `python_interpreter`.
+
+### The `python_interpreter` and `vagrant` settings
+
+In anaconda v1.x the user had to enable the vagrant support and provide an
+additional vagrant configuration in order to connect to a remote anaconda's
+`jsonserver`, even that way of work with Vagrant is already supported, it is
+deprecated and will be removed from the package in future releases, the
+suggested way to work with Vagrant or any other remote worker now is setting
+the `python_interpreter` to the right value.
+
+For example, in order to connect the AnacondaST3 IDE into a Vagrant worker we
+could just configure our `python_interpreter` option as:
+
+    `"python_interpreter": "vagrant://default:19360?network=forwarded"`
+
+That will connect the ST3 anaconda's runtime to the `default` vagrant VM into
+the `19360` port using a forwarded network topology invoking the system `python`
+that is in the Vagrant's VM `$PATH`.
+
+For more info visit: https://github.com/DamnWidget/anaconda/wiki/Anaconda-v2:-Using-a-remote-python-interpreter-through-Vagrant
+
+*Note*: the `vagrant` branch is also deprecated and is not gonna be maintained
+any more as it is not needed for anaconda v2
+
+A very similar configuration can be used to connect to server running in for
+example a development machine in AWS
+
+    `"python_interpreter": "tcp://your_domain.com:9999"`
+
+That will connect the anaconda's runtime into a remote server running in
+`your_domain.com` in the port `9999`
+
+More info: https://github.com/DamnWidget/anaconda/wiki/Anaconda-v2:-Using-a-remote-python-interpreter
+
+### UNIX Domain Sockets on Posix Platforms
+
+Starting from v2.0.0 anaconda connects to the `jsonserver` trough a UNIX Domain
+Socket instead of a regular TCP/IP connection when a local worker (local
+python interpreter running in the same machine than ST3 is running in) is used.
+
+### Deadcode
+
+Some deadcode has been removed.
+
+New Features
+============
+
+This is a non exhaustive list of the major new features in anaconda v2.0.0
+
+### Docker Support
+
+This was most voted up feature requests in the package's history and now is
+here to stay.
+
+Use a python interpreter running in a Docker container is as simple as configure
+the right `python_interpreter` it is very like the examples that we already
+show above.
+
+More info: https://github.com/DamnWidget/anaconda/wiki/Anaconda-v2:-Using-a-remote-python-interpreter-through-Docker
+
+### MyPy Support
+
+MyPy is now supported as linter, it is disabled by default and can be enabled
+and configured trough the `mypy` family settings in the configuration file. To
+enable `mypy` linting just set `mypy` as `true` in any level of your
+configuration.
+
+Please, refer to the Anaconda's configuration file to get a complete list of
+the MyPy linting options available in anaconda.
+
+### Improved Logging Locations
+
+Anaconda v2 doesn't use Jedi's cache directory for logging purposes anymore now
+the log files under the following paths in each platform:
+
+    * GNU/Linux: ~/.local/share/anaconda/logs
+    * OS X: ~/Library/Logs/anaconda
+    * Windows: %APPDATA%\\Anaconda\\Logs
+
+### Updates
+
+Jedi has been updated to v0.10.0 (commmit 8a34481e8cbda862f9c0c2a33995ccbebe85897e)
+that will solve some autocompletion problems.
+
+### Final Notes
+
+There is lots of small fixes, bug fixes and other changes that probably worth
+a mention in this version notes but I am too lazy to do so forgive me.

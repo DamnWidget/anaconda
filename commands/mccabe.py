@@ -6,28 +6,29 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.typing import Dict, Any
 from ..anaconda_lib.callback import Callback
-from ..anaconda_lib.helpers import get_settings, active_view
+from ..anaconda_lib.helpers import get_settings
 
 
 class AnacondaMcCabe(sublime_plugin.WindowCommand):
     """Execute McCabe complexity checker
     """
 
-    def run(self):
+    def run(self) -> None:
 
         view = self.window.active_view()
         code = view.substr(sublime.Region(0, view.size()))
         data = {
             'code': code,
             'threshold': get_settings(view, 'mccabe_threshold', 7),
-            'filename': active_view().file_name(),
+            'filename': view.file_name(),
             'method': 'mccabe',
             'handler': 'qa'
         }
         Worker().execute(Callback(on_success=self.prepare_data), **data)
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Determine if this command is enabled or not
         """
 
@@ -36,7 +37,7 @@ class AnacondaMcCabe(sublime_plugin.WindowCommand):
         matcher = 'source.python'
         return view.match_selector(location, matcher)
 
-    def prepare_data(self, data):
+    def prepare_data(self, data: Dict[str, Any]) -> None:
         """Prepare the data to present in the quick panel
         """
 
@@ -53,11 +54,11 @@ class AnacondaMcCabe(sublime_plugin.WindowCommand):
 
         self._show_options(data['errors'])
 
-    def _show_options(self, options):
+    def _show_options(self, options: Dict[str, Any]) -> None:
         """Show a dropdown quickpanel with options to jump
         """
 
-        self.options = []
+        self.options = []  # type: List[List[str]]
         for option in options:
             self.options.append(
                 [option['message'], 'line: {}'.format(option['line'])]
@@ -65,7 +66,7 @@ class AnacondaMcCabe(sublime_plugin.WindowCommand):
 
         self.window.show_quick_panel(self.options, self._jump)
 
-    def _jump(self, item):
+    def _jump(self, item: int) -> None:
         """Jump to a line in the view buffer
         """
 

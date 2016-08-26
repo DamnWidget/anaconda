@@ -328,7 +328,9 @@ def run_linter(view=None, hook=None):
         'pylint_rcfile': get_settings(view, 'pylint_rcfile'),
         'pylint_ignores': get_settings(view, 'pylint_ignore'),
         'pyflakes_explicit_ignore': get_settings(
-            view, 'pyflakes_explicit_ignore', [])
+            view, 'pyflakes_explicit_ignore', []),
+        'use_mypy': get_settings(view, 'mypy', False),
+        'mypy_settings': get_mypy_settings(view)
     }
 
     text = view.substr(sublime.Region(0, view.size()))
@@ -345,6 +347,33 @@ def run_linter(view=None, hook=None):
         Worker().execute(Callback(on_success=parse_results), **data)
     else:
         Worker().execute(Callback(partial(hook, parse_results)), **data)
+
+
+def get_mypy_settings(view):
+    """Get MyPy related settings
+    """
+
+    mypy_settings = []
+    if get_settings(view, 'mypy_silent_imports', False):
+        mypy_settings.append('--silent-imports')
+    if get_settings(view, 'mypy_almost_silent', False):
+        mypy_settings.append('--almost-silent')
+    if get_settings(view, 'mypy_py2', False):
+        mypy_settings.append('--py2')
+    if get_settings(view, 'mypy_disallow_untyped_calls', False):
+        mypy_settings.append('--disallow-untyped-calls')
+    if get_settings(view, 'mypy_disallow_untyped_defs', False):
+        mypy_settings.append('--disallow-untyped-defs')
+    if get_settings(view, 'mypy_check_untyped_defs', False):
+        mypy_settings.append('--check-untyped-defs')
+    custom_typing = get_settings(view, 'mypy_custom_typing', None)
+    if custom_typing is not None:
+        mypy_settings.append('--custom-typing')
+        mypy_settings.append(custom_typing)
+
+    mypy_settings.append('--incremental')  # use cache always
+
+    return mypy_settings
 
 
 def parse_results(data, code='python'):
