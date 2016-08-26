@@ -1,6 +1,11 @@
 [![Join the chat at https://gitter.im/DamnWidget/anaconda](https://badges.gitter.im/DamnWidget/anaconda.svg)](https://gitter.im/DamnWidget/anaconda?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/DamnWidget/anaconda.svg?branch=master)](https://travis-ci.org/DamnWidget/anaconda)
 
-# Anaconda
+                                                          |        
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` | 
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   | 
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_| 
+                                     The Sublime Text 3 Python IDE
+                                     
 [![Pledgie][pledgie-donate-image]][pledgie-donate-link]
 
 Anaconda turns your Sublime Text 3 into a full featured Python IDE. Read the plugin documentation on [http://damnwidget.github.io/anaconda](http://damnwidget.github.io/anaconda).
@@ -55,6 +60,12 @@ Delete your Sublime Text Cache file `Cache/Python/Completion Rules.tmPreferences
 SublimeCodeIntel interferes with anaconda's auto-completion.
 
 **Work-around**: Consider disabling SublimeCodeIntel for Python views or disabling/removing it completely when using anaconda.
+
+#### Anaconda behaves slowly and jsonserver crashes
+If you are in POSIX systems (Linux or OS X) take a look at the owner of the anaconda's jsonserver log files, they *must* be owned by your user or the jsonserver would be unable to start up. Log files can be found in:
+* GNU/Linux: ~/.local/share/anaconda/logs
+* OS X: ~/Library/Logs/anaconda
+* Windows: %APPDATA%\\Anaconda\\Logs
 
 ## Contributing to Anaconda
 There are several ways to contribute with anaconda.
