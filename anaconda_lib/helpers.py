@@ -183,7 +183,7 @@ def get_settings(view, name, default=None):
                                     name, plugin_settings.get(name, default)
                                 )
                             )
-                            w = view.Window()
+                            w = view.window()
                             if w is not None:
                                 return sublime.expand_variables(
                                     r, w.extract_variables()
