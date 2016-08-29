@@ -91,7 +91,7 @@ class LocalWorker(Worker):
                 self.interpreter.python
             )
 
-    def _status(self, timeout=0.05):
+    def _status(self, timeout=0.10):
         """Check the socket status, returns True if it is operable
         """
 
