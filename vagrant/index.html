@@ -78,6 +78,8 @@
                 <li><a href="anaconda/anaconda_settings">Configure Anaconda</a></li>
                 <li><a href="anaconda/tests_runner/">Tests Runner</a></li>
                 <li><a href="anaconda/vagrant/">Vagrant Integration</a></li>
+				<li><a href="anaconda/docker/">Docker</a></li>
+				<li><a href="anaconda/remote_interpreter/">Remote Interpreter</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
 
@@ -122,7 +124,7 @@
   <div class="container">
     <h1><span class="anaconda">Anaconda</span> <span class="ide">Python IDE</span></h1>
     <p>Anaconda turns your Sublime Text 3 into a full featured Python development IDE</p>
-    <a role="button" class="btn btn-primary btn-large btn-download" href="https://github.com/DamnWidget/anaconda/archive/v2.0.4.tar.gz"><span class="glyphicon glyphicon-download-alt"></span> Download Anaconda v2.0.4</a>
+    <a role="button" class="btn btn-primary btn-large btn-download" href="https://github.com/DamnWidget/anaconda/archive/v2.0.5.tar.gz"><span class="glyphicon glyphicon-download-alt"></span> Download Anaconda v2.0.5</a>
     <button type="button" class="btn btn-primary btn-large btn-pc" data-toggle="modal" data-target="#package-control"><span class="glyphicon glyphicon-cloud"></span> Use Package Control</button>
   </div>
 </section>
@@ -258,10 +260,13 @@ the next steps.</p>
 
 <p>Change <code>{config}</code> for the name of the config of your vm box (if your machine is the default machine it will be just <code>config.vm.synced_folder</code> but if for example your machine is called <code>django_project1</code> it will be <code>django_project1.vm.synced_folder</code>).</p>
 
-<p>Change <code>{local_anaconda_installation}</code> to the path where anaconda is installed in your system, that will be:
-* Linux: <code>~/.config/sublime-text-3/Packages/Anaconda</code>
-* OS X: <code>~/Library/Application Support/Sublime Text 3/Packages/Anaconda</code>
-* Windows: <code>%APPDATA%\\Roaming\\Sublime Text 3\\Packages\\Anaconda</code></p>
+<p>Change <code>{local_anaconda_installation}</code> to the path where anaconda is installed in your system, that will be:</p>
+
+<ul>
+<li>Linux: <code>~/.config/sublime-text-3/Packages/Anaconda</code></li>
+<li>OS X: <code>~/Library/Application Support/Sublime Text 3/Packages/Anaconda</code></li>
+<li>Windows: <code>%APPDATA%\\Roaming\\Sublime Text 3\\Packages\\Anaconda</code></li>
+</ul>
 
 <p>Change <code>{mount_point}</code> to whatever directory inside your guest machine that you want to mount it, for example <code>/anaconda</code></p>
 

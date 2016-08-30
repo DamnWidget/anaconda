@@ -223,10 +223,13 @@ the next steps.&lt;/p&gt;
 
 &lt;p&gt;Change &lt;code&gt;{config}&lt;/code&gt; for the name of the config of your vm box (if your machine is the default machine it will be just &lt;code&gt;config.vm.synced_folder&lt;/code&gt; but if for example your machine is called &lt;code&gt;django_project1&lt;/code&gt; it will be &lt;code&gt;django_project1.vm.synced_folder&lt;/code&gt;).&lt;/p&gt;
 
-&lt;p&gt;Change &lt;code&gt;{local_anaconda_installation}&lt;/code&gt; to the path where anaconda is installed in your system, that will be:
-* Linux: &lt;code&gt;~/.config/sublime-text-3/Packages/Anaconda&lt;/code&gt;
-* OS X: &lt;code&gt;~/Library/Application Support/Sublime Text 3/Packages/Anaconda&lt;/code&gt;
-* Windows: &lt;code&gt;%APPDATA%\\Roaming\\Sublime Text 3\\Packages\\Anaconda&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Change &lt;code&gt;{local_anaconda_installation}&lt;/code&gt; to the path where anaconda is installed in your system, that will be:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Linux: &lt;code&gt;~/.config/sublime-text-3/Packages/Anaconda&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;OS X: &lt;code&gt;~/Library/Application Support/Sublime Text 3/Packages/Anaconda&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Windows: &lt;code&gt;%APPDATA%\\Roaming\\Sublime Text 3\\Packages\\Anaconda&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
 
 &lt;p&gt;Change &lt;code&gt;{mount_point}&lt;/code&gt; to whatever directory inside your guest machine that you want to mount it, for example &lt;code&gt;/anaconda&lt;/code&gt;&lt;/p&gt;
 
