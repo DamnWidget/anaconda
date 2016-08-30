@@ -65,32 +65,31 @@ class Validator:
         buffer_found = []
         in_docstring = False
         for line in self.source.splitlines():
-            # skip if we detect docstring blocks
-            if not in_docstring:
-                in_docstring = self.__detect_docstring(line)
-            else:
-                if self.__detect_docstring(line):
+            if self.__detect_docstring(line):
+                if in_docstring:
                     in_docstring = False
                 else:
-                    continue
-            l = line.strip()
-            if len(buffer_found) > 0:
-                if ')' in l:
-                    buffer_found.append(l.replace(')', '').strip())
-                    found.append((' '.join(buffer_found), lineno))
-                    buffer_found = []
-                else:
-                    buffer_found.append(l)
+                    in_docstring = True
+                lineno += 1
+                continue
             else:
-                if self.__detect_docstring(line):
-                    continue
+                l = line.strip()
+                if len(buffer_found) > 0:
+                    if ')' in l:
+                        buffer_found.append(l.replace(')', '').strip())
+                        found.append((' '.join(buffer_found), lineno))
+                        buffer_found = []
+                    else:
+                        buffer_found.append(l)
+                else:
+                    if self.__detect_docstring(line):
+                        continue
                 if l.startswith('import ') or l.startswith('from '):
                     if '(' in l:
                         buffer_found.append(l.replace('(', '').strip())
                     else:
                         found.append((l, lineno))
             lineno += 1
-
         return found
 
     def __detect_docstring(self, line):
