@@ -1,0 +1,16 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+Anaconda v2.0.4
+===============
+
+This is a minor bug fix release
+
+## Fixes
+	- Fix for Unix Domain Sockets longer than 103 characters, #519
+	- Fix for wrong linting lines on import validation, #337
