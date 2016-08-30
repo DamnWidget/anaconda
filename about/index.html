@@ -17,8 +17,8 @@
  
 <meta property="og:type" content="article"/>
 <meta property="og:description" content=""/>
-<meta property="og:title" content="About Anaconda : spf13.com"/>
-<meta property="og:site_name" content="spf13 is Steve Francia"/>
+<meta property="og:title" content="About Anaconda : damnwidget.github.io/anaconda/"/>
+<meta property="og:site_name" content="AnacondaST3 Python IDE"/>
 <meta property="og:image" content="" />
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:width" content="" />
@@ -122,7 +122,7 @@
   <div class="container">
     <h1><span class="anaconda">Anaconda</span> <span class="ide">Python IDE</span></h1>
     <p>Anaconda turns your Sublime Text 3 into a full featured Python development IDE</p>
-    <a role="button" class="btn btn-primary btn-large btn-download" href="https://github.com/DamnWidget/anaconda/archive/v1.4.4.tar.gz"><span class="glyphicon glyphicon-download-alt"></span> Download Anaconda v1.4.4</a>
+    <a role="button" class="btn btn-primary btn-large btn-download" href="https://github.com/DamnWidget/anaconda/archive/v2.0.4.tar.gz"><span class="glyphicon glyphicon-download-alt"></span> Download Anaconda v2.0.4</a>
     <button type="button" class="btn btn-primary btn-large btn-pc" data-toggle="modal" data-target="#package-control"><span class="glyphicon glyphicon-cloud"></span> Use Package Control</button>
   </div>
 </section>
@@ -171,22 +171,22 @@
 
         <div class="row">
             <div class="col-md-3">
-                <div id="TableOfContents" class="sidebar hidden-print hidden-xs hidden-sm affix-top" role="complementary">
+                <nav id="TableOfContents" class="sidebar hidden-print hidden-xs hidden-sm affix-top" role="complementary">
 <ul class="nav">
-<li><a href="#toc_0">Supported Platforms</a></li>
-<li><a href="#toc_1">With performance in mind</a></li>
-<li><a href="#toc_2">Anaconda&rsquo;s History</a></li>
-<li><a href="#toc_3">Anaconda Architecture</a>
+<li><a href="#supported-platforms">Supported Platforms</a></li>
+<li><a href="#with-performance-in-mind">With performance in mind</a></li>
+<li><a href="#anaconda-s-history">Anaconda&rsquo;s History</a></li>
+<li><a href="#anaconda-architecture">Anaconda Architecture</a>
 <ul class="nav">
-<li><a href="#toc_4">How does this work?</a>
+<li><a href="#how-does-this-work">How does this work?</a>
 <ul class="nav">
-<li><a href="#toc_5">How does Anaconda solve these two problems?</a></li>
+<li><a href="#how-does-anaconda-solve-these-two-problems">How does Anaconda solve these two problems?</a></li>
 </ul></li>
-<li><a href="#toc_6">Why can&rsquo;t I use it with Sublime Text 2?</a></li>
+<li><a href="#why-can-t-i-use-it-with-sublime-text-2">Why can&rsquo;t I use it with Sublime Text 2?</a></li>
 </ul></li>
-<li><a href="#toc_7">Anaconda ST3 Python IDE logo</a></li>
+<li><a href="#anaconda-st3-python-ide-logo">Anaconda ST3 Python IDE logo</a></li>
 </ul>
-</div>
+</nav>
             </div>
 
             <div class="col-md-9" role="main">
@@ -198,12 +198,12 @@
 <p>Anaconda is a plugin that turns your Sublime Text 3 into a full-featured Python
 development IDE.</p>
 
-<h1 id="toc_0">Supported Platforms</h1>
+<h1 id="supported-platforms">Supported Platforms</h1>
 
 <p>Anaconda currently supports all three Sublime Text 3 platforms:
 Linux, OS X and Windows.  The status of the plugin among these platforms is</p>
 
-<table class="table table-striped">
+<table>
 <thead>
 <tr>
 <th>Platform</th>
@@ -247,7 +247,7 @@ support the <code>cProfile</code> library in <code>POSIX</code> platforms), conf
 log should be displayed in the Sublime Text 3 console, where the user can check
 where the time is being spent.</p>
 
-<h1 id="toc_1">With performance in mind</h1>
+<h1 id="with-performance-in-mind">With performance in mind</h1>
 
 <p>Are you tired of extensions that promise you nice features but make your
 Sublime Text freeze and block you from writing? Us too! This is
@@ -258,7 +258,7 @@ your Sublime Text, as everything in Anaconda runs asynchronously.</p>
 thousand lines; Anaconda will work smoothly in each situation, helping you
 to focus on your code without being interrupted every few seconds.</p>
 
-<h1 id="toc_2">Anaconda&rsquo;s History</h1>
+<h1 id="anaconda-s-history">Anaconda&rsquo;s History</h1>
 
 <p>At the beginning, Anaconda was a small project with no pretensions at all; we only
 wanted to have a single plugin to complete and lint code in a single
@@ -276,7 +276,7 @@ the wrong approach and is why we decided to go asynchronous.</p>
 this number grows daily — more than any other Python-specialized
 plugin for Sublime Text.</p>
 
-<h1 id="toc_3">Anaconda Architecture</h1>
+<h1 id="anaconda-architecture">Anaconda Architecture</h1>
 
 <p>Anaconda is an <code>asynchronous client-server</code> architecture application. That means
 that part of Anaconda runs in the Sublime Text 3 embedded Python interpreter
@@ -285,7 +285,7 @@ runtime, and the other part runs in a decoupled, standalone, asynchronous server
 <p>All the heavy processing is done in this standalone server so that the embedded Python
 interpreter in Sublime Text 3 never gets stuck, stale or unresponsive.</p>
 
-<h2 id="toc_4">How does this work?</h2>
+<h2 id="how-does-this-work">How does this work?</h2>
 
 <p>Anaconda detects if any Sublime Text 3 window has a Python buffer view. If there
 are any Python buffers, it starts a new standalone Anaconda JsonServer for that window.  This server
@@ -304,7 +304,7 @@ for detailed information about that).</p>
 <li>Plugins usually make Sublime Text 3 unresponsive (or completely frozen) when they do weight process or calculations, even when using Threads, as the embedded Sublime Text Python interpreter also has a <a href="https://wiki.python.org/moin/GlobalInterpreterLock">GIL</a> that gets locked.</li>
 </ul>
 
-<h3 id="toc_5">How does Anaconda solve these two problems?</h3>
+<h3 id="how-does-anaconda-solve-these-two-problems">How does Anaconda solve these two problems?</h3>
 
 <ul>
 <li><p>In Anaconda, auto completion, linting, refactoring, code analytics, complexity
@@ -328,7 +328,7 @@ result coming back from the non-blocking socket.</p>
 any performance degradation, whether your project is a few files with
 a few lines or a Django monster with hundred of thousands of lines.</p>
 
-<h2 id="toc_6">Why can&rsquo;t I use it with Sublime Text 2?</h2>
+<h2 id="why-can-t-i-use-it-with-sublime-text-2">Why can&rsquo;t I use it with Sublime Text 2?</h2>
 
 <p>Honestly, who wants to use ST2 when there&rsquo;s ST3? Seriously, the
 performance of ST3 is far better than ST2. The only reason not to switch used to be the lack of plugins,
@@ -341,7 +341,7 @@ we already maintain a <a href="https://github.com/DamnWidget/SublimePySide">mult
 and will not do it again, ever.
 <br><br><br></p>
 
-<h1 id="toc_7">Anaconda ST3 Python IDE logo</h1>
+<h1 id="anaconda-st3-python-ide-logo">Anaconda ST3 Python IDE logo</h1>
 
 <p>This is the Anaconda Sublime Text 3 Python IDE logotype.</p>
 

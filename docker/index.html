@@ -1,0 +1,353 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en-US" prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb#">
+<head>
+    <meta charset="utf-8">
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="description" content="Anaconda is an autocompletion, liniting, code analyzer and IDE for SublimeText 3">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+<meta name="keywords" content="">
+
+ 
+<meta property="og:type" content="article"/>
+<meta property="og:description" content=""/>
+<meta property="og:title" content="Docker Integration : damnwidget.github.io/anaconda/"/>
+<meta property="og:site_name" content="AnacondaST3 Python IDE"/>
+<meta property="og:image" content="" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="" />
+<meta property="og:image:height" content="" />
+<meta property="og:url" content="http://damnwidget.github.io/anaconda/docker/">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2016-08-30"/>
+<meta property="article:modified_time" content="2016-08-30"/>
+
+
+
+
+
+<meta name="twitter:card" content="summary">
+
+<meta name="twitter:site" content="@damnwidget">
+<meta name="twitter:title" content="Docker Integration : damnwidget.github.io/anaconda">
+<meta name="twitter:creator" content="@spf13">
+<meta name="twitter:description" content="">
+<meta name="twitter:image:src" content="">
+<meta name="twitter:domain" content="damnwidget.github.io">
+
+
+
+    <base href="http://damnwidget.github.io/anaconda">
+    <title>Anaconda, the Python IDE for Sublime Text 3</title>
+    <link rel="canonical" href="http://damnwidget.github.io/anaconda/docker/">
+    <link href="" rel="alternate" type="application/rss+xml" title="Anaconda, the Python IDE for Sublime Text 3" />
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="/anaconda/css/anaconda.css">
+<link rel="stylesheet" href="/anaconda/css/prettify.css">
+
+
+
+
+</head>
+<body>
+
+<header class="navbar navbar-inverse navbar-fixed-top docs-nav" role="banner">
+
+    <div class="container">
+        <div class="navbar-header">
+            <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">AnacondaST3</a>
+
+        </div>
+        <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+
+            <ul class="nav navbar-nav">
+                <li><a href="anaconda/IDE/">Powerful IDE</a></li>
+                <li><a href="anaconda/anaconda_settings">Configure Anaconda</a></li>
+                <li><a href="anaconda/tests_runner/">Tests Runner</a></li>
+                <li><a href="anaconda/vagrant/">Vagrant Integration</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+
+                <li><a href="anaconda/about/">About</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        Github <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="https://github.com/DamnWidget/anaconda">Anaconda Repo</a></li>
+                        <li><a href="https://github.com/DamnWidget/anaconda/issues">Anaconda Issues</a></li>
+                        <li><a href="https://github.com/DamnWidget/anaconda/wiki">Anaconda Wiki</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+</header>
+
+<div class="modal fade" id="package-control">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title">Installation using Package Control</h4>
+      </div>
+      <div class="modal-body">
+        <p>To install anaconda trough Package Control show the <code>Command Palette</code> (Tools -> Command Palette) and write <code>install package</code></p>
+<p><img src="/anaconda/img/screenshots/command_palette.png"></img></p>
+<p>then write <code>anaconda</code> in the input window popup that just appeared (that is the SublimeText 3 Command Palette) and press <code>enter</code></p>
+<p><img src="/anaconda/img/screenshots/install_anaconda.png"></img></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="anaconda-header" id="content">
+  <div class="container">
+    <h1><span class="anaconda">Anaconda</span> <span class="ide">Python IDE</span></h1>
+    <p>Anaconda turns your Sublime Text 3 into a full featured Python development IDE</p>
+    <a role="button" class="btn btn-primary btn-large btn-download" href="https://github.com/DamnWidget/anaconda/archive/v2.0.4.tar.gz"><span class="glyphicon glyphicon-download-alt"></span> Download Anaconda v2.0.4</a>
+    <button type="button" class="btn btn-primary btn-large btn-pc" data-toggle="modal" data-target="#package-control"><span class="glyphicon glyphicon-cloud"></span> Use Package Control</button>
+  </div>
+</section>
+
+
+<section class="banner">
+  <div class="container">
+    <div class="anaconda-social">
+        <ul class="anaconda-social-buttons">
+            <li>
+                <iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=DamnWidget&amp;repo=anaconda&amp;type=watch&amp;count=true" width="100" height="20" title="Star on GitHub"
+                ></iframe>
+            </li>
+            <li>
+                <iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=DamnWidget&amp;repo=anaconda&amp;type=fork&amp;count=true" width="96" height="20" title="Fork on GitHub"></iframe>
+            </li>
+            <li class="follow-btn">
+                <iframe
+                    src="//platform.twitter.com/widgets/follow_button.html?screen_name=damnwidget&amp;show_screen_name=true&amp;show_count=true"
+                    class="twitter-follow-button twitter-follow-button"
+                    style="width: 226px; height: 20px;"
+                    allowtransparency="true"
+                    frameborder="0"
+                    scrolling="no">
+                </iframe>
+            </li>
+            <li class="tweet-btn">
+                <iframe
+                    src="https://platform.twitter.com/widgets/tweet_button.html?size=m&amp;count=horizontal&amp;lanf=en&amp;url=https%3A%2F%2Fdamnwidget.github.io%2Fanaconda&amp;via=damnwidget&amp;related=damnwidget&amp;text=Anaconda%20plugin%20turns%20your%20SublimeText%203%20into%20a%20full%20featured%20Python%20IDE&amp;hashtags=ST3"
+                    class="twitter-share-button twitter-tweet-button twitter-share-button twitter-count-horizontal"
+                    style="width: 109px; height: 20px;"
+                    allowtransparency="true"
+                    frameborder="0"
+                    scrolling="no">
+                </iframe>
+            </li>
+        </ul>
+    </div>
+  </div>
+</section>
+
+
+<div id="main" class="container anaconda-container">
+
+    <div class="about">
+
+        <div class="row">
+            <div class="col-md-3">
+                <nav id="TableOfContents" class="sidebar hidden-print hidden-xs hidden-sm affix-top" role="complementary">
+<ul class="nav">
+<li><a href="#docker-containers">Docker Containers</a>
+<ul class="nav">
+<li><a href="#how-to-run-the-anaconda-s-minserver-into-a-docker-container">How to run the anaconda&rsquo;s minserver into a Docker container?</a>
+<ul class="nav">
+<li><a href="#run-anaconda-s-minserver-in-it-s-own-container">Run anaconda&rsquo;s minserver in it&rsquo;s own container</a>
+<ul class="nav">
+<li><a href="#run-the-container">Run the container</a></li>
+<li><a href="#anaconda-python-interpreter">Anaconda <code>python_interpreter</code></a></li>
+</ul></li>
+<li><a href="#run-anaconda-s-minserver-in-an-already-running-container">Run anaconda&rsquo;s minserver in an already running container</a>
+<ul class="nav">
+<li><a href="#the-python-interpreter">The <code>python_interpreter</code></a></li>
+</ul></li>
+<li><a href="#using-docker-compose">Using docker-compose</a>
+<ul class="nav">
+<li><a href="#the-python-interpreter-1">The <code>python_interpreter</code></a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+            </div>
+
+            <div class="col-md-9" role="main">
+                <div class="anaconda-content">
+                    <h1 id="title">Docker Integration</h1>
+                    <article id="content">
+                        
+
+<h1 id="docker-containers">Docker Containers</h1>
+
+<p>Anaconda can use docker containers environments to lint and complete your code. Some IDE utilities will not work or don&rsquo;t offer its full features when docker environments are in use, for example, the Goto IDE command wil not work if you try to go to a file that is located in the container (workarounds are provided anyway).</p>
+
+<h2 id="how-to-run-the-anaconda-s-minserver-into-a-docker-container">How to run the anaconda&rsquo;s minserver into a Docker container?</h2>
+
+<p>There are so many ways to make your anaconda to connect and use a minserver running in a Docker container. The way to use Docker with anaconda is to use docker run, docker exec or docker-compose manually to start your application environment and then use a regular anaconda&rsquo;s remote worker using the generic <code>tcp://address:port</code> configuration with whatever directory map that you want or need (remember that directory maps is a common feature for all the anaconda&rsquo;s remote workers so it is present in <code>tcp://</code> and <code>vagrant://</code> python interpreter schemes).</p>
+
+<p>We are gonna present here different ways to connect your anaconda with Docker, some of them make use of <code>docker run</code>, others use <code>docker exec</code> in an already running container (that probably contains your code) and others doesn&rsquo;t directly use the <code>docker</code> command but <code>docker-compose</code> with a <code>docker-compose.yml</code> file.</p>
+
+<h3 id="run-anaconda-s-minserver-in-it-s-own-container">Run anaconda&rsquo;s minserver in it&rsquo;s own container</h3>
+
+<p>If you just need to use the Python interpreter installed in the container you can just run a new container that executes the anaconda&rsquo;s minserver with the desired interpreter and set the <code>python_interpreter</code> to point with a tcp remote connection to your container.</p>
+
+<h4 id="run-the-container">Run the container</h4>
+
+<p>For this example we are  gonna use the generic <code>python:2.7</code> docker image but it will work for whatever docker image that contains a valid Python installation. The command to run our container will look like this:</p>
+
+<pre><code class="language-bash">docker run -d --rm -v ~/.config/sublime_text_3/Packages/Anaconda:/opt/anaconda -v ~/my_project:/my_project python:2.7 /opt/anaconda/anaconda_server/docker/start python 19360 docker_project
+</code></pre>
+
+<p>The <code>-d</code> option will make docker to run the container in detach mode in the background and return its ID, the <code>--rm</code> option will automatically remove the container as soon as it exit. With the <code>-v</code> option we pass the directory where Anaconda is installed inside Sublime Text 3 (for Linux in this example) as a volume to be mounted inside the container in <code>/opt/anaconda</code> in that way, the anaconda <code>minserver</code> code will be available in the container to be executed so we don&rsquo;t need to make a new installation into the container and we can be sure that it is always up to date with the last release. We also pass the directory where our code resides <code>~/my_project</code> as a volume to be mounted in <code>/my_project</code> using another <code>-v</code> parameter (you can mount as many volumes as you need passing each one in a new <code>-v</code> parameter).</p>
+
+<p>Then the last parameter is the command that we want to run <code>/opt/anaconda/anaconda_server/docker/start</code> with the parameters <code>python</code>, <code>19360</code> and <code>docker_project</code>, <code>docker/start</code> is a shell script wrapper that executes the anaconda&rsquo;s <code>minserver</code> using it&rsquo;s first argument as python interpreter and passing it&rsquo;s second as port and third as project name, there is a fourth argument that we didnt&rsquo; used here to specify <code>extra_paths</code> separated by comma.</p>
+
+<h4 id="anaconda-python-interpreter">Anaconda <code>python_interpreter</code></h4>
+
+<p>With our container running the only thing that we have to do is to tell anaconda that we want to use a remote tcp interpreter:</p>
+
+<pre><code class="language-json">{
+    &quot;settings&quot;: {
+        &quot;python_interpreter&quot;: &quot;tcp://172.17.0.2:9999?pathmap=~/my_project,/my_project&quot;
+    }
+}
+</code></pre>
+
+<p>Et voila our anaconda will use our container.</p>
+
+<p><strong>note</strong>: the address <code>172.17.0.2</code> is the address that docker assigns automatically to it&rsquo;s first container in it&rsquo;s by default <code>bridge</code> network, using it we don&rsquo;t have the need to expose the minserver port, if we want to expose the port to the host we should run the docker command as</p>
+
+<pre><code class="language-bash">docker run -d --rm -v ~/.config/sublime_text_3/Packages/Anaconda:/opt/anaconda -v ~/my_project:/my_project -p 9999:9999 python:2.7 /opt/anaconda/anaconda_server/docker/start python 19360 docker_project
+</code></pre>
+
+<p>Then we could use <code>&quot;tcp://localhost:9999....&quot;</code> as our intrepreter</p>
+
+<h3 id="run-anaconda-s-minserver-in-an-already-running-container">Run anaconda&rsquo;s minserver in an already running container</h3>
+
+<p>In many situation we will have already a container executing our code so we can use it to run the <code>minserver</code> using the <code>exec</code> docker command.</p>
+
+<pre><code class="language-bash">docker exec -d dd94c34814f5 /opt/anaconda/anaconda_server/docker/start python 19360 some_project
+</code></pre>
+
+<p>The <code>-d</code> option tells docker to run this command in detached mode, the second parameter <code>dd94c34814f5</code> is our container ID and the third and last parameter is our command. Take into account that <code>exec</code> will not be able to mount volumes so the anaconda code <strong>must</strong> be already a volume in the container that we are executing the command.</p>
+
+<h4 id="the-python-interpreter">The <code>python_interpreter</code></h4>
+
+<p>Exactly the same but with a different port</p>
+
+<pre><code class="language-json">{
+    &quot;settings&quot;: {
+        &quot;python_interpreter&quot;: &quot;tcp://172.17.0.2:19360?pathmap=~/my_project,/my_project&quot;
+    }
+}
+</code></pre>
+
+<p><strong>note</strong>: take into account that <code>exec</code> is not able to expose new ports to the host neither so if you want to expose the port where the anaconda&rsquo;s <code>minserver</code> is running you should add it first to the <code>run</code> command on the container that we are executing the command.</p>
+
+<h3 id="using-docker-compose">Using docker-compose</h3>
+
+<p>We think this one is the best approach to follow, if you are not used to the <code>docker-compose</code> command take look at it&rsquo;s <a href="https://docs.docker.com/compose/">documentation</a> in the docker website. In short, <code>docker-compose</code> allow us to define and run multi container isolated environments with docker.</p>
+
+<p>We are gonna borrow their <a href="https://docs.docker.com/compose/gettingstarted/">getting started</a> tutorial so go there and follow the instructions until you finalize the step 3. If you followed the tutorial you will have a directory that contains four files: <code>app.py</code>, <code>docker-compose.yml</code>, <code>Dockerfile</code> and <code>requirements.txt</code> now edit <code>docker-compose.yml</code> file, we are gonna add a new container there.</p>
+
+<p>Add the new container to the <code>services</code> definition after the redis entry with the contents below (be careful with the spaces as them have meaning in the YAML format):</p>
+
+<pre><code class="language-yaml">    anaconda:
+        image: composetest_web
+        ports:
+            - &quot;19360:19360&quot;
+        volumes:
+            - /home/&lt;user&gt;/.config/sublime_text_3/Packages/Anaconda:/opt/anaconda
+        depends_on:
+            - web
+        entrypoint: /opt/anaconda/anaconda_server/docker/start python 19360 docker_project /code
+</code></pre>
+
+<p>As we used <code>composetest_web</code> as our base image, we should have the <code>/code</code> volume available so we pass it as fourth parameter to our <code>minserver</code> invocation so Jedi will be able to complete code in our application.</p>
+
+<p>Now you can go forward the step four of the <code>docker-compose</code> getting started guide and run <code>docker-compose up</code> to start the environment.</p>
+
+<p><strong>note</strong>: change the left side of the volume path to whatever path your anaconda is installed on.</p>
+
+<p><strong>example</strong>: you can take a look at this <a href="https://gist.github.com/DamnWidget/3e58cec118879ed7baa08dc283e162a0">gist complete example</a></p>
+
+<h4 id="the-python-interpreter-1">The <code>python_interpreter</code></h4>
+
+<p>The python interpreter is not more difficult</p>
+
+<pre><code class="language-json">{
+    &quot;settings&quot;: {
+        &quot;python_interpreter&quot;: &quot;tcp://localhost:19360?pathmap=&lt;path_to_your_docker-compose.yml_directory&gt;,/code&quot;
+    }
+}
+</code></pre>
+
+<p>Enjoy!</p>
+
+                    </article>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+<footer class="anaconda-footer" role="contentinfo">
+  <div class="container">
+    <p>This project is maintained by <a href="https://github.com/DamnWidget">@damnwidget</a> with the help of <a href="https://github.com/DamnWidget/anaconda/graphs/contributors">several contributors</a>.
+    <p>Code licensed under <a href="http://www.gnu.org/licenses/gpl.html">GPL</a>, documentation under <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons Attribution">CC BY 3.0</a></p>
+    <p>This page is hosted in <a href="https://pages.github.com/">GitHub Pages</a> and has been generated with <a href="https://github.com/spf13/hugo">Hugo</a></p>
+  </div>
+</footer>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/holder/2.2.0/holder.min.js"></script>
+<script src="/anaconda/javascript/anaconda.js"></script>
+<script src="/anaconda/javascript/prettify/prettify.js"></script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-43676681-2', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+<script>
+  !function ($) {
+    $(function(){
+      window.prettyPrint && prettyPrint()
+    })
+  }(window.jQuery)
+</script>
+
+</body>
+</html>

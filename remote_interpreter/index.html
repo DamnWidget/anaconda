@@ -17,16 +17,16 @@
  
 <meta property="og:type" content="article"/>
 <meta property="og:description" content=""/>
-<meta property="og:title" content="Anaconda&#39;s Test Runner : damnwidget.github.io/anaconda/"/>
+<meta property="og:title" content="Using a Remote Python Interpreter : damnwidget.github.io/anaconda/"/>
 <meta property="og:site_name" content="AnacondaST3 Python IDE"/>
 <meta property="og:image" content="" />
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:width" content="" />
 <meta property="og:image:height" content="" />
-<meta property="og:url" content="http://damnwidget.github.io/anaconda/tests_runner/">
+<meta property="og:url" content="http://damnwidget.github.io/anaconda/remote_interpreter/">
 <meta property="og:locale" content="en_US">
-<meta property="article:published_time" content="2014-10-24"/>
-<meta property="article:modified_time" content="2014-10-24"/>
+<meta property="article:published_time" content="2016-08-30"/>
+<meta property="article:modified_time" content="2016-08-30"/>
 
 
 
@@ -35,7 +35,7 @@
 <meta name="twitter:card" content="summary">
 
 <meta name="twitter:site" content="@damnwidget">
-<meta name="twitter:title" content="Anaconda&#39;s Test Runner : damnwidget.github.io/anaconda">
+<meta name="twitter:title" content="Using a Remote Python Interpreter : damnwidget.github.io/anaconda">
 <meta name="twitter:creator" content="@spf13">
 <meta name="twitter:description" content="">
 <meta name="twitter:image:src" content="">
@@ -45,7 +45,7 @@
 
     <base href="http://damnwidget.github.io/anaconda">
     <title>Anaconda, the Python IDE for Sublime Text 3</title>
-    <link rel="canonical" href="http://damnwidget.github.io/anaconda/tests_runner/">
+    <link rel="canonical" href="http://damnwidget.github.io/anaconda/remote_interpreter/">
     <link href="" rel="alternate" type="application/rss+xml" title="Anaconda, the Python IDE for Sublime Text 3" />
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
@@ -173,25 +173,12 @@
             <div class="col-md-3">
                 <nav id="TableOfContents" class="sidebar hidden-print hidden-xs hidden-sm affix-top" role="complementary">
 <ul class="nav">
-<li><a href="#how-to-run-tests">How to run tests?</a>
+<li><a href="#remote-python-interpreters">Remote Python Interpreters</a>
 <ul class="nav">
-<li><a href="#available-options">Available options</a></li>
-<li><a href="#configuration-options">Configuration Options</a>
-<ul class="nav">
-<li><a href="#test-before-command">test_before_command</a></li>
-<li><a href="#test-after-command">test_after_command</a></li>
-<li><a href="#test-delimeter">test_delimeter</a></li>
-<li><a href="#test-virtualenv">test_virtualenv</a></li>
-<li><a href="#test-project-path">test_project_path</a></li>
-</ul></li>
-</ul></li>
-<li><a href="#configuration-examples">Configuration Examples</a>
-<ul class="nav">
-<li><a href="#run-twisted-s-trial-suite">Run Twisted&rsquo;s Trial Suite</a></li>
-<li><a href="#run-twisted-s-trial-using-before-and-after-commands-for-virtualenv">Run Twisted&rsquo;s Trial using before and after commands for virtualenv</a></li>
-<li><a href="#run-twisted-s-trial-using-test-virtualenv">Run Twisted&rsquo;s Trial using test_virtualenv</a></li>
-<li><a href="#run-django-test-suite-wit-nose2">Run Django test suite wit nose2</a></li>
-<li><a href="#common-python-code-and-standard-library-unittest">Common python code and standard library unittest</a></li>
+<li><a href="#remote-machine-preparation">Remote machine preparation</a></li>
+<li><a href="#clone-anaconda-source-code-in-the-remote-host">Clone anaconda source code in the remote host</a></li>
+<li><a href="#start-the-anaconda-minserver-py">Start the anaconda <code>minserver.py</code></a></li>
+<li><a href="#making-anaconda-to-connect-to-your-remote-host">Making anaconda to connect to your remote host</a></li>
 </ul></li>
 </ul>
 </nav>
@@ -199,188 +186,48 @@
 
             <div class="col-md-9" role="main">
                 <div class="anaconda-content">
-                    <h1 id="title">Anaconda&#39;s Test Runner</h1>
+                    <h1 id="title">Using a Remote Python Interpreter</h1>
                     <article id="content">
                         
 
-<p>The anaconda&rsquo;s test runner is an original contribution by <a href="https://github.com/NorthIsUp">@NorthisUp</a>
-to the project.</p>
+<h1 id="remote-python-interpreters">Remote Python Interpreters</h1>
 
-<h1 id="how-to-run-tests">How to run tests?</h1>
+<p>Anaconda can use remote python interpreters to lint and complete your code. Some IDE utilities will not work when remote python interpreters are in use, for example the Goto IDE command will not work if you try to go to a file that is stored in the remote hosts and not in the local one.</p>
 
-<p>There is different ways to access the tests runner commands in Anaconda, the
-most common one is just click with the secondary mouse click in the file that
-you want to run tests from and select the option that you want from the
-anaconda&rsquo;s contextual menu.</p>
+<h2 id="remote-machine-preparation">Remote machine preparation</h2>
 
-<p>You can also use the Command Palette <code>Anaconda: test</code> if you don&rsquo;t want to
-remove your hand from the keyboard.</p>
+<p>In order to use remote python interpreters living on remote machines with anaconda the user has to prepare the remote machine first following the next steps.</p>
 
-<p><strong>note</strong>: Of course you can configure whatever shortcut that you want to run
-anaconda tests but they are not added by default</p>
+<h2 id="clone-anaconda-source-code-in-the-remote-host">Clone anaconda source code in the remote host</h2>
 
-<h2 id="available-options">Available options</h2>
+<p>You need the anaconda source code in your remote host (if you don&rsquo;t have it there yet) to do so, just connect trough SSH or remote desktop into your remote host and clone the anaconda repository in whatever directory that you like:</p>
 
-<ul>
-<li><strong>Run Last Tests</strong>: It will repeat the last test that you ran</li>
-<li><strong>Run Current Test</strong>: It will run the test under the cursor</li>
-<li><strong>Run Project Tests</strong>: Run the project whole test suite</li>
-<li><strong>Run Current File Tests</strong>: Run all the tests defined in the current file</li>
-</ul>
-
-<h2 id="configuration-options">Configuration Options</h2>
-
-<p>Anaconda&rsquo;s test runner support several options to fine tune it&rsquo;s behaviour,
-to run some kind of test runners (like twisted&rsquo;s trial) you need to configure
-them in order to make it work</p>
-
-<p><strong>note</strong>: By default, anaconda&rsquo;s test runner try to run <code>nosetests</code></p>
-
-<h3 id="test-before-command">test_before_command</h3>
-
-<p>If this options is set, anaconda will try to run the given command before run
-the test suite.</p>
-
-<p><strong>note</strong>: If you need to run more than one command, just use a list of
-commands like:</p>
-
-<pre><code class="language-json">&quot;test_before_command&quot;: [&quot;cmd1&quot;, &quot;cmd2&quot;, &quot;cmd3&quot;]
+<pre><code class="language-bash">git clone http://github.com/DamnWidget/anaconda
 </code></pre>
 
-<h3 id="test-after-command">test_after_command</h3>
+<h2 id="start-the-anaconda-minserver-py">Start the anaconda <code>minserver.py</code></h2>
 
-<p>As before, if this option is set, anaconda will try to run the given command
-after run the test suite, this is useful to clean up</p>
+<p>The regular anaconda JsonServer just don&rsquo;t work in remote environments for that, anaconda also distributes a minified version of the JsonServer called <code>minserver.py</code> you must execute it with the Python interpreter that you want to use to lint and complete your code, the following are the <code>minserver.py</code> options:</p>
 
-<p><strong>note</strong>: again you can pass a list of commands with the same format than for
-the <code>test_before_command</code> option</p>
-
-<p>### test_command</p>
-
-<p>This is the command that anaconda is going to run in order to execute your
-test suite, this is <code>nosetests</code> by default. An example of configuration is
-as follows:</p>
-
-<pre><code class="language-json">&quot;test_command&quot;: &quot;python -m unittest discover&quot;
+<pre><code>Usage: minserver.py -p &lt;project&gt; -e &lt;extra_paths&gt; port
 </code></pre>
 
-<h3 id="test-delimeter">test_delimeter</h3>
+<p>Let&rsquo;s say that you cloned anaconda source code in <code>~/ides/anaconda</code> and you want to use a Python interpreter in a virtual environment called <code>django_prj1</code> you could start your server like:</p>
 
-<p>This option defines the test delimiter to use after your test module names,
-by default this is <code>:</code>, for example, if you set this option to <code>.</code> and your
-module nae is <code>&quot;test_server.py&quot;</code> it will try <code>test_server.ServerTest</code></p>
-
-<h3 id="test-virtualenv">test_virtualenv</h3>
-
-<p>Unfortunately, anaconda&rsquo;s test runner can&rsquo;t use your defined
-<code>python_interpreter</code>, this is why you have to configure this option to tell
-the tests runner that you want to use an specific virtual environment to run
-your test suite.</p>
-
-<p>Anaconda will activate the virtual environment, run the suite and deactivate it.</p>
-
-<h3 id="test-project-path">test_project_path</h3>
-
-<p>If this option is set, anaconda will add whatever text is on it after the
-command that is going to be used to run the test suite, this is needed for
-example to run test suites that uses the <code>twisted</code> library <code>trial</code> command.</p>
-
-<p>For example, if we have this configuration:</p>
-
-<pre><code class="language-json">&quot;test_command&quot;: &quot;trial&quot;,
-&quot;test_project_path&quot;: &quot;mamba&quot;
+<pre><code class="language-bash">$ workon django_prj1
+$ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;
 </code></pre>
 
-<p>Anaconda will execute <code>trial mamba</code> (where <code>mamba</code> is a directory)
-<br><br></p>
+<p>This command will start anaconda&rsquo;s <code>minserver.py</code> in the background. Note that if you close your ssh session the server would finish as well, if you want to be able to close your session you should be using something like <a href="http://www.gnu.org/software/screen/">screen</a>, <a href="http://tmux.github.io/">tmux</a> or <a href="http://linux.die.net/man/1/nohup">nohup</a></p>
 
-<h1 id="configuration-examples">Configuration Examples</h1>
+<h2 id="making-anaconda-to-connect-to-your-remote-host">Making anaconda to connect to your remote host</h2>
 
-<p>You can find here several configuration examples. All the configuration
-options on these examples are placed in the <code>.sublime-project</code> file.</p>
+<p>Anaconda uses the <code>python_interpreter</code> setting value to connect to your remote host using the URI <code>tcp://&lt;host&gt;:&lt;port&gt;</code> so simple use something like this as your <code>python_interpreter</code> configuration option:</p>
 
-<p><strong>note</strong>: If you don&rsquo;t know what a <code>.sublime-project</code> file is and why is
-so important, take a look at <a href="/anaconda/anaconda_settings/">Configuring Anaconda the Right Way</a></p>
-
-<h2 id="run-twisted-s-trial-suite">Run Twisted&rsquo;s Trial Suite</h2>
-
-<p>Normally, to run a test suite build with Twisted&rsquo;s trial you need to pass to
-trial a top level directory that contains your tests and is used by it&rsquo;s auto
-test discovery facility. Here is an example about how to configure the
-anaconda&rsquo;s tests runner to accomplish that.</p>
-
-<pre><code class="language-json">{
-    ...
-    &quot;setings&quot;: {
-        &quot;test_command&quot;: &quot;trial&quot;,
-        &quot;test_delimeter&quot;: &quot;.&quot;,  // trial uses &quot;.&quot; as delimeter
-        &quot;test_project_path&quot;: &quot;myprojct&quot;
-    }
-}
+<pre><code class="language-json">&quot;python_interpreter&quot;: &quot;tcp://192.168.100.21:9999&quot;
 </code></pre>
 
-<p>The configuration above will make anaconda to run <code>trial</code> in <code>myproject</code>
-directory</p>
-
-<h2 id="run-twisted-s-trial-using-before-and-after-commands-for-virtualenv">Run Twisted&rsquo;s Trial using before and after commands for virtualenv</h2>
-
-<p>You don&rsquo;t need to use the <code>test_virtualenv</code> option at all if you don&rsquo;t want
-to do it. This is useful for example when you have complex steps before and
-after activate or deactivate your virtual environment.</p>
-
-<pre><code class="language-json">{
-    ...
-    &quot;settings&quot;: {
-        &quot;test_command&quot;: &quot;trial&quot;,
-        &quot;test_delimeter&quot;: &quot;.&quot;.  // trial uses &quot;.&quot; as delimeter
-        &quot;test_project_path&quot;: &quot;myproject&quot;,
-        &quot;test_before_command&quot;: &quot;source $HOME/.virtualenvs/myproject/bin/python&quot;,
-        &quot;test_after_command&quot;: &quot;deactivate&quot;
-    }
-}
-</code></pre>
-
-<h2 id="run-twisted-s-trial-using-test-virtualenv">Run Twisted&rsquo;s Trial using test_virtualenv</h2>
-
-<p>Obviously, is you just want to use a virtual environment is much easier to
-just use the <code>test_virtualenv</code> option, this example es equivalent to the
-previous one.</p>
-
-<pre><code class="language-json">{
-    ...
-    &quot;settings&quot;: {
-        &quot;test_command&quot;: &quot;trial&quot;,
-        &quot;test_delimeter&quot;: &quot;.&quot;.  // trial uses &quot;.&quot; as delimeter
-        &quot;test_project_path&quot;: &quot;myproject&quot;,
-        &quot;test_virtualenv&quot;: &quot;~/.virtualenv/myproject&quot;
-    }
-}
-</code></pre>
-
-<h2 id="run-django-test-suite-wit-nose2">Run Django test suite wit nose2</h2>
-
-<p>To run a Django project test suite with nose2 is not much more complex</p>
-
-<pre><code class="language-json">{
-    ...
-    &quot;settings&quot;: {
-        &quot;test_command&quot;: &quot;./manage.py test --settings=tests.settings --noinput&quot;,
-        &quot;test_delimeter&quot;: &quot;.&quot;
-    }
-}
-</code></pre>
-
-<h2 id="common-python-code-and-standard-library-unittest">Common python code and standard library unittest</h2>
-
-<p>Of course, you can also run the standard library unittest suite</p>
-
-<pre><code class="language-json">{
-    ...
-    &quot;settings&quot;: {
-        &quot;test_command&quot;: &quot;python -m unittest discover&quot;
-    }
-}
-</code></pre>
+<p><em>Note</em>: Take into account that the <code>minserver.py</code> <em>must</em> be running before you start Sublime Text 3 or set anaconda to use your remote hosts and your remote host:port will be available from your network or anaconda will fail (and complain about).</p>
 
                     </article>
                 </div>

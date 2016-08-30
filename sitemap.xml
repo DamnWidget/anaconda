@@ -3,8 +3,17 @@
   
   <url>
     <loc>http://damnwidget.github.io/anaconda/</loc>
-    <lastmod>2014-10-24T14:40:35+01:00</lastmod>
-    <priority>0</priority>
+    <lastmod>2016-08-30T12:26:09+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://damnwidget.github.io/anaconda/remote_interpreter/</loc>
+    <lastmod>2016-08-30T12:26:09+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://damnwidget.github.io/anaconda/docker/</loc>
+    <lastmod>2016-08-30T12:22:53+01:00</lastmod>
   </url>
   
   <url>

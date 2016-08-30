@@ -17,8 +17,8 @@
  
 <meta property="og:type" content="article"/>
 <meta property="og:description" content=""/>
-<meta property="og:title" content="Configure Anaconda the Right Way : spf13.com"/>
-<meta property="og:site_name" content="spf13 is Steve Francia"/>
+<meta property="og:title" content="Configure Anaconda the Right Way : damnwidget.github.io/anaconda/"/>
+<meta property="og:site_name" content="AnacondaST3 Python IDE"/>
 <meta property="og:image" content="" />
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:width" content="" />
@@ -122,7 +122,7 @@
   <div class="container">
     <h1><span class="anaconda">Anaconda</span> <span class="ide">Python IDE</span></h1>
     <p>Anaconda turns your Sublime Text 3 into a full featured Python development IDE</p>
-    <a role="button" class="btn btn-primary btn-large btn-download" href="https://github.com/DamnWidget/anaconda/archive/v1.4.4.tar.gz"><span class="glyphicon glyphicon-download-alt"></span> Download Anaconda v1.4.4</a>
+    <a role="button" class="btn btn-primary btn-large btn-download" href="https://github.com/DamnWidget/anaconda/archive/v2.0.4.tar.gz"><span class="glyphicon glyphicon-download-alt"></span> Download Anaconda v2.0.4</a>
     <button type="button" class="btn btn-primary btn-large btn-pc" data-toggle="modal" data-target="#package-control"><span class="glyphicon glyphicon-cloud"></span> Use Package Control</button>
   </div>
 </section>
@@ -171,26 +171,26 @@
 
         <div class="row">
             <div class="col-md-3">
-                <div id="TableOfContents" class="sidebar hidden-print hidden-xs hidden-sm affix-top" role="complementary">
+                <nav id="TableOfContents" class="sidebar hidden-print hidden-xs hidden-sm affix-top" role="complementary">
 <ul class="nav">
-<li><a href="#toc_0">Does Anaconda supports virtualenv?</a></li>
-<li><a href="#toc_1">Where to place Anaconda settings options?</a>
+<li><a href="#does-anaconda-supports-virtualenv">Does Anaconda supports virtualenv?</a></li>
+<li><a href="#where-to-place-anaconda-settings-options">Where to place Anaconda settings options?</a>
 <ul class="nav">
-<li><a href="#toc_2">Overriding details per project</a></li>
+<li><a href="#overriding-details-per-project">Overriding details per project</a></li>
 </ul></li>
-<li><a href="#toc_3">Python Interpreter settings</a>
+<li><a href="#python-interpreter-settings">Python Interpreter settings</a>
 <ul class="nav">
-<li><a href="#toc_4">Configuring the Python Interpreter</a></li>
-<li><a href="#toc_5">Extra Paths</a></li>
-<li><a href="#toc_6">Virtualenv environment variables</a></li>
-<li><a href="#toc_7">Environment hook files</a>
+<li><a href="#configuring-the-python-interpreter">Configuring the Python Interpreter</a></li>
+<li><a href="#extra-paths">Extra Paths</a></li>
+<li><a href="#virtualenv-environment-variables">Virtualenv environment variables</a></li>
+<li><a href="#environment-hook-files">Environment hook files</a>
 <ul class="nav">
-<li><a href="#toc_8">What is an environment hook file?</a></li>
+<li><a href="#what-is-an-environment-hook-file">What is an environment hook file?</a></li>
 </ul></li>
-<li><a href="#toc_9">Project and Python Interpreter Switching</a></li>
+<li><a href="#project-and-python-interpreter-switching">Project and Python Interpreter Switching</a></li>
 </ul></li>
 </ul>
-</div>
+</nav>
             </div>
 
             <div class="col-md-9" role="main">
@@ -212,7 +212,7 @@ specific options that can make your life way easier.</p>
 
 <p>Let&rsquo;s start from the beginning.</p>
 
-<h1 id="toc_0">Does Anaconda supports virtualenv?</h1>
+<h1 id="does-anaconda-supports-virtualenv">Does Anaconda supports virtualenv?</h1>
 
 <p>Yes, it does. Anaconda supports virtual environments out of the box, but you
 have to tell it where to find the python binary of your virtual environment.</p>
@@ -220,11 +220,11 @@ have to tell it where to find the python binary of your virtual environment.</p>
 <p>This can be done configuring the <code>python_interpreter</code> option in any of the
 several ways that anaconda allow you to fine tune your plugin installation.</p>
 
-<h1 id="toc_1">Where to place Anaconda settings options?</h1>
+<h1 id="where-to-place-anaconda-settings-options">Where to place Anaconda settings options?</h1>
 
 <p>You can place anaconda settings in three different places.</p>
 
-<table class="table table-striped">
+<table>
 <thead>
 <tr>
 <th>#</th>
@@ -269,7 +269,7 @@ go to <code>Preferences &gt; Package Settings &gt; Anaconda</code>, there you wi
 different entries, <code>Settings-Default</code> and <code>Settings-User</code> for options 1 and 2
 respectively. Any option in those files have to be placed in the global scope.</p>
 
-<pre class="prettyprint"><code class="language-json">{
+<pre><code class="language-json">{
     &quot;python_interpreter&quot;: &quot;stackless_python3&quot;,
     &quot;auto_python_builder_enabled&quot;: false,
     ...
@@ -281,7 +281,7 @@ anaconda plugin options configured to it&rsquo;s default behaviour.</p>
 
 <p><strong>note</strong>: We <strong>strongly recommend</strong> to use Project configurations always<br><br></p>
 
-<h2 id="toc_2">Overriding details per project</h2>
+<h2 id="overriding-details-per-project">Overriding details per project</h2>
 
 <p>Anaconda will always try to use any options that are found in the project file
 of the project that you are working on first. This is pretty useful as <strong>you
@@ -300,7 +300,7 @@ the <code>python_interpreter</code> one.</p>
 <p>To edit your project configuration file just go to <code>Project &gt; Edit Project</code>.
 The options <strong>must be placed inside the <code>settings</code> dictionary</strong></p>
 
-<pre class="prettyprint"><code class="language-json">{
+<pre><code class="language-json">{
     &quot;build_systems&quot;:
     [
         {
@@ -324,12 +324,12 @@ The options <strong>must be placed inside the <code>settings</code> dictionary</
 }
 </code></pre>
 
-<h1 id="toc_3">Python Interpreter settings</h1>
+<h1 id="python-interpreter-settings">Python Interpreter settings</h1>
 
 <p>Anaconda has the ability to use whatever python interpreter that you can
 compile and use in your platform, this includes:</p>
 
-<table class="table table-striped">
+<table>
 <thead>
 <tr>
 <th>Python Interpreter</th>
@@ -341,33 +341,26 @@ compile and use in your platform, this includes:</p>
 <tbody>
 <tr>
 <td><strong>CPython</strong></td>
-<td><img src="/anaconda/img/check.png" alt="" />
-</td>
-<td><img src="/anaconda/img/check.png" alt="" />
-</td>
+<td><img src="/anaconda/img/check.png" alt="" /></td>
+<td><img src="/anaconda/img/check.png" alt="" /></td>
 </tr>
 
 <tr>
 <td><strong>PyPy</strong></td>
-<td><img src="/anaconda/img/check.png" alt="" />
-</td>
-<td><img src="/anaconda/img/check.png" alt="" />
-</td>
+<td><img src="/anaconda/img/check.png" alt="" /></td>
+<td><img src="/anaconda/img/check.png" alt="" /></td>
 </tr>
 
 <tr>
 <td><strong>Jython</strong></td>
-<td><img src="/anaconda/img/check.png" alt="" />
-</td>
+<td><img src="/anaconda/img/check.png" alt="" /></td>
 <td>N/A</td>
 </tr>
 
 <tr>
 <td><strong>Stackless</strong></td>
-<td><img src="/anaconda/img/check.png" alt="" />
-</td>
-<td><img src="/anaconda/img/check.png" alt="" />
-</td>
+<td><img src="/anaconda/img/check.png" alt="" /></td>
+<td><img src="/anaconda/img/check.png" alt="" /></td>
 </tr>
 </tbody>
 </table>
@@ -376,7 +369,7 @@ compile and use in your platform, this includes:</p>
 features with whatever python interpreter that you want, that of course
 includes <strong>python interpreters residing in virtual environments</strong></p>
 
-<h2 id="toc_4">Configuring the Python Interpreter</h2>
+<h2 id="configuring-the-python-interpreter">Configuring the Python Interpreter</h2>
 
 <p>Anaconda will use your <code>PATH</code> configured python interpreter by default out
 of the box. To use another interpreter just change the <code>python_interpreter</code>
@@ -385,14 +378,14 @@ shown in the examples below</p>
 
 <p>Example of global user configuration (Packages/User/Anaconda.sublime-settings):</p>
 
-<pre class="prettyprint"><code class="language-json">{
+<pre><code class="language-json">{
     &quot;python_interpreter&quot;: &quot;/usr/bin/pypy-c2.4&quot;
 }
 </code></pre>
 
 <p>Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):</p>
 
-<pre class="prettyprint"><code class="language-json">{
+<pre><code class="language-json">{
     &quot;folders&quot;:
     [
         {
@@ -407,7 +400,7 @@ shown in the examples below</p>
 }
 </code></pre>
 
-<h2 id="toc_5">Extra Paths</h2>
+<h2 id="extra-paths">Extra Paths</h2>
 
 <p>I know, you are used to add loads of extra paths to make your completions
 work in other plugins. In Anaconda, <code>extra</code> means just that <code>extra</code>, your
@@ -422,7 +415,7 @@ project configuration files.</p>
 
 <p>Example of global user configuration (Packages/User/Anaconda.sublime-settings):</p>
 
-<pre class="prettyprint"><code class="language-json">{
+<pre><code class="language-json">{
     &quot;extra_paths&quot;:
     [
         &quot;/opt/sublime_text_3&quot;,
@@ -433,7 +426,7 @@ project configuration files.</p>
 
 <p>Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):</p>
 
-<pre class="prettyprint"><code class="language-json">{
+<pre><code class="language-json">{
     ...
     &quot;settings&quot;: {
         &quot;extra_paths&quot;:
@@ -445,7 +438,7 @@ project configuration files.</p>
 }
 </code></pre>
 
-<h2 id="toc_6">Virtualenv environment variables</h2>
+<h2 id="virtualenv-environment-variables">Virtualenv environment variables</h2>
 
 <p>If you are using a <code>virtualenv</code> for your <code>python_interpreter</code> and you start
 your Sublime Text 3 from the command line (to inherit environment variables
@@ -454,14 +447,14 @@ on OS X and Linux) you can use the variable <code>$VIRTUAL_ENV</code> in your
 
 <p>Example of global user configuration (Packages/User/Anaconda.sublime-settings):</p>
 
-<pre class="prettyprint"><code class="language-json">{
+<pre><code class="language-json">{
     &quot;python_interpreter&quot;: &quot;$VIRTUAL_ENV/bin/python&quot;
 }
 </code></pre>
 
 <p>Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):</p>
 
-<pre class="prettyprint"><code class="language-json">{
+<pre><code class="language-json">{
     ...
     &quot;settings&quot;: {
         &quot;python_interpreter&quot;: &quot;$VIRTUAL_ENV/bin/python&quot;
@@ -469,14 +462,14 @@ on OS X and Linux) you can use the variable <code>$VIRTUAL_ENV</code> in your
 }
 </code></pre>
 
-<h2 id="toc_7">Environment hook files</h2>
+<h2 id="environment-hook-files">Environment hook files</h2>
 
 <p>There are high probabilities that the only configuration option that you
 ever change in your projects is just the <code>python_interpreter</code> and the
 <code>extra_paths</code>. If that is your case, maybe you want to use environment hook
 files instead of configure your projects directly.</p>
 
-<h3 id="toc_8">What is an environment hook file?</h3>
+<h3 id="what-is-an-environment-hook-file">What is an environment hook file?</h3>
 
 <p>An environment hook file is a JSON file named <code>.anaconda</code> that resides in the
 root of your working directory or in any directory level up to drive root
@@ -484,7 +477,7 @@ directory. If a valid hook file exists on that directory tree, it will be used
 instead of your project or general anaconda configuration. A valid <code>.anaconda</code>
 hook file is as in the example below.</p>
 
-<pre class="prettyprint"><code class="language-json">{
+<pre><code class="language-json">{
     &quot;python_interpreter&quot;: &quot;~/.virtualenvs/stackless_python2.7/bin/python&quot;,
     &quot;extra_paths&quot;: [&quot;/usr/local/lib/awesome_python_lib&quot;]
 }
@@ -493,7 +486,7 @@ hook file is as in the example below.</p>
 <p><strong>note</strong>: take into account that only <code>python_interpreter</code> and <code>extra_paths</code>
 can be hooked, any other option will be ignored</p>
 
-<h2 id="toc_9">Project and Python Interpreter Switching</h2>
+<h2 id="project-and-python-interpreter-switching">Project and Python Interpreter Switching</h2>
 
 <p>If you change your configured python interpreter or you just switch your
 project, the plugin will detect it and reload a new completion/linting/IDE
