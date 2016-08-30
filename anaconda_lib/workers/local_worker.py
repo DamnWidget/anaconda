@@ -31,7 +31,7 @@ class LocalWorker(Worker):
             return False
 
         start = time.time()
-        while not self._status(0.05):
+        while not self._status(0.10):
             if time.time() - start >= 1:  # 1s
                 return False
             time.sleep(0.1)

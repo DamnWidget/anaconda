@@ -10,6 +10,7 @@ from urllib.parse import urlparse, parse_qs
 import sublime
 
 from ..logger import Log
+from ..unix_socket import UnixSocketPath
 from ..helpers import project_name, debug_enabled
 from ..helpers import get_settings, active_view, get_interpreter
 from ..vagrant import VagrantIPAddressGlobal, VagrantMachineGlobalInfo
@@ -175,17 +176,7 @@ class Interpreter(object):
         if sublime.platform() == 'windows':
             return 'localhost'
 
-        socketpath = {
-            'linux': os.path.join('~', '.local', 'share', 'anaconda', 'run'),
-            'osx': os.path.join(
-                '~', 'Library', 'Application Support', 'Anaconda'),
-        }
-
-        return os.path.expanduser(os.path.join(
-            socketpath[sublime.platform()],
-            self.project_name,
-            'anaconda.sock')
-        )
+        return UnixSocketPath(self.project_name).socket
 
     def __parse_raw_interpreter(self):
         """Parses the raw interpreter string for later simple use

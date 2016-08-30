@@ -25,11 +25,12 @@ except ImportError:
 sys.path.insert(0, os.path.join(
     os.path.split(os.path.split(__file__)[0])[0], 'anaconda_lib'))
 
+from lib.path import log_directory
 from lib.contexts import json_decode
+from unix_socket import UnixSocketPath
 from handlers import ANACONDA_HANDLERS
 from jedi import settings as jedi_settings
 from lib.anaconda_handler import AnacondaHandler
-from lib.path import log_directory, socket_directory
 
 
 DEBUG_MODE = True
@@ -161,7 +162,9 @@ class JSONServer(asyncore.dispatcher):
         """Called when we accept and incomming connection
         """
         sock, addr = self.accept()
-        self.logger.info('Incomming connection from {0}'.format(repr(addr)))
+        self.logger.info('Incomming connection from {0}'.format(
+            repr(addr) or 'unix socket')
+        )
         self.handler(sock, self)
 
     def handle_close(self):
@@ -335,18 +338,17 @@ if __name__ == "__main__":
         if WINDOWS:
             server = JSONServer(('localhost', port))
         else:
-            socket_directory = os.path.join(socket_directory, options.project or 'anaconda')  # noqa
-            if not os.path.exists(socket_directory):
-                os.makedirs(socket_directory)
-            unix_domain_socket = os.path.join(socket_directory, 'anaconda.sock')  # noqa
-            if os.path.exists(unix_domain_socket):
-                os.unlink(unix_domain_socket)
-            server = JSONServer(unix_domain_socket)
+            unix_socket_path = UnixSocketPath(options.project)
+            if not os.path.exists(unix_socket_path.socket):
+                os.makedirs(os.path.dirname(unix_socket_path.socket))
+            if os.path.exists(unix_socket_path.socket):
+                os.unlink(unix_socket_path.socket)
+            server = JSONServer(unix_socket_path.socket)
 
         logger.info(
             'Anaconda Server started in {0} for '
             'PID {1} with cache dir {2}{3}'.format(
-                port or unix_domain_socket, PID,
+                port or unix_socket_path.socket, PID,
                 jedi_settings.cache_directory,
                 ' and extra paths {0}'.format(
                     options.extra_paths
