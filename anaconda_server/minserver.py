@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.join(
 
 from jedi import settings as jedi_settings
 
-from lib.log import log_directory
+from lib.path import log_directory
 from lib.contexts import json_decode
 from handlers import ANACONDA_HANDLERS
 from lib.anaconda_handler import AnacondaHandler
