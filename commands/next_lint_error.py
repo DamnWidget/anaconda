@@ -57,25 +57,17 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
             self.window.active_view().sel()[0].begin()
         )
         lines = set([])
-        next_change = None
         vid = self.window.active_view().id()
         for error_type in ['ERRORS', 'WARNINGS', 'VIOLATIONS']:
             for line, _ in ANACONDA[error_type].get(vid, {}).items():
                 lines.add(int(line))
 
-        lines = list(set(sorted(lines)))
+        lines = set(sorted(lines))
         if not len(lines):
             return None
 
-        if not cur_line:
-            return None
+        lines_list = []
+        if cur_line and list(lines)[-1] > cur_line:
+            lines_list = [l for l in lines if l > cur_line]
 
-        if lines[-1] > cur_line:
-            for l in lines:
-                if l > cur_line:
-                    next_change = l
-                    break
-        else:
-            next_change = lines[0]
-
-        return next_change
+        return lines_list[0] if len(lines_list) > 0 else lines.pop()
