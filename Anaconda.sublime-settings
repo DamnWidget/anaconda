@@ -465,6 +465,13 @@
     "mypy_almost_silent": false,
 
     /*
+        MyPy suppress stub warnings
+
+        Suppress stub warnings when silent_imports is not used
+     */
+    "mypy_suppress_stub_warnings": true,
+
+    /*
     	MyPy py2
 
     	Use Python 2 mode

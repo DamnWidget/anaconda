@@ -372,6 +372,9 @@ def get_mypy_settings(view):
         mypy_settings.append(custom_typing)
 
     mypy_settings.append('--incremental')  # use cache always
+    mypy_settings.append(
+        get_settings(view, 'mypy_suppress_stub_warnings', False)
+    )
 
     return mypy_settings
 

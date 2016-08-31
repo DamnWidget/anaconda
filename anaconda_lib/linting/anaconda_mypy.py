@@ -6,14 +6,21 @@
 Anaconda MyPy wrapper
 """
 
-import re
+import os
 import sys
+import shlex
+import logging
+import subprocess
+from subprocess import PIPE, Popen
+
 
 MYPY_SUPPORTED = False
 try:
     from mypy import main as mypy
     MYPY_SUPPORTED = True
+    del mypy
 except ImportError:
+    logging.info('MyPy is enabled but we could not import it')
     pass
 
 
@@ -35,12 +42,10 @@ class MyPy(object):
 
         errors = []
         try:
-            exit = sys.exit
-            sys.exit = lambda x: None
             errors = self.check_source()
-            sys.exit = exit
         except Exception as error:
             print(error)
+            logging.error(error)
 
         return errors
 
@@ -48,43 +53,47 @@ class MyPy(object):
         """Wrap calls to MyPy as a library
         """
 
+        args = shlex.split('{0} -O -m mypy {1} {2} {3}'.format(
+            sys.executable, '--suppress-error-context',
+            ' '.join(self.settings[:-1]), self.filename),
+            posix=os.name != 'nt'
+        )
+        kwargs = {
+            'cwd': os.path.dirname(os.path.abspath(__file__)),
+            'bufsize': -1,
+            'env': os.environ.copy()
+        }
+        if os.name == 'nt':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            kwargs['startupinfo'] = startupinfo
+
+        proc = Popen(args, stdout=PIPE, stderr=PIPE, **kwargs)
+        out, err = proc.communicate()
+        if err is not None and len(err) > 0:
+            if sys.version_info >= (3,):
+                err = err.decode('utf8')
+            raise RuntimeError(err)
+
+        if sys.version_info >= (3,):
+            out = out.decode('utf8')
+
         errors = []
-        sources, options = self._parse_options()
-        result = mypy.type_check_only(sources, None, options)
-        for error in result.manager.errors.error_info:
+        for line in out.splitlines():
+            if self.settings[-1] and 'stub' in line.lower():
+                continue
+
+            error_data = line.split(':')
             errors.append({
                 'level': 'W',
-                'lineno': error.line,
+                'lineno': int(error_data[1]),
                 'offset': 0,
                 'code': ' ',
                 'raw_error': '[W] MyPy {0}: {1}'.format(
-                    error.severity, error.message
+                    error_data[2], error_data[3]
                 ),
                 'message': '[W] MyPy%s: %s',
                 'underline_range': True
             })
 
         return errors
-
-    def _parse_options(self):
-        """Parse options using mypy
-        """
-
-        self.settings.append(self.filename)
-
-        # check MyPy version
-        match = re.match(r'(\d).(\d).(\d)', mypy.__version__)
-        if match is not None:
-            mypy_version = tuple(int(i) for i in (
-                match.group(1), match.group(2), match.group(3)))
-        else:
-            mypy_version = (0, 0, 0)
-
-        if mypy_version >= (0, 4, 3):
-            return mypy.process_options(self.settings)
-
-        sys_argv = sys.argv
-        sys.argv = [''] + self.settings
-        sources, options = mypy.process_options()
-        sys.argv = sys_argv
-        return sources, options
