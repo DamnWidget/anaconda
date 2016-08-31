@@ -31,10 +31,15 @@ class LocalWorker(Worker):
             return False
 
         start = time.time()
-        while not self._status(0.10):
-            if time.time() - start >= 1:  # 1s
+        times = 1
+        interval = 2
+        while not self._status(0.20):
+            if time.time() - start >= interval:  # expressed in seconds
+                msg = '{}. tried to connect {} times during {} seconds'
+                self.error = msg.format(self.error, times, interval)
                 return False
             time.sleep(0.1)
+            times += 1
 
         return True
 
@@ -91,7 +96,7 @@ class LocalWorker(Worker):
                 self.interpreter.python
             )
 
-    def _status(self, timeout=0.10):
+    def _status(self, timeout=0.05):
         """Check the socket status, returns True if it is operable
         """
 
