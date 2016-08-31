@@ -33,6 +33,13 @@ class MyPy(object):
         self.filename = filename
         self.settings = settings
 
+    @property
+    def silent(self):
+        """Returns True if --silent-imports settig is present
+        """
+
+        return '--silent-imports' in self.settings
+
     def execute(self):
         """Check the code with MyPy check types
         """
@@ -80,7 +87,8 @@ class MyPy(object):
 
         errors = []
         for line in out.splitlines():
-            if self.settings[-1] and 'stub' in line.lower():
+            if (self.settings[-1] and not
+                    self.silent and 'stub' in line.lower()):
                 continue
 
             error_data = line.split(':')
