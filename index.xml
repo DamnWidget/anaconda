@@ -30,19 +30,19 @@
 
 &lt;p&gt;You need the anaconda source code in your remote host (if you don&amp;rsquo;t have it there yet) to do so, just connect trough SSH or remote desktop into your remote host and clone the anaconda repository in whatever directory that you like:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;git clone http://github.com/DamnWidget/anaconda
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;git clone http://github.com/DamnWidget/anaconda
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;h2 id=&#34;start-the-anaconda-minserver-py&#34;&gt;Start the anaconda &lt;code&gt;minserver.py&lt;/code&gt;&lt;/h2&gt;
 
 &lt;p&gt;The regular anaconda JsonServer just don&amp;rsquo;t work in remote environments for that, anaconda also distributes a minified version of the JsonServer called &lt;code&gt;minserver.py&lt;/code&gt; you must execute it with the Python interpreter that you want to use to lint and complete your code, the following are the &lt;code&gt;minserver.py&lt;/code&gt; options:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;Usage: minserver.py -p &amp;lt;project&amp;gt; -e &amp;lt;extra_paths&amp;gt; port
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code&gt;Usage: minserver.py -p &amp;lt;project&amp;gt; -e &amp;lt;extra_paths&amp;gt; port
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Let&amp;rsquo;s say that you cloned anaconda source code in &lt;code&gt;~/ides/anaconda&lt;/code&gt; and you want to use a Python interpreter in a virtual environment called &lt;code&gt;django_prj1&lt;/code&gt; you could start your server like:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;$ workon django_prj1
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;$ workon django_prj1
 $ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;amp;
 &lt;/code&gt;&lt;/pre&gt;
 
@@ -52,7 +52,7 @@ $ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;amp;
 
 &lt;p&gt;Anaconda uses the &lt;code&gt;python_interpreter&lt;/code&gt; setting value to connect to your remote host using the URI &lt;code&gt;tcp://&amp;lt;host&amp;gt;:&amp;lt;port&amp;gt;&lt;/code&gt; so simple use something like this as your &lt;code&gt;python_interpreter&lt;/code&gt; configuration option:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;tcp://192.168.100.21:9999&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;tcp://192.168.100.21:9999&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;&lt;em&gt;Note&lt;/em&gt;: Take into account that the &lt;code&gt;minserver.py&lt;/code&gt; &lt;em&gt;must&lt;/em&gt; be running before you start Sublime Text 3 or set anaconda to use your remote hosts and your remote host:port will be available from your network or anaconda will fail (and complain about).&lt;/p&gt;
@@ -85,7 +85,7 @@ $ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;amp;
 
 &lt;p&gt;For this example we are  gonna use the generic &lt;code&gt;python:2.7&lt;/code&gt; docker image but it will work for whatever docker image that contains a valid Python installation. The command to run our container will look like this:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;docker run -d --rm -v ~/.config/sublime_text_3/Packages/Anaconda:/opt/anaconda -v ~/my_project:/my_project python:2.7 /opt/anaconda/anaconda_server/docker/start python 19360 docker_project
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;docker run -d --rm -v ~/.config/sublime_text_3/Packages/Anaconda:/opt/anaconda -v ~/my_project:/my_project python:2.7 /opt/anaconda/anaconda_server/docker/start python 19360 docker_project
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;The &lt;code&gt;-d&lt;/code&gt; option will make docker to run the container in detach mode in the background and return its ID, the &lt;code&gt;--rm&lt;/code&gt; option will automatically remove the container as soon as it exit. With the &lt;code&gt;-v&lt;/code&gt; option we pass the directory where Anaconda is installed inside Sublime Text 3 (for Linux in this example) as a volume to be mounted inside the container in &lt;code&gt;/opt/anaconda&lt;/code&gt; in that way, the anaconda &lt;code&gt;minserver&lt;/code&gt; code will be available in the container to be executed so we don&amp;rsquo;t need to make a new installation into the container and we can be sure that it is always up to date with the last release. We also pass the directory where our code resides &lt;code&gt;~/my_project&lt;/code&gt; as a volume to be mounted in &lt;code&gt;/my_project&lt;/code&gt; using another &lt;code&gt;-v&lt;/code&gt; parameter (you can mount as many volumes as you need passing each one in a new &lt;code&gt;-v&lt;/code&gt; parameter).&lt;/p&gt;
@@ -96,7 +96,7 @@ $ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;amp;
 
 &lt;p&gt;With our container running the only thing that we have to do is to tell anaconda that we want to use a remote tcp interpreter:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     &amp;quot;settings&amp;quot;: {
         &amp;quot;python_interpreter&amp;quot;: &amp;quot;tcp://172.17.0.2:9999?pathmap=~/my_project,/my_project&amp;quot;
     }
@@ -107,7 +107,7 @@ $ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;amp;
 
 &lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: the address &lt;code&gt;172.17.0.2&lt;/code&gt; is the address that docker assigns automatically to it&amp;rsquo;s first container in it&amp;rsquo;s by default &lt;code&gt;bridge&lt;/code&gt; network, using it we don&amp;rsquo;t have the need to expose the minserver port, if we want to expose the port to the host we should run the docker command as&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;docker run -d --rm -v ~/.config/sublime_text_3/Packages/Anaconda:/opt/anaconda -v ~/my_project:/my_project -p 9999:9999 python:2.7 /opt/anaconda/anaconda_server/docker/start python 19360 docker_project
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;docker run -d --rm -v ~/.config/sublime_text_3/Packages/Anaconda:/opt/anaconda -v ~/my_project:/my_project -p 9999:9999 python:2.7 /opt/anaconda/anaconda_server/docker/start python 19360 docker_project
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Then we could use &lt;code&gt;&amp;quot;tcp://localhost:9999....&amp;quot;&lt;/code&gt; as our intrepreter&lt;/p&gt;
@@ -116,7 +116,7 @@ $ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;amp;
 
 &lt;p&gt;In many situation we will have already a container executing our code so we can use it to run the &lt;code&gt;minserver&lt;/code&gt; using the &lt;code&gt;exec&lt;/code&gt; docker command.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;docker exec -d dd94c34814f5 /opt/anaconda/anaconda_server/docker/start python 19360 some_project
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;docker exec -d dd94c34814f5 /opt/anaconda/anaconda_server/docker/start python 19360 some_project
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;The &lt;code&gt;-d&lt;/code&gt; option tells docker to run this command in detached mode, the second parameter &lt;code&gt;dd94c34814f5&lt;/code&gt; is our container ID and the third and last parameter is our command. Take into account that &lt;code&gt;exec&lt;/code&gt; will not be able to mount volumes so the anaconda code &lt;strong&gt;must&lt;/strong&gt; be already a volume in the container that we are executing the command.&lt;/p&gt;
@@ -125,7 +125,7 @@ $ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;amp;
 
 &lt;p&gt;Exactly the same but with a different port&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     &amp;quot;settings&amp;quot;: {
         &amp;quot;python_interpreter&amp;quot;: &amp;quot;tcp://172.17.0.2:19360?pathmap=~/my_project,/my_project&amp;quot;
     }
@@ -142,7 +142,7 @@ $ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;amp;
 
 &lt;p&gt;Add the new container to the &lt;code&gt;services&lt;/code&gt; definition after the redis entry with the contents below (be careful with the spaces as them have meaning in the YAML format):&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-yaml&#34;&gt;    anaconda:
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-yaml&#34;&gt;    anaconda:
         image: composetest_web
         ports:
             - &amp;quot;19360:19360&amp;quot;
@@ -165,7 +165,7 @@ $ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;amp;
 
 &lt;p&gt;The python interpreter is not more difficult&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     &amp;quot;settings&amp;quot;: {
         &amp;quot;python_interpreter&amp;quot;: &amp;quot;tcp://localhost:19360?pathmap=&amp;lt;path_to_your_docker-compose.yml_directory&amp;gt;,/code&amp;quot;
     }
@@ -218,7 +218,7 @@ the next steps.&lt;/p&gt;
 
 &lt;p&gt;Your guest machine needs access to the anaconda code base to run a minified version of the &lt;code&gt;jsonserver&lt;/code&gt; that is already present in your anaconda installation. To add your local anaconda installation as shared folder just add the configuration below in your &lt;code&gt;Vagrantfile&lt;/code&gt;&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;{config}.vm.synced_folder &#39;{local_anaconda_installation}&#39;, &#39;{mount_point}&#39;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-ruby&#34;&gt;{config}.vm.synced_folder &#39;{local_anaconda_installation}&#39;, &#39;{mount_point}&#39;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Change &lt;code&gt;{config}&lt;/code&gt; for the name of the config of your vm box (if your machine is the default machine it will be just &lt;code&gt;config.vm.synced_folder&lt;/code&gt; but if for example your machine is called &lt;code&gt;django_project1&lt;/code&gt; it will be &lt;code&gt;django_project1.vm.synced_folder&lt;/code&gt;).&lt;/p&gt;
@@ -235,26 +235,26 @@ the next steps.&lt;/p&gt;
 
 &lt;p&gt;So for example to share the anaconda local installation directory using OS X as host and the default config in &lt;code&gt;Vagrantfile&lt;/code&gt; and using the vagrant home as mount point you should use something like:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;config.vm.synced_folder &#39;~/Library/Application Support/Sublime Text 3/Packages/Anaconda&#39; &#39;~/anaconda&#39;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-ruby&#34;&gt;config.vm.synced_folder &#39;~/Library/Application Support/Sublime Text 3/Packages/Anaconda&#39; &#39;~/anaconda&#39;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;h3 id=&#34;configure-sublime-text-3-project&#34;&gt;Configure Sublime Text 3 project&lt;/h3&gt;
 
 &lt;p&gt;To tell anaconda to use your vagrant environment instead of your local one we just need to change our &lt;code&gt;python_interpreter&lt;/code&gt; setting, anaconda uses a non standard URI format to configure Vagrant environments, the formats is as follows:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;vagrant://{machine_name}:{port}?{options}
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-ruby&#34;&gt;vagrant://{machine_name}:{port}?{options}
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;So for example, if we want to use our vagrant guest in a forwarded port we could use the URI:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=forwarded&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=forwarded&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;The above &lt;code&gt;python_interpreter&lt;/code&gt; will try to start an anaconda&amp;rsquo;s &lt;code&gt;json minserver&lt;/code&gt; using the by default Python interpreter in the guest machine (python) on the by default anaconda&amp;rsquo;s guest machine shared folder (/anaconda) and connect to &lt;code&gt;localhost:19360&lt;/code&gt; where it&amp;rsquo;s port should be forwarded.&lt;/p&gt;
 
 &lt;p&gt;The different configuration options that you can pass to it are:&lt;/p&gt;
 
-&lt;table&gt;
+&lt;table class=&#34;table&#34;&gt;
 &lt;thead&gt;
 &lt;tr&gt;
 &lt;th&gt;Option&lt;/th&gt;
@@ -309,7 +309,7 @@ the next steps.&lt;/p&gt;
 
 &lt;h5 id=&#34;vagrantfile&#34;&gt;Vagrantfile&lt;/h5&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;Vagrant.configure(2) do |config|
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-ruby&#34;&gt;Vagrant.configure(2) do |config|
     config.vm.box = &amp;quot;precise64&amp;quot;
     config.vm.network :forwarded_port, guest: 19360, host: 19360
     config.vm.synced_folder = &#39;~/Library/Application Support/Sublime Text 3/Packages/Anaconda&#39;, &#39;/anaconda&#39;
@@ -318,7 +318,7 @@ end
 
 &lt;h5 id=&#34;anaconda-s-python-interpreter&#34;&gt;Anaconda&amp;rsquo;s Python Interpreter&lt;/h5&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=forwarded&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=forwarded&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;h4 id=&#34;private-network-using-defaults&#34;&gt;Private Network using Defaults&lt;/h4&gt;
@@ -327,7 +327,7 @@ end
 
 &lt;h5 id=&#34;vagrantfile-1&#34;&gt;Vagrantfile&lt;/h5&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;Vagrant.configure(2) do |config|
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-ruby&#34;&gt;Vagrant.configure(2) do |config|
     config.vm.box = &amp;quot;precise64&amp;quot;
     config.vm.network &amp;quot;private_network&amp;quot;, ip: &amp;quot;192.168.5.10&amp;quot;
     config.vm.synced_folder = &#39;~/Library/Application Support/Sublime Text 3/Packages/Anaconda&#39;, &#39;/anaconda&#39;
@@ -336,7 +336,7 @@ end
 
 &lt;h5 id=&#34;anaconda-s-python-interpreter-1&#34;&gt;Anaconda&amp;rsquo;s Python Interpreter&lt;/h5&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=private&amp;amp;address=192.168.5.10&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=private&amp;amp;address=192.168.5.10&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;We tell anaconda to connect to the address &lt;code&gt;192.168.5.10&lt;/code&gt; using the query option &lt;code&gt;address&lt;/code&gt;&lt;/p&gt;
@@ -347,7 +347,7 @@ end
 
 &lt;h5 id=&#34;vagrantfile-2&#34;&gt;Vagrantfile&lt;/h5&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;Vagrant.configure(2) do |config|
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-ruby&#34;&gt;Vagrant.configure(2) do |config|
     config.vm.box = &amp;quot;precise64&amp;quot;
     config.vm.network &amp;quot;pubic_network&amp;quot;
     config.vm.synced_folder = &#39;~/Library/Application Support/Sublime Text 3/Packages/Anaconda&#39;, &#39;/anaconda&#39;
@@ -356,7 +356,7 @@ end
 
 &lt;h5 id=&#34;anaconda-s-python-interpreter-2&#34;&gt;Anaconda&amp;rsquo;s Python Interpreter&lt;/h5&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=public&amp;amp;dev=eth1&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=public&amp;amp;dev=eth1&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;When the vagrant network mode is set as public, anaconda will discover the guest IP address through the vagrant ssh command in the local machine this is why we have to specify the guest interface device that is gonna set it&amp;rsquo;s IP (&lt;code&gt;eth1&lt;/code&gt; in this example).&lt;/p&gt;
@@ -365,7 +365,7 @@ end
 
 &lt;p&gt;If we want to use an specific Python interpreter in the guest machine (this is the equivalent to set the &lt;code&gt;python_interpreter&lt;/code&gt; to some specific interpreter in a local configuration) we can just setup the &lt;code&gt;interpreter&lt;/code&gt; query option.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=forwarded&amp;amp;interpreter=~/.virtualenv/myenv/bin/python&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=forwarded&amp;amp;interpreter=~/.virtualenv/myenv/bin/python&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Anaconda will try to execute the Python interpreter located in &lt;code&gt;~/.virtualenv/myenv/bin/python&lt;/code&gt; in the guest machine.&lt;/p&gt;
@@ -374,7 +374,7 @@ end
 
 &lt;p&gt;You can add extra paths just adding them to the &lt;code&gt;extra_paths&lt;/code&gt; configuration like in your regular anaconda configuration or you can pass them in your URI, you can also mix both, for example:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=forwarded&amp;amp;extra=~/my_firs_project&amp;amp;extra=~/my_second_project&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=forwarded&amp;amp;extra=~/my_firs_project&amp;amp;extra=~/my_second_project&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;You can add multiple extra paths defining more than one &lt;code&gt;extra&lt;/code&gt; query option as is shown in the example&lt;/p&gt;
@@ -387,19 +387,19 @@ end
 
 &lt;h5 id=&#34;vagrantfile-3&#34;&gt;Vagrantfile&lt;/h5&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;    config.vm.synced_folder = &#39;~/Library/Application Support/Sublime Text 3/Packages/Anaconda&#39;, &#39;/home/vagrant/anaconda&#39;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-ruby&#34;&gt;    config.vm.synced_folder = &#39;~/Library/Application Support/Sublime Text 3/Packages/Anaconda&#39;, &#39;/home/vagrant/anaconda&#39;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;h5 id=&#34;anaconda-s-python-interpreter-3&#34;&gt;Anaconda&amp;rsquo;s Python Interpreter&lt;/h5&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=forwarded&amp;amp;shared=/home/vagrant/anaconda&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?network=forwarded&amp;amp;shared=/home/vagrant/anaconda&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;h4 id=&#34;using-an-user-different-than-vagrant&#34;&gt;Using an user different than vagrant&lt;/h4&gt;
 
 &lt;p&gt;In some situations the user could need to use an specific user in the guest machine, that could be easily done adding the user and password to the network location part in the URI so for example to use the user &lt;code&gt;maya&lt;/code&gt; with password &lt;code&gt;12345&lt;/code&gt; we could simple add:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://maya:12345@default:19360?network=forwarded&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://maya:12345@default:19360?network=forwarded&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;h3 id=&#34;mapping-directories&#34;&gt;Mapping directories&lt;/h3&gt;
@@ -417,7 +417,7 @@ end
 
 &lt;p&gt;To minimize (completely solve it is just not possible) this problem effects, you can provide a series of (local, remote) paths to make anaconda try to map always that is possible paths between local and remote files. So for example to fix our scenario above we can use the following vagrant URI:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;vagrant://default:19360?network=forwarded&amp;amp;pathmap=/home/user/projects/myproject,/MyProject&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;vagrant://default:19360?network=forwarded&amp;amp;pathmap=/home/user/projects/myproject,/MyProject&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Anaconda will try to map the paths always that is possible (and safe), you can add multiple paths adding the &lt;code&gt;pathmap&lt;/code&gt; query parameter more than once.&lt;/p&gt;
@@ -428,14 +428,14 @@ end
 
 &lt;p&gt;In order to bypass anaconda startups you just need to pass the &lt;code&gt;manual&lt;/code&gt; option with whatever value that you want&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?manual=1&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot;: &amp;quot;vagrant://default:19360?manual=1&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Using the config above anaconda will just try to connect to &lt;code&gt;localhost:19360&lt;/code&gt;.&lt;/p&gt;
 
 &lt;p&gt;You can also bypass anaconda startup options using a regular anaconda remote worker instead of a vagrant one:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot; &amp;quot;tcp://localhost:19360&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;python_interpreter&amp;quot; &amp;quot;tcp://localhost:19360&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;&lt;em&gt;Note&lt;/em&gt;: Take into account that in both scenarios you &lt;em&gt;must&lt;/em&gt; start the &lt;code&gt;minserver.py&lt;/code&gt; manually before to start Sublime Text 3 or anaconda will fail (and complain about).&lt;/p&gt;
@@ -491,7 +491,7 @@ the test suite.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: If you need to run more than one command, just use a list of
 commands like:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;test_before_command&amp;quot;: [&amp;quot;cmd1&amp;quot;, &amp;quot;cmd2&amp;quot;, &amp;quot;cmd3&amp;quot;]
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;test_before_command&amp;quot;: [&amp;quot;cmd1&amp;quot;, &amp;quot;cmd2&amp;quot;, &amp;quot;cmd3&amp;quot;]
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;h3 id=&#34;test-after-command&#34;&gt;test_after_command&lt;/h3&gt;
@@ -508,7 +508,7 @@ the &lt;code&gt;test_before_command&lt;/code&gt; option&lt;/p&gt;
 test suite, this is &lt;code&gt;nosetests&lt;/code&gt; by default. An example of configuration is
 as follows:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;test_command&amp;quot;: &amp;quot;python -m unittest discover&amp;quot;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;test_command&amp;quot;: &amp;quot;python -m unittest discover&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;h3 id=&#34;test-delimeter&#34;&gt;test_delimeter&lt;/h3&gt;
@@ -534,7 +534,7 @@ example to run test suites that uses the &lt;code&gt;twisted&lt;/code&gt; librar
 
 &lt;p&gt;For example, if we have this configuration:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;test_command&amp;quot;: &amp;quot;trial&amp;quot;,
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;test_command&amp;quot;: &amp;quot;trial&amp;quot;,
 &amp;quot;test_project_path&amp;quot;: &amp;quot;mamba&amp;quot;
 &lt;/code&gt;&lt;/pre&gt;
 
@@ -556,7 +556,7 @@ trial a top level directory that contains your tests and is used by it&amp;rsquo
 test discovery facility. Here is an example about how to configure the
 anaconda&amp;rsquo;s tests runner to accomplish that.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     ...
     &amp;quot;setings&amp;quot;: {
         &amp;quot;test_command&amp;quot;: &amp;quot;trial&amp;quot;,
@@ -575,7 +575,7 @@ directory&lt;/p&gt;
 to do it. This is useful for example when you have complex steps before and
 after activate or deactivate your virtual environment.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     ...
     &amp;quot;settings&amp;quot;: {
         &amp;quot;test_command&amp;quot;: &amp;quot;trial&amp;quot;,
@@ -593,7 +593,7 @@ after activate or deactivate your virtual environment.&lt;/p&gt;
 just use the &lt;code&gt;test_virtualenv&lt;/code&gt; option, this example es equivalent to the
 previous one.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     ...
     &amp;quot;settings&amp;quot;: {
         &amp;quot;test_command&amp;quot;: &amp;quot;trial&amp;quot;,
@@ -608,7 +608,7 @@ previous one.&lt;/p&gt;
 
 &lt;p&gt;To run a Django project test suite with nose2 is not much more complex&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     ...
     &amp;quot;settings&amp;quot;: {
         &amp;quot;test_command&amp;quot;: &amp;quot;./manage.py test --settings=tests.settings --noinput&amp;quot;,
@@ -621,7 +621,7 @@ previous one.&lt;/p&gt;
 
 &lt;p&gt;Of course, you can also run the standard library unittest suite&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     ...
     &amp;quot;settings&amp;quot;: {
         &amp;quot;test_command&amp;quot;: &amp;quot;python -m unittest discover&amp;quot;
@@ -664,7 +664,7 @@ several ways that anaconda allow you to fine tune your plugin installation.&lt;/
 
 &lt;p&gt;You can place anaconda settings in three different places.&lt;/p&gt;
 
-&lt;table&gt;
+&lt;table class=&#34;table&#34;&gt;
 &lt;thead&gt;
 &lt;tr&gt;
 &lt;th&gt;#&lt;/th&gt;
@@ -709,7 +709,7 @@ go to &lt;code&gt;Preferences &amp;gt; Package Settings &amp;gt; Anaconda&lt;/co
 different entries, &lt;code&gt;Settings-Default&lt;/code&gt; and &lt;code&gt;Settings-User&lt;/code&gt; for options 1 and 2
 respectively. Any option in those files have to be placed in the global scope.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     &amp;quot;python_interpreter&amp;quot;: &amp;quot;stackless_python3&amp;quot;,
     &amp;quot;auto_python_builder_enabled&amp;quot;: false,
     ...
@@ -740,7 +740,7 @@ the &lt;code&gt;python_interpreter&lt;/code&gt; one.&lt;/p&gt;
 &lt;p&gt;To edit your project configuration file just go to &lt;code&gt;Project &amp;gt; Edit Project&lt;/code&gt;.
 The options &lt;strong&gt;must be placed inside the &lt;code&gt;settings&lt;/code&gt; dictionary&lt;/strong&gt;&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     &amp;quot;build_systems&amp;quot;:
     [
         {
@@ -769,7 +769,7 @@ The options &lt;strong&gt;must be placed inside the &lt;code&gt;settings&lt;/cod
 &lt;p&gt;Anaconda has the ability to use whatever python interpreter that you can
 compile and use in your platform, this includes:&lt;/p&gt;
 
-&lt;table&gt;
+&lt;table class=&#34;table&#34;&gt;
 &lt;thead&gt;
 &lt;tr&gt;
 &lt;th&gt;Python Interpreter&lt;/th&gt;
@@ -818,14 +818,14 @@ shown in the examples below&lt;/p&gt;
 
 &lt;p&gt;Example of global user configuration (Packages/User/Anaconda.sublime-settings):&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     &amp;quot;python_interpreter&amp;quot;: &amp;quot;/usr/bin/pypy-c2.4&amp;quot;
 }
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     &amp;quot;folders&amp;quot;:
     [
         {
@@ -855,7 +855,7 @@ project configuration files.&lt;/p&gt;
 
 &lt;p&gt;Example of global user configuration (Packages/User/Anaconda.sublime-settings):&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     &amp;quot;extra_paths&amp;quot;:
     [
         &amp;quot;/opt/sublime_text_3&amp;quot;,
@@ -866,7 +866,7 @@ project configuration files.&lt;/p&gt;
 
 &lt;p&gt;Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     ...
     &amp;quot;settings&amp;quot;: {
         &amp;quot;extra_paths&amp;quot;:
@@ -887,14 +887,14 @@ on OS X and Linux) you can use the variable &lt;code&gt;$VIRTUAL_ENV&lt;/code&gt
 
 &lt;p&gt;Example of global user configuration (Packages/User/Anaconda.sublime-settings):&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     &amp;quot;python_interpreter&amp;quot;: &amp;quot;$VIRTUAL_ENV/bin/python&amp;quot;
 }
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     ...
     &amp;quot;settings&amp;quot;: {
         &amp;quot;python_interpreter&amp;quot;: &amp;quot;$VIRTUAL_ENV/bin/python&amp;quot;
@@ -917,7 +917,7 @@ directory. If a valid hook file exists on that directory tree, it will be used
 instead of your project or general anaconda configuration. A valid &lt;code&gt;.anaconda&lt;/code&gt;
 hook file is as in the example below.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     &amp;quot;python_interpreter&amp;quot;: &amp;quot;~/.virtualenvs/stackless_python2.7/bin/python&amp;quot;,
     &amp;quot;extra_paths&amp;quot;: [&amp;quot;/usr/local/lib/awesome_python_lib&amp;quot;]
 }
@@ -997,7 +997,7 @@ character it can be configured easily editing the &lt;code&gt;Python.sublime-set
 configuration file in the  &lt;code&gt;Packages/User&lt;/code&gt; directory (Preferences -&amp;gt; Browse
 Packages) and add the following:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;{
     &amp;quot;auto_complete_triggers&amp;quot;: [{&amp;quot;selector&amp;quot;: &amp;quot;source.python - string - comment
     - constant.numeric&amp;quot;, &amp;quot;characters&amp;quot;: &amp;quot;.&amp;quot;}]
 }
@@ -1325,7 +1325,7 @@ variable as &lt;code&gt;false&lt;/code&gt;.&lt;/p&gt;
 E501&lt;/code&gt; error in pep8. It can be done adding them to the &lt;code&gt;pep8_ignore&lt;/code&gt; list using
 the error code like:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;pep8_ignore&amp;quot;:
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;pep8_ignore&amp;quot;:
 [
     &amp;quot;E501&amp;quot;
 ]
@@ -1342,7 +1342,7 @@ global anaconda configuration file or adding this list to any project
 configuration with the warning/errors that they wish to disable. For example,
 to disable the unused import warning:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;pyflakes_explicit_ignore&amp;quot;:
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;pyflakes_explicit_ignore&amp;quot;:
     [
         &amp;quot;UnusedImport&amp;quot;
     ],
@@ -1373,7 +1373,7 @@ system so it &lt;em&gt;can&amp;rsquo;t&lt;/em&gt; lint files until you save them
 &lt;p&gt;Anaconda uses E, W and V codes to maintain compability with PyFlakes and PEP8
 linters so the PyLint mapping is as follows:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;mapping = {
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;mapping = {
     &#39;C&#39;: &#39;V&#39;,
     &#39;E&#39;: &#39;E&#39;,
     &#39;F&#39;: &#39;E&#39;,
@@ -1510,7 +1510,7 @@ are displayed in the left gutter bar of the Sublime Text 3 buffer. To display
 fancy icons, the users can set the &lt;code&gt;anaconda_gutter_theme&lt;/code&gt; configuration
 option to any of the available themes:&lt;/p&gt;
 
-&lt;table&gt;
+&lt;table class=&#34;table&#34;&gt;
 &lt;thead&gt;
 &lt;tr&gt;
 &lt;th&gt;Gutter Theme&lt;/th&gt;
@@ -1565,7 +1565,7 @@ affected lines&lt;/li&gt;
 &lt;li&gt;none - it will not draw anything&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;table&gt;
+&lt;table class=&#34;table&#34;&gt;
 &lt;thead&gt;
 &lt;tr&gt;
 &lt;th&gt;Outline&lt;/th&gt;
@@ -1600,7 +1600,7 @@ typing by default, this behaviour can be also configured setting the option
 &lt;p&gt;Users can customize anaconda linting marks as they like adding some custom
 rules to their SublimeText theme:&lt;/p&gt;
 
-&lt;table&gt;
+&lt;table class=&#34;table&#34;&gt;
 &lt;thead&gt;
 &lt;tr&gt;
 &lt;th&gt;Tag name&lt;/th&gt;
@@ -1652,7 +1652,7 @@ rules to their SublimeText theme:&lt;/p&gt;
 
 &lt;p&gt;You can of course copy this piece of XML and paste into your theme&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;!-- Anaconda --&amp;gt;
+&lt;pre class=&#34;prettyprint&#34;&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;!-- Anaconda --&amp;gt;
 &amp;lt;dict&amp;gt;
   &amp;lt;key&amp;gt;name&amp;lt;/key&amp;gt;
   &amp;lt;string&amp;gt;anaconda Error Outline&amp;lt;/string&amp;gt;
@@ -1745,7 +1745,7 @@ development IDE.&lt;/p&gt;
 &lt;p&gt;Anaconda currently supports all three Sublime Text 3 platforms:
 Linux, OS X and Windows.  The status of the plugin among these platforms is&lt;/p&gt;
 
-&lt;table&gt;
+&lt;table class=&#34;table&#34;&gt;
 &lt;thead&gt;
 &lt;tr&gt;
 &lt;th&gt;Platform&lt;/th&gt;
@@ -1836,7 +1836,7 @@ Sublime Text 3 runtime.&lt;/p&gt;
 
 &lt;p&gt;Anaconda&amp;rsquo;s JsonServers use the Python interpreter that is available in the
 system &lt;code&gt;PATH&lt;/code&gt;, but this behavior can be configured globally or per project (
-take a look at &lt;a href=&#34;http://localhost:1313/anaconda/anaconda_settings/&#34;&gt;Configuring Anaconda the Right Way&lt;/a&gt;
+take a look at &lt;a href=&#34;./anaconda_settings/&#34;&gt;Configuring Anaconda the Right Way&lt;/a&gt;
 for detailed information about that).&lt;/p&gt;
 
 &lt;p&gt;In this way, we solve two common problems in Sublime Text plugins:&lt;/p&gt;

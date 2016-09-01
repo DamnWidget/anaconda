@@ -222,7 +222,7 @@
 
 <p>For this example we are  gonna use the generic <code>python:2.7</code> docker image but it will work for whatever docker image that contains a valid Python installation. The command to run our container will look like this:</p>
 
-<pre><code class="language-bash">docker run -d --rm -v ~/.config/sublime_text_3/Packages/Anaconda:/opt/anaconda -v ~/my_project:/my_project python:2.7 /opt/anaconda/anaconda_server/docker/start python 19360 docker_project
+<pre class="prettyprint"><code class="language-bash">docker run -d --rm -v ~/.config/sublime_text_3/Packages/Anaconda:/opt/anaconda -v ~/my_project:/my_project python:2.7 /opt/anaconda/anaconda_server/docker/start python 19360 docker_project
 </code></pre>
 
 <p>The <code>-d</code> option will make docker to run the container in detach mode in the background and return its ID, the <code>--rm</code> option will automatically remove the container as soon as it exit. With the <code>-v</code> option we pass the directory where Anaconda is installed inside Sublime Text 3 (for Linux in this example) as a volume to be mounted inside the container in <code>/opt/anaconda</code> in that way, the anaconda <code>minserver</code> code will be available in the container to be executed so we don&rsquo;t need to make a new installation into the container and we can be sure that it is always up to date with the last release. We also pass the directory where our code resides <code>~/my_project</code> as a volume to be mounted in <code>/my_project</code> using another <code>-v</code> parameter (you can mount as many volumes as you need passing each one in a new <code>-v</code> parameter).</p>
@@ -233,7 +233,7 @@
 
 <p>With our container running the only thing that we have to do is to tell anaconda that we want to use a remote tcp interpreter:</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     &quot;settings&quot;: {
         &quot;python_interpreter&quot;: &quot;tcp://172.17.0.2:9999?pathmap=~/my_project,/my_project&quot;
     }
@@ -244,7 +244,7 @@
 
 <p><strong>note</strong>: the address <code>172.17.0.2</code> is the address that docker assigns automatically to it&rsquo;s first container in it&rsquo;s by default <code>bridge</code> network, using it we don&rsquo;t have the need to expose the minserver port, if we want to expose the port to the host we should run the docker command as</p>
 
-<pre><code class="language-bash">docker run -d --rm -v ~/.config/sublime_text_3/Packages/Anaconda:/opt/anaconda -v ~/my_project:/my_project -p 9999:9999 python:2.7 /opt/anaconda/anaconda_server/docker/start python 19360 docker_project
+<pre class="prettyprint"><code class="language-bash">docker run -d --rm -v ~/.config/sublime_text_3/Packages/Anaconda:/opt/anaconda -v ~/my_project:/my_project -p 9999:9999 python:2.7 /opt/anaconda/anaconda_server/docker/start python 19360 docker_project
 </code></pre>
 
 <p>Then we could use <code>&quot;tcp://localhost:9999....&quot;</code> as our intrepreter</p>
@@ -253,7 +253,7 @@
 
 <p>In many situation we will have already a container executing our code so we can use it to run the <code>minserver</code> using the <code>exec</code> docker command.</p>
 
-<pre><code class="language-bash">docker exec -d dd94c34814f5 /opt/anaconda/anaconda_server/docker/start python 19360 some_project
+<pre class="prettyprint"><code class="language-bash">docker exec -d dd94c34814f5 /opt/anaconda/anaconda_server/docker/start python 19360 some_project
 </code></pre>
 
 <p>The <code>-d</code> option tells docker to run this command in detached mode, the second parameter <code>dd94c34814f5</code> is our container ID and the third and last parameter is our command. Take into account that <code>exec</code> will not be able to mount volumes so the anaconda code <strong>must</strong> be already a volume in the container that we are executing the command.</p>
@@ -262,7 +262,7 @@
 
 <p>Exactly the same but with a different port</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     &quot;settings&quot;: {
         &quot;python_interpreter&quot;: &quot;tcp://172.17.0.2:19360?pathmap=~/my_project,/my_project&quot;
     }
@@ -279,7 +279,7 @@
 
 <p>Add the new container to the <code>services</code> definition after the redis entry with the contents below (be careful with the spaces as them have meaning in the YAML format):</p>
 
-<pre><code class="language-yaml">    anaconda:
+<pre class="prettyprint"><code class="language-yaml">    anaconda:
         image: composetest_web
         ports:
             - &quot;19360:19360&quot;
@@ -302,7 +302,7 @@
 
 <p>The python interpreter is not more difficult</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     &quot;settings&quot;: {
         &quot;python_interpreter&quot;: &quot;tcp://localhost:19360?pathmap=&lt;path_to_your_docker-compose.yml_directory&gt;,/code&quot;
     }

@@ -226,7 +226,7 @@ several ways that anaconda allow you to fine tune your plugin installation.</p>
 
 <p>You can place anaconda settings in three different places.</p>
 
-<table>
+<table class="table">
 <thead>
 <tr>
 <th>#</th>
@@ -271,7 +271,7 @@ go to <code>Preferences &gt; Package Settings &gt; Anaconda</code>, there you wi
 different entries, <code>Settings-Default</code> and <code>Settings-User</code> for options 1 and 2
 respectively. Any option in those files have to be placed in the global scope.</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     &quot;python_interpreter&quot;: &quot;stackless_python3&quot;,
     &quot;auto_python_builder_enabled&quot;: false,
     ...
@@ -302,7 +302,7 @@ the <code>python_interpreter</code> one.</p>
 <p>To edit your project configuration file just go to <code>Project &gt; Edit Project</code>.
 The options <strong>must be placed inside the <code>settings</code> dictionary</strong></p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     &quot;build_systems&quot;:
     [
         {
@@ -331,7 +331,7 @@ The options <strong>must be placed inside the <code>settings</code> dictionary</
 <p>Anaconda has the ability to use whatever python interpreter that you can
 compile and use in your platform, this includes:</p>
 
-<table>
+<table class="table">
 <thead>
 <tr>
 <th>Python Interpreter</th>
@@ -380,14 +380,14 @@ shown in the examples below</p>
 
 <p>Example of global user configuration (Packages/User/Anaconda.sublime-settings):</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     &quot;python_interpreter&quot;: &quot;/usr/bin/pypy-c2.4&quot;
 }
 </code></pre>
 
 <p>Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     &quot;folders&quot;:
     [
         {
@@ -417,7 +417,7 @@ project configuration files.</p>
 
 <p>Example of global user configuration (Packages/User/Anaconda.sublime-settings):</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     &quot;extra_paths&quot;:
     [
         &quot;/opt/sublime_text_3&quot;,
@@ -428,7 +428,7 @@ project configuration files.</p>
 
 <p>Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     ...
     &quot;settings&quot;: {
         &quot;extra_paths&quot;:
@@ -449,14 +449,14 @@ on OS X and Linux) you can use the variable <code>$VIRTUAL_ENV</code> in your
 
 <p>Example of global user configuration (Packages/User/Anaconda.sublime-settings):</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     &quot;python_interpreter&quot;: &quot;$VIRTUAL_ENV/bin/python&quot;
 }
 </code></pre>
 
 <p>Exaple of project configuration (~/projects/my_project/MyProject.sublime-project):</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     ...
     &quot;settings&quot;: {
         &quot;python_interpreter&quot;: &quot;$VIRTUAL_ENV/bin/python&quot;
@@ -479,7 +479,7 @@ directory. If a valid hook file exists on that directory tree, it will be used
 instead of your project or general anaconda configuration. A valid <code>.anaconda</code>
 hook file is as in the example below.</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     &quot;python_interpreter&quot;: &quot;~/.virtualenvs/stackless_python2.7/bin/python&quot;,
     &quot;extra_paths&quot;: [&quot;/usr/local/lib/awesome_python_lib&quot;]
 }

@@ -246,7 +246,7 @@ the test suite.</p>
 <p><strong>note</strong>: If you need to run more than one command, just use a list of
 commands like:</p>
 
-<pre><code class="language-json">&quot;test_before_command&quot;: [&quot;cmd1&quot;, &quot;cmd2&quot;, &quot;cmd3&quot;]
+<pre class="prettyprint"><code class="language-json">&quot;test_before_command&quot;: [&quot;cmd1&quot;, &quot;cmd2&quot;, &quot;cmd3&quot;]
 </code></pre>
 
 <h3 id="test-after-command">test_after_command</h3>
@@ -263,7 +263,7 @@ the <code>test_before_command</code> option</p>
 test suite, this is <code>nosetests</code> by default. An example of configuration is
 as follows:</p>
 
-<pre><code class="language-json">&quot;test_command&quot;: &quot;python -m unittest discover&quot;
+<pre class="prettyprint"><code class="language-json">&quot;test_command&quot;: &quot;python -m unittest discover&quot;
 </code></pre>
 
 <h3 id="test-delimeter">test_delimeter</h3>
@@ -289,7 +289,7 @@ example to run test suites that uses the <code>twisted</code> library <code>tria
 
 <p>For example, if we have this configuration:</p>
 
-<pre><code class="language-json">&quot;test_command&quot;: &quot;trial&quot;,
+<pre class="prettyprint"><code class="language-json">&quot;test_command&quot;: &quot;trial&quot;,
 &quot;test_project_path&quot;: &quot;mamba&quot;
 </code></pre>
 
@@ -311,7 +311,7 @@ trial a top level directory that contains your tests and is used by it&rsquo;s a
 test discovery facility. Here is an example about how to configure the
 anaconda&rsquo;s tests runner to accomplish that.</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     ...
     &quot;setings&quot;: {
         &quot;test_command&quot;: &quot;trial&quot;,
@@ -330,7 +330,7 @@ directory</p>
 to do it. This is useful for example when you have complex steps before and
 after activate or deactivate your virtual environment.</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     ...
     &quot;settings&quot;: {
         &quot;test_command&quot;: &quot;trial&quot;,
@@ -348,7 +348,7 @@ after activate or deactivate your virtual environment.</p>
 just use the <code>test_virtualenv</code> option, this example es equivalent to the
 previous one.</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     ...
     &quot;settings&quot;: {
         &quot;test_command&quot;: &quot;trial&quot;,
@@ -363,7 +363,7 @@ previous one.</p>
 
 <p>To run a Django project test suite with nose2 is not much more complex</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     ...
     &quot;settings&quot;: {
         &quot;test_command&quot;: &quot;./manage.py test --settings=tests.settings --noinput&quot;,
@@ -376,7 +376,7 @@ previous one.</p>
 
 <p>Of course, you can also run the standard library unittest suite</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     ...
     &quot;settings&quot;: {
         &quot;test_command&quot;: &quot;python -m unittest discover&quot;

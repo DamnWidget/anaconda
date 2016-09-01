@@ -323,7 +323,7 @@ character it can be configured easily editing the <code>Python.sublime-settings<
 configuration file in the  <code>Packages/User</code> directory (Preferences -&gt; Browse
 Packages) and add the following:</p>
 
-<pre><code class="language-json">{
+<pre class="prettyprint"><code class="language-json">{
     &quot;auto_complete_triggers&quot;: [{&quot;selector&quot;: &quot;source.python - string - comment
     - constant.numeric&quot;, &quot;characters&quot;: &quot;.&quot;}]
 }
@@ -651,7 +651,7 @@ variable as <code>false</code>.</p>
 E501</code> error in pep8. It can be done adding them to the <code>pep8_ignore</code> list using
 the error code like:</p>
 
-<pre><code class="language-json">&quot;pep8_ignore&quot;:
+<pre class="prettyprint"><code class="language-json">&quot;pep8_ignore&quot;:
 [
     &quot;E501&quot;
 ]
@@ -668,7 +668,7 @@ global anaconda configuration file or adding this list to any project
 configuration with the warning/errors that they wish to disable. For example,
 to disable the unused import warning:</p>
 
-<pre><code class="language-json">&quot;pyflakes_explicit_ignore&quot;:
+<pre class="prettyprint"><code class="language-json">&quot;pyflakes_explicit_ignore&quot;:
     [
         &quot;UnusedImport&quot;
     ],
@@ -699,7 +699,7 @@ system so it <em>can&rsquo;t</em> lint files until you save them.</p>
 <p>Anaconda uses E, W and V codes to maintain compability with PyFlakes and PEP8
 linters so the PyLint mapping is as follows:</p>
 
-<pre><code class="language-json">mapping = {
+<pre class="prettyprint"><code class="language-json">mapping = {
     'C': 'V',
     'E': 'E',
     'F': 'E',
@@ -836,7 +836,7 @@ are displayed in the left gutter bar of the Sublime Text 3 buffer. To display
 fancy icons, the users can set the <code>anaconda_gutter_theme</code> configuration
 option to any of the available themes:</p>
 
-<table>
+<table class="table">
 <thead>
 <tr>
 <th>Gutter Theme</th>
@@ -891,7 +891,7 @@ affected lines</li>
 <li>none - it will not draw anything</li>
 </ul>
 
-<table>
+<table class="table">
 <thead>
 <tr>
 <th>Outline</th>
@@ -926,7 +926,7 @@ typing by default, this behaviour can be also configured setting the option
 <p>Users can customize anaconda linting marks as they like adding some custom
 rules to their SublimeText theme:</p>
 
-<table>
+<table class="table">
 <thead>
 <tr>
 <th>Tag name</th>
@@ -978,7 +978,7 @@ rules to their SublimeText theme:</p>
 
 <p>You can of course copy this piece of XML and paste into your theme</p>
 
-<pre><code class="language-xml">&lt;!-- Anaconda --&gt;
+<pre class="prettyprint"><code class="language-xml">&lt;!-- Anaconda --&gt;
 &lt;dict&gt;
   &lt;key&gt;name&lt;/key&gt;
   &lt;string&gt;anaconda Error Outline&lt;/string&gt;

@@ -255,7 +255,7 @@ the next steps.</p>
 
 <p>Your guest machine needs access to the anaconda code base to run a minified version of the <code>jsonserver</code> that is already present in your anaconda installation. To add your local anaconda installation as shared folder just add the configuration below in your <code>Vagrantfile</code></p>
 
-<pre><code class="language-ruby">{config}.vm.synced_folder '{local_anaconda_installation}', '{mount_point}'
+<pre class="prettyprint"><code class="language-ruby">{config}.vm.synced_folder '{local_anaconda_installation}', '{mount_point}'
 </code></pre>
 
 <p>Change <code>{config}</code> for the name of the config of your vm box (if your machine is the default machine it will be just <code>config.vm.synced_folder</code> but if for example your machine is called <code>django_project1</code> it will be <code>django_project1.vm.synced_folder</code>).</p>
@@ -272,26 +272,26 @@ the next steps.</p>
 
 <p>So for example to share the anaconda local installation directory using OS X as host and the default config in <code>Vagrantfile</code> and using the vagrant home as mount point you should use something like:</p>
 
-<pre><code class="language-ruby">config.vm.synced_folder '~/Library/Application Support/Sublime Text 3/Packages/Anaconda' '~/anaconda'
+<pre class="prettyprint"><code class="language-ruby">config.vm.synced_folder '~/Library/Application Support/Sublime Text 3/Packages/Anaconda' '~/anaconda'
 </code></pre>
 
 <h3 id="configure-sublime-text-3-project">Configure Sublime Text 3 project</h3>
 
 <p>To tell anaconda to use your vagrant environment instead of your local one we just need to change our <code>python_interpreter</code> setting, anaconda uses a non standard URI format to configure Vagrant environments, the formats is as follows:</p>
 
-<pre><code class="language-ruby">vagrant://{machine_name}:{port}?{options}
+<pre class="prettyprint"><code class="language-ruby">vagrant://{machine_name}:{port}?{options}
 </code></pre>
 
 <p>So for example, if we want to use our vagrant guest in a forwarded port we could use the URI:</p>
 
-<pre><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=forwarded&quot;
+<pre class="prettyprint"><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=forwarded&quot;
 </code></pre>
 
 <p>The above <code>python_interpreter</code> will try to start an anaconda&rsquo;s <code>json minserver</code> using the by default Python interpreter in the guest machine (python) on the by default anaconda&rsquo;s guest machine shared folder (/anaconda) and connect to <code>localhost:19360</code> where it&rsquo;s port should be forwarded.</p>
 
 <p>The different configuration options that you can pass to it are:</p>
 
-<table>
+<table class="table">
 <thead>
 <tr>
 <th>Option</th>
@@ -346,7 +346,7 @@ the next steps.</p>
 
 <h5 id="vagrantfile">Vagrantfile</h5>
 
-<pre><code class="language-ruby">Vagrant.configure(2) do |config|
+<pre class="prettyprint"><code class="language-ruby">Vagrant.configure(2) do |config|
     config.vm.box = &quot;precise64&quot;
     config.vm.network :forwarded_port, guest: 19360, host: 19360
     config.vm.synced_folder = '~/Library/Application Support/Sublime Text 3/Packages/Anaconda', '/anaconda'
@@ -355,7 +355,7 @@ end
 
 <h5 id="anaconda-s-python-interpreter">Anaconda&rsquo;s Python Interpreter</h5>
 
-<pre><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=forwarded&quot;
+<pre class="prettyprint"><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=forwarded&quot;
 </code></pre>
 
 <h4 id="private-network-using-defaults">Private Network using Defaults</h4>
@@ -364,7 +364,7 @@ end
 
 <h5 id="vagrantfile-1">Vagrantfile</h5>
 
-<pre><code class="language-ruby">Vagrant.configure(2) do |config|
+<pre class="prettyprint"><code class="language-ruby">Vagrant.configure(2) do |config|
     config.vm.box = &quot;precise64&quot;
     config.vm.network &quot;private_network&quot;, ip: &quot;192.168.5.10&quot;
     config.vm.synced_folder = '~/Library/Application Support/Sublime Text 3/Packages/Anaconda', '/anaconda'
@@ -373,7 +373,7 @@ end
 
 <h5 id="anaconda-s-python-interpreter-1">Anaconda&rsquo;s Python Interpreter</h5>
 
-<pre><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=private&amp;address=192.168.5.10&quot;
+<pre class="prettyprint"><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=private&amp;address=192.168.5.10&quot;
 </code></pre>
 
 <p>We tell anaconda to connect to the address <code>192.168.5.10</code> using the query option <code>address</code></p>
@@ -384,7 +384,7 @@ end
 
 <h5 id="vagrantfile-2">Vagrantfile</h5>
 
-<pre><code class="language-ruby">Vagrant.configure(2) do |config|
+<pre class="prettyprint"><code class="language-ruby">Vagrant.configure(2) do |config|
     config.vm.box = &quot;precise64&quot;
     config.vm.network &quot;pubic_network&quot;
     config.vm.synced_folder = '~/Library/Application Support/Sublime Text 3/Packages/Anaconda', '/anaconda'
@@ -393,7 +393,7 @@ end
 
 <h5 id="anaconda-s-python-interpreter-2">Anaconda&rsquo;s Python Interpreter</h5>
 
-<pre><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=public&amp;dev=eth1&quot;
+<pre class="prettyprint"><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=public&amp;dev=eth1&quot;
 </code></pre>
 
 <p>When the vagrant network mode is set as public, anaconda will discover the guest IP address through the vagrant ssh command in the local machine this is why we have to specify the guest interface device that is gonna set it&rsquo;s IP (<code>eth1</code> in this example).</p>
@@ -402,7 +402,7 @@ end
 
 <p>If we want to use an specific Python interpreter in the guest machine (this is the equivalent to set the <code>python_interpreter</code> to some specific interpreter in a local configuration) we can just setup the <code>interpreter</code> query option.</p>
 
-<pre><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=forwarded&amp;interpreter=~/.virtualenv/myenv/bin/python&quot;
+<pre class="prettyprint"><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=forwarded&amp;interpreter=~/.virtualenv/myenv/bin/python&quot;
 </code></pre>
 
 <p>Anaconda will try to execute the Python interpreter located in <code>~/.virtualenv/myenv/bin/python</code> in the guest machine.</p>
@@ -411,7 +411,7 @@ end
 
 <p>You can add extra paths just adding them to the <code>extra_paths</code> configuration like in your regular anaconda configuration or you can pass them in your URI, you can also mix both, for example:</p>
 
-<pre><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=forwarded&amp;extra=~/my_firs_project&amp;extra=~/my_second_project&quot;
+<pre class="prettyprint"><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=forwarded&amp;extra=~/my_firs_project&amp;extra=~/my_second_project&quot;
 </code></pre>
 
 <p>You can add multiple extra paths defining more than one <code>extra</code> query option as is shown in the example</p>
@@ -424,19 +424,19 @@ end
 
 <h5 id="vagrantfile-3">Vagrantfile</h5>
 
-<pre><code class="language-ruby">    config.vm.synced_folder = '~/Library/Application Support/Sublime Text 3/Packages/Anaconda', '/home/vagrant/anaconda'
+<pre class="prettyprint"><code class="language-ruby">    config.vm.synced_folder = '~/Library/Application Support/Sublime Text 3/Packages/Anaconda', '/home/vagrant/anaconda'
 </code></pre>
 
 <h5 id="anaconda-s-python-interpreter-3">Anaconda&rsquo;s Python Interpreter</h5>
 
-<pre><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=forwarded&amp;shared=/home/vagrant/anaconda&quot;
+<pre class="prettyprint"><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?network=forwarded&amp;shared=/home/vagrant/anaconda&quot;
 </code></pre>
 
 <h4 id="using-an-user-different-than-vagrant">Using an user different than vagrant</h4>
 
 <p>In some situations the user could need to use an specific user in the guest machine, that could be easily done adding the user and password to the network location part in the URI so for example to use the user <code>maya</code> with password <code>12345</code> we could simple add:</p>
 
-<pre><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://maya:12345@default:19360?network=forwarded&quot;
+<pre class="prettyprint"><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://maya:12345@default:19360?network=forwarded&quot;
 </code></pre>
 
 <h3 id="mapping-directories">Mapping directories</h3>
@@ -454,7 +454,7 @@ end
 
 <p>To minimize (completely solve it is just not possible) this problem effects, you can provide a series of (local, remote) paths to make anaconda try to map always that is possible paths between local and remote files. So for example to fix our scenario above we can use the following vagrant URI:</p>
 
-<pre><code class="language-json">&quot;vagrant://default:19360?network=forwarded&amp;pathmap=/home/user/projects/myproject,/MyProject&quot;
+<pre class="prettyprint"><code class="language-json">&quot;vagrant://default:19360?network=forwarded&amp;pathmap=/home/user/projects/myproject,/MyProject&quot;
 </code></pre>
 
 <p>Anaconda will try to map the paths always that is possible (and safe), you can add multiple paths adding the <code>pathmap</code> query parameter more than once.</p>
@@ -465,14 +465,14 @@ end
 
 <p>In order to bypass anaconda startups you just need to pass the <code>manual</code> option with whatever value that you want</p>
 
-<pre><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?manual=1&quot;
+<pre class="prettyprint"><code class="language-json">&quot;python_interpreter&quot;: &quot;vagrant://default:19360?manual=1&quot;
 </code></pre>
 
 <p>Using the config above anaconda will just try to connect to <code>localhost:19360</code>.</p>
 
 <p>You can also bypass anaconda startup options using a regular anaconda remote worker instead of a vagrant one:</p>
 
-<pre><code class="language-json">&quot;python_interpreter&quot; &quot;tcp://localhost:19360&quot;
+<pre class="prettyprint"><code class="language-json">&quot;python_interpreter&quot; &quot;tcp://localhost:19360&quot;
 </code></pre>
 
 <p><em>Note</em>: Take into account that in both scenarios you <em>must</em> start the <code>minserver.py</code> manually before to start Sublime Text 3 or anaconda will fail (and complain about).</p>

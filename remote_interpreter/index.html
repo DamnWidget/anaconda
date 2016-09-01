@@ -204,19 +204,19 @@
 
 <p>You need the anaconda source code in your remote host (if you don&rsquo;t have it there yet) to do so, just connect trough SSH or remote desktop into your remote host and clone the anaconda repository in whatever directory that you like:</p>
 
-<pre><code class="language-bash">git clone http://github.com/DamnWidget/anaconda
+<pre class="prettyprint"><code class="language-bash">git clone http://github.com/DamnWidget/anaconda
 </code></pre>
 
 <h2 id="start-the-anaconda-minserver-py">Start the anaconda <code>minserver.py</code></h2>
 
 <p>The regular anaconda JsonServer just don&rsquo;t work in remote environments for that, anaconda also distributes a minified version of the JsonServer called <code>minserver.py</code> you must execute it with the Python interpreter that you want to use to lint and complete your code, the following are the <code>minserver.py</code> options:</p>
 
-<pre><code>Usage: minserver.py -p &lt;project&gt; -e &lt;extra_paths&gt; port
+<pre class="prettyprint"><code>Usage: minserver.py -p &lt;project&gt; -e &lt;extra_paths&gt; port
 </code></pre>
 
 <p>Let&rsquo;s say that you cloned anaconda source code in <code>~/ides/anaconda</code> and you want to use a Python interpreter in a virtual environment called <code>django_prj1</code> you could start your server like:</p>
 
-<pre><code class="language-bash">$ workon django_prj1
+<pre class="prettyprint"><code class="language-bash">$ workon django_prj1
 $ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;
 </code></pre>
 
@@ -226,7 +226,7 @@ $ (django_prj1) python ~/ides/anaconda/anaconda_server/minserver.py &amp;
 
 <p>Anaconda uses the <code>python_interpreter</code> setting value to connect to your remote host using the URI <code>tcp://&lt;host&gt;:&lt;port&gt;</code> so simple use something like this as your <code>python_interpreter</code> configuration option:</p>
 
-<pre><code class="language-json">&quot;python_interpreter&quot;: &quot;tcp://192.168.100.21:9999&quot;
+<pre class="prettyprint"><code class="language-json">&quot;python_interpreter&quot;: &quot;tcp://192.168.100.21:9999&quot;
 </code></pre>
 
 <p><em>Note</em>: Take into account that the <code>minserver.py</code> <em>must</em> be running before you start Sublime Text 3 or set anaconda to use your remote hosts and your remote host:port will be available from your network or anaconda will fail (and complain about).</p>
