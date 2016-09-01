@@ -66,7 +66,8 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
         if not len(lines):
             return None
 
+        lines_list = []
         if cur_line and list(lines)[-1] > cur_line:
             lines_list = [l for l in lines if l > cur_line]
 
-        return lines_list[0]
+        return lines_list[0] if len(lines_list) > 0 else lines.pop()
