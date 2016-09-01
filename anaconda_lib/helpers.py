@@ -131,6 +131,9 @@ def create_subprocess(args, **kwargs):
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         kwargs['startupinfo'] = startupinfo
 
+    if sublime.platform() == 'osx':
+        kwargs['PYTHONIOENCODING'] = 'utf8'
+
     try:
         return subprocess.Popen(args, **kwargs)
     except Exception as e:
