@@ -1,0 +1,19 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+Anaconda v2.0.7
+===============
+
+This is a minor bug fix release
+
+## Fixes
+
+    - Next lint error raises an exception if current line is larger than last
+      error line, @alin23 provided a fix that resolves #524
+    - Fixed unicode error in OS X, resolves #481, thanks to @karolyi for his
+      tests in OS X while I was unable to test it myself

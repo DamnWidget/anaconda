@@ -131,6 +131,14 @@ def create_subprocess(args, **kwargs):
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         kwargs['startupinfo'] = startupinfo
 
+    if sublime.platform() == 'osx':
+        env = kwargs['env'] if 'env' in kwargs else os.environ.copy()
+        if 'env' in kwargs:
+            env = env
+
+        env['PYTHONIOENCODING'] = 'utf8'
+        kwargs['env'] = env
+
     try:
         return subprocess.Popen(args, **kwargs)
     except Exception as e:
