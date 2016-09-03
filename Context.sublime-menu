@@ -29,6 +29,10 @@
                 "caption": "Next lint error"
             },
             {
+                "command": "anaconda_prev_lint_error",
+                "caption": "Previous lint error"
+            },
+            {
                 "command": "anaconda_auto_format",
                 "caption": "Autoformat PEP8 Errors"
             },
