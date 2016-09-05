@@ -69,4 +69,4 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
         if cur_line is not None and lines[-1] > cur_line:
             lines = [l for l in lines if l > cur_line]
 
-        return lines[0]
+        return lines[0] if len(lines) > 0 else None
