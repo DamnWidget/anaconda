@@ -62,12 +62,11 @@ class AnacondaNextLintError(sublime_plugin.WindowCommand):
             for line, _ in ANACONDA[error_type].get(vid, {}).items():
                 lines.add(int(line))
 
-        lines = set(sorted(lines))
+        lines = sorted(lines)
         if not len(lines):
             return None
 
-        lines_list = []
-        if cur_line and list(lines)[-1] > cur_line:
-            lines_list = [l for l in lines if l > cur_line]
+        if cur_line is not None and lines[-1] > cur_line:
+            lines = [l for l in lines if l > cur_line]
 
-        return lines_list[0] if len(lines_list) > 0 else lines.pop()
+        return lines[0] if len(lines) > 0 else None
