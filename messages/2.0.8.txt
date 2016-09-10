@@ -1,0 +1,26 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+Anaconda v2.0.8
+===============
+
+This is a minor bug fix and features release
+
+## Fixes
+
+	- Fixed line truncation in some PEP8 errors descriptions related with bad
+	  indentation
+    - Fixed anaconda failing to determine the next error when running Next
+      error comman
+
+## Additions
+
+	- Added new `Previous lint error` command that works opposite to the
+	  already present `Next lint error` (obviusly)
+	- Added new config option `swallog_startup_errors` to completely
+	  ignore startup errors (use at your own risk)
