@@ -114,8 +114,10 @@ class LocalWorker(Worker):
             'jsonserver.py script running in your system. If there is, check '
             '{} writing the following script in your Sublime Text 3 console:'
             '\n\nimport socket; socket.socket(socket.AF_INET, '
-            'socket.SOCK_STREAM).connect({})\n\n'.format(
-                check, addr,
-            )
+            'socket.SOCK_STREAM).connect({})\n\nIf anaconda works just fine '
+            'after you received this error and the command above worked you '
+            'can make anaconda to do not show you this error anymore settig '
+            'the \'swallow_startup_errors\' to \'true\' in your '
+            'configuration file.'.format(check, addr)
         )
         return super(LocalWorker, self)._status(timeout)

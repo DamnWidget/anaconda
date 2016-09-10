@@ -9,7 +9,7 @@ from functools import partial
 
 import sublime
 
-from . import pep8
+from . import pycodestyle as pep8
 from ..worker import Worker
 from ..callback import Callback
 from ..persistent_list import PersistentList

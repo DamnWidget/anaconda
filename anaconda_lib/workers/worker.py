@@ -8,6 +8,7 @@ import socket
 import sublime
 
 from ..logger import Log
+from ..helpers import get_settings
 from ..jsonclient import AsynClient
 from ..constants import WorkerStatus
 from ..decorators import auto_project_switch_ng
@@ -53,7 +54,9 @@ class Worker(object):
                 )
                 Log.error(msg)
                 if self.status != WorkerStatus.faulty:
-                    sublime.error_message(msg)
+                    if not get_settings(
+                           active_view(), 'swallow_startup_errors', False):
+                        sublime.error_message(msg)
                     self.status = WorkerStatus.faulty
                 return
 

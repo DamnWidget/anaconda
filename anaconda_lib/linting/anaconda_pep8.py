@@ -5,7 +5,7 @@
 
 import os
 
-import pep8
+import pycodestyle as pep8
 from linting import linter
 
 

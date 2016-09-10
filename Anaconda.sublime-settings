@@ -604,4 +604,13 @@
         Note: this is need for example to can run tests with `twisted's trial`
     */
     // "test_project_path": "./"
+
+    /*
+    	Set this option to true if you get warnings about anaconda not
+    	being able to connect to your localhost on ST3 startup but it
+    	works normally after closing the error message.
+
+    	NOTE: Ignore errors is dangerous do it under your own responsibility
+     */
+	"swallow_startup_errors": false
 }

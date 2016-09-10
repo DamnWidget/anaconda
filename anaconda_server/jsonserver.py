@@ -357,7 +357,7 @@ if __name__ == "__main__":
         )
     except Exception as error:
         log_traceback()
-        logger.error(error)
+        logger.error(str(error))
         sys.exit(-1)
 
     server.logger = logger

@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 import _ast  # noqa
 
-import pep8  # noqa
+import pycodestyle as pep8  # noqa
 import pyflakes.checker as pyflakes  # noqa
 
 
