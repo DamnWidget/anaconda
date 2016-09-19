@@ -237,7 +237,7 @@ def prepare_send_data(location, method, handler):
 
     view = active_view()
     return {
-        'source': view.substr(sublime.Region(0, view.size())).strip(),
+        'source': view.substr(sublime.Region(0, view.size())),
         'line': location[0] + 1,
         'offset': location[1],
         'filename': view.file_name() or '',
