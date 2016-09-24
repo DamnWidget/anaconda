@@ -24,9 +24,10 @@ class BackgroundLinter(sublime_plugin.EventListener):
 
     check_auto_lint = False
 
-    def __init__(self, lang: str='Python', linter: Callable=run_linter) -> None:  # noqa
+    def __init__(self, lang: str='Python', linter: Callable=run_linter, non_auto: bool=False) -> None:  # noqa
         super(BackgroundLinter, self).__init__()
         self.lang = lang
+        self._force_non_auto = non_auto
         self.run_linter = linter
         self.last_selected_line = -1
         sublime.set_timeout(self.lint, 1000)
@@ -45,7 +46,8 @@ class BackgroundLinter(sublime_plugin.EventListener):
                 ANACONDA['ALREADY_LINTED'] = True
                 self.run_linter(view)
 
-        sublime.set_timeout(lambda: self.lint(), int(delay * 1000))
+        if not self._force_non_auto:
+            sublime.set_timeout(lambda: self.lint(), int(delay * 1000))
 
     def on_modified(self, view: sublime.View) -> None:
         """
