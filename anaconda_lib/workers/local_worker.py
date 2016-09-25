@@ -116,7 +116,7 @@ class LocalWorker(Worker):
             '\n\nimport socket; socket.socket(socket.AF_INET, '
             'socket.SOCK_STREAM).connect({})\n\nIf anaconda works just fine '
             'after you received this error and the command above worked you '
-            'can make anaconda to do not show you this error anymore settig '
+            'can make anaconda to do not show you this error anymore setting '
             'the \'swallow_startup_errors\' to \'true\' in your '
             'configuration file.'.format(check, addr)
         )
