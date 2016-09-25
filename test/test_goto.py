@@ -28,12 +28,12 @@ class TestGoto(object):
 
     def _check_goto(self, result):
         assert result['success'] is True
-        assert len(result['goto']) == 1
+        assert len(result['result']) == 1
         if PYTHON3:
-            assert result['goto'][0][0] == re.__file__
+            assert result['result'][0][1] == re.__file__
         else:
             file_name = re.__file__
             if '.pyc' in file_name:
-                assert result['goto'][0][0] == file_name[:-1]
+                assert result['result'][0][1] == file_name[:-1]
             else:
-                assert result['goto'][0][0] == file_name
+                assert result['result'][0][1] == file_name

@@ -26,8 +26,8 @@ class FindUsages(Command):
 
         self.callback({
             'success': success,
-            'usages': [
-                (i.module_path, i.line, i.column)
+            'result': [
+                (i.full_name, i.module_path, i.line, i.column)
                 for i in usages if not i.in_builtin_module()
             ] if usages is not None else [],
             'uid': self.uid

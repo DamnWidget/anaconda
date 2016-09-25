@@ -2,13 +2,11 @@
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
-from functools import partial
-
 import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
-from ..anaconda_lib.jediusages import JediUsages
+from ..anaconda_lib.explore_panel import ExplorerPanel
 from ..anaconda_lib.helpers import prepare_send_data, is_python
 
 
@@ -20,7 +18,7 @@ class AnacondaGoto(sublime_plugin.TextCommand):
         try:
             location = self.view.rowcol(self.view.sel()[0].begin())
             data = prepare_send_data(location, 'goto', 'jedi')
-            Worker().execute(partial(JediUsages(self).process, False), **data)
+            Worker().execute(self.on_success, **data)
         except:
             pass
 
@@ -29,6 +27,26 @@ class AnacondaGoto(sublime_plugin.TextCommand):
         """
 
         return is_python(self.view)
+
+    def on_success(self, data):
+        """Called when a result comes from the query
+        """
+
+        if not data['result']:
+            sublime.status_message('Could not find symbol')
+            return
+
+        symbols = []
+        for result in data['result']:
+            symbols.append({
+                'title': result[0],
+                'location': 'File: {} Line: {} Column: {}'.format(
+                    result[1], result[2], result[3]
+                ),
+                'position': '{}:{}:{}'.format(result[1], result[2], result[3])
+            })
+
+        ExplorerPanel(self.view, symbols).show([])
 
 
 class AnacondaGotoPythonObject(sublime_plugin.TextCommand):
@@ -55,7 +73,7 @@ class AnacondaGotoPythonObject(sublime_plugin.TextCommand):
                 'source': import_command,
                 'handler': 'jedi'
             }
-            Worker().execute(partial(JediUsages(self).process, False), **data)
+            Worker().execute(self.on_success, **data)
         except:
             raise
 
@@ -64,3 +82,23 @@ class AnacondaGotoPythonObject(sublime_plugin.TextCommand):
             'Provide object path:', '',
             self.input_package, None, None
         )
+
+    def on_success(self, data):
+        """Called when there is a response from the query
+        """
+
+        if not data['result']:
+            sublime.status_message('Symbol not found...')
+            return
+
+        symbols = []
+        for result in data['result']:
+            symbols.append({
+                'title': result[0],
+                'location': 'File: {} Line: {} Column: {}'.format(
+                    result[1], result[2], result[3]
+                ),
+                'position': '{}:{}:{}'.format(result[1], result[2], result[3])
+            })
+
+        ExplorerPanel(self.view, symbols).show([])

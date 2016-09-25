@@ -26,9 +26,9 @@ class Goto(Command):
             success = False
         else:
             # we use a set here to avoid duplication
-            data = set([(i.module_path, i.line, i.column + 1)
+            data = set([(i.full_name, i.module_path, i.line, i.column + 1)
                         for i in definitions if not i.in_builtin_module()])
             success = True
 
         self.callback(
-            {'success': success, 'goto': list(data), 'uid': self.uid})
+            {'success': success, 'result': list(data), 'uid': self.uid})
