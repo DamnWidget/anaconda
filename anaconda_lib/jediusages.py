@@ -62,8 +62,11 @@ class JediUsages(object):
 
                 return
 
-            filename, lineno, columno = self.options[filename]
+        opts = self.options[filename]
+        if len(self.options[filename]) == 4:
+            opts = opts[1:]
 
+        filename, lineno, columno = opts
         flags = sublime.ENCODED_POSITION
         if transient:
             flags |= sublime.TRANSIENT
