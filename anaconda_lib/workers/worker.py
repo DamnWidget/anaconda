@@ -55,7 +55,7 @@ class Worker(object):
                 Log.error(msg)
                 if self.status != WorkerStatus.faulty:
                     if not get_settings(
-                           active_view(), 'swallow_startup_errors', False):
+                            active_view(), 'swallow_startup_errors', False):
                         sublime.error_message(msg)
                     self.status = WorkerStatus.faulty
                 return
