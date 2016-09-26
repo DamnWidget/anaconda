@@ -49,7 +49,12 @@ class ExplorerPanel:
             cluster = self.options
 
         if len(cluster) == 1 and not forced:
-            Jumper(self.view, cluster[0]['position']).jump()
+            try:
+                Jumper(self.view, cluster[0]['position']).jump()
+            except KeyError:
+                if len(cluster[0].get('options', [])) == 1 and not forced:
+                    Jumper(
+                        self.view, cluster[0]['options'][0]['position']).jump()
             return
 
         self.last_cluster = cluster
