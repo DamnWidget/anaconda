@@ -29,9 +29,6 @@ class VagrantWorker(Worker):
         if not self.check_config():
             return False
 
-        if hasattr(self, 'reconnecting') and self.reconnecting:
-            self.interpreter.renew_port()
-
         return super(VagrantWorker, self).start()
 
     def check_config(self):
