@@ -30,7 +30,7 @@ ONLY_CODE = 0x01
 NOT_SCRATCH = 0x02
 LINTING_ENABLED = 0x04
 
-ENVIRON_HOOK_INVALID = defaultdict(lambda: False)  # type: defaultdict
+ENVIRON_HOOK_INVALID = defaultdict(lambda: False)
 
 
 def completion_is_disabled(view):
