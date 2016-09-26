@@ -243,4 +243,10 @@ class Interpreter(object):
         """String representation
         """
 
-        return ' '.join(self.arguments[0])
+        try:
+            return ' '.join(self.arguments[0])
+        except TypeError:
+            rep = ''
+            for k, v in self.__data.items():
+                rep + k + ': ' + v + '\n'
+            return rep
