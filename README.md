@@ -1,7 +1,7 @@
 [![Join the chat at https://gitter.im/DamnWidget/anaconda](https://img.shields.io/gitter/room/DamnWidget/anaconda.svg?maxAge=2592000)](https://gitter.im/DamnWidget/anaconda?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![GitHub release](https://img.shields.io/github/release/damnwidget/anaconda.svg?maxAge=2592000)](https://github.com/DamnWidget/anaconda/releases/latest)
+[![GitHub release](https://img.shields.io/github/release/damnwidget/anaconda.svg)](https://github.com/DamnWidget/anaconda/releases/latest)
 [![Build Status](https://travis-ci.org/DamnWidget/anaconda.svg?branch=master)](https://travis-ci.org/DamnWidget/anaconda)
-[![Package Control](https://img.shields.io/packagecontrol/dt/Anaconda.svg?maxAge=2592000)](https://packagecontrol.io/packages/Anaconda)
+[![Package Control](https://img.shields.io/packagecontrol/dt/Anaconda.svg)](https://packagecontrol.io/packages/Anaconda)
 
                                                           |
               _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
