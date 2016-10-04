@@ -337,7 +337,7 @@ if __name__ == "__main__":
             server = JSONServer(('localhost', port))
         else:
             unix_socket_path = UnixSocketPath(options.project)
-            if not os.path.exists(unix_socket_path.socket):
+            if not os.path.exists(os.path.dirname(unix_socket_path.socket)):
                 os.makedirs(os.path.dirname(unix_socket_path.socket))
             if os.path.exists(unix_socket_path.socket):
                 os.unlink(unix_socket_path.socket)
