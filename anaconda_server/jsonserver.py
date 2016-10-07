@@ -356,6 +356,7 @@ if __name__ == "__main__":
     except Exception as error:
         log_traceback()
         logger.error(str(error))
+        server.shutdown()
         sys.exit(-1)
 
     server.logger = logger
