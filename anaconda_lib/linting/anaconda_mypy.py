@@ -15,9 +15,11 @@ from subprocess import PIPE, Popen
 
 
 MYPY_SUPPORTED = False
+MYPY_VERSION = None
 try:
     from mypy import main as mypy
     MYPY_SUPPORTED = True
+    MYPY_VERSION = mypy.__version__.split('.')
     del mypy
 except ImportError:
     logging.info('MyPy is enabled but we could not import it')
@@ -60,8 +62,12 @@ class MyPy(object):
         """Wrap calls to MyPy as a library
         """
 
+        err_ctx = '--hide-error-context'
+        if MYPY_VERSION >= (0, 4, 5):
+            err_ctx = '--suppress-error-context'
+
         args = shlex.split('{0} -O -m mypy {1} {2} {3}'.format(
-            sys.executable, '--suppress-error-context',
+            sys.executable, err_ctx,
             ' '.join(self.settings[:-1]), self.filename),
             posix=os.name != 'nt'
         )
