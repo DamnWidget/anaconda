@@ -19,9 +19,10 @@ MYPY_VERSION = None
 try:
     from mypy import main as mypy
     MYPY_SUPPORTED = True
-    MYPY_VERSION = mypy.__version__.split('.')
+    MYPY_VERSION = tuple(int(i) for i in mypy.__version__.split('.'))
     del mypy
 except ImportError:
+    print('MyPy is enabled but we could not import it')
     logging.info('MyPy is enabled but we could not import it')
     pass
 
@@ -63,7 +64,7 @@ class MyPy(object):
         """
 
         err_ctx = '--hide-error-context'
-        if MYPY_VERSION >= (0, 4, 5):
+        if MYPY_VERSION < (0, 4, 5):
             err_ctx = '--suppress-error-context'
 
         args = shlex.split('{0} -O -m mypy {1} {2} {3}'.format(
@@ -97,14 +98,14 @@ class MyPy(object):
                     self.silent and 'stub' in line.lower()):
                 continue
 
-            error_data = line.split(':')
+            data = line.split(':') if os.name != 'nt' else line[2:].split(':')
             errors.append({
                 'level': 'W',
-                'lineno': int(error_data[1]),
+                'lineno': int(data[1]),
                 'offset': 0,
                 'code': ' ',
                 'raw_error': '[W] MyPy {0}: {1}'.format(
-                    error_data[2], error_data[3]
+                    data[2], data[3]
                 ),
                 'message': '[W] MyPy%s: %s',
                 'underline_range': True
