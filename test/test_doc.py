@@ -10,8 +10,8 @@ import jedi
 from commands.doc import Doc
 from handlers.jedi_handler import JediHandler
 
-src = 'def test_src():\n\t"""Test String\n\t"""\n\ntest_src('
-src_escape = 'def test_src():\n\t"""<strong>Espa&nacute;a currency €</strong>"""\n\ntest_src('  # noqa
+src = 'def test_src():\n\t"""Test String\n\t"""\n\ntest_src'
+src_escape = 'def test_src():\n\t"""<strong>Espa&nacute;a currency €</strong>"""\n\ntest_src'  # noqa
 
 
 class TestDoc(object):
@@ -19,6 +19,8 @@ class TestDoc(object):
     """
 
     def test_doc_command(self):
+        print(jedi)
+        print(jedi.Script(src, path='').call_signatures())
         Doc(self._check_html, 0, jedi.Script(src), True)
 
     def test_doc_plain(self):
@@ -31,7 +33,7 @@ class TestDoc(object):
         Doc(self._check_no_definition, 0, jedi.Script('nothing'), False)
 
     def test_doc_handler(self):
-        data = {'source': src, 'line': 5, 'offset': 9, 'html': True}
+        data = {'source': src, 'line': 5, 'offset': 8, 'html': True}
         handler = JediHandler('doc', data, 0, 0, self._check_handler)
         handler.run()
 
@@ -42,6 +44,7 @@ class TestDoc(object):
         )
 
     def _check_plain(self, kwrgs):
+        print(kwrgs)
         self._common_assertions(kwrgs)
         assert kwrgs['doc'].strip() == "Docstring for {0}\n{1}\n{2}".format(
             'test_src',
