@@ -67,7 +67,7 @@ class MyPy(object):
         if MYPY_VERSION < (0, 4, 5):
             err_ctx = '--suppress-error-context'
 
-        args = shlex.split('{0} -O -m mypy {1} {2} {3}'.format(
+        args = shlex.split('\'{0}\' -O -m mypy {1} {2} \'{3}\''.format(
             sys.executable, err_ctx,
             ' '.join(self.settings[:-1]), self.filename),
             posix=os.name != 'nt'
