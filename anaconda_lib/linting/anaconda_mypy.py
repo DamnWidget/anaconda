@@ -69,8 +69,7 @@ class MyPy(object):
 
         args = shlex.split('\'{0}\' -O -m mypy {1} {2} \'{3}\''.format(
             sys.executable, err_ctx,
-            ' '.join(self.settings[:-1]), self.filename),
-            posix=os.name != 'nt'
+            ' '.join(self.settings[:-1]), self.filename)
         )
         kwargs = {
             'cwd': os.path.dirname(os.path.abspath(__file__)),
