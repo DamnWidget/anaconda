@@ -133,7 +133,7 @@ class Jumper:
         """Toggle mark indicator to focus the cursor
         """
 
-        path, line, column = self.position.split(':')
+        path, line, column = self.position.rsplit(':', 2)
         pt = self.view.text_point(int(line) - 1, int(column))
         region_name = 'anaconda.indicator.{}.{}'.format(
             self.view.id(), line
