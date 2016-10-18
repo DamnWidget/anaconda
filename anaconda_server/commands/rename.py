@@ -29,7 +29,7 @@ class Rename(Command):
             usages = self.script.usages()
             proposals = self.jedi_refactor.rename(self.script, self.new_word)
             for u in usages:
-                path = u.module_path.rsplit('/{0}.py'.format(u.module_name))[0]
+                path = os.path.dirname(u.module_path)
                 if self.is_same_path(path):
                     if u.module_path not in renames:
                         renames[u.module_path] = []
