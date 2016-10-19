@@ -191,7 +191,7 @@ def add_lint_marks(view, lines, **errors):
     }
     style = get_settings(view, 'anaconda_linter_mark_style', 'outline')
     show_underlines = get_settings(view, 'anaconda_linter_underlines', True)
-    if style == 'none' and show_underlines:
+    if show_underlines:
         for type_name, underlines in types.items():
             if len(underlines) > 0:
                 view.add_regions(
