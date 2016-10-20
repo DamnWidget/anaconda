@@ -202,6 +202,9 @@ def add_lint_marks(view, lines, **errors):
 
     if len(lines) > 0:
         outline_style = {
+            'solid_underline': sublime.DRAW_NO_FILL | sublime.DRAW_NO_OUTLINE | sublime.DRAW_SOLID_UNDERLINE,
+            'stippled_underline': sublime.DRAW_NO_FILL | sublime.DRAW_NO_OUTLINE | sublime.DRAW_STIPPLED_UNDERLINE,
+            'squiggly_underline': sublime.DRAW_NO_FILL | sublime.DRAW_NO_OUTLINE | sublime.DRAW_SQUIGGLY_UNDERLINE,
             'outline': sublime.DRAW_OUTLINED,
             'none': sublime.HIDDEN,
             'fill': None
