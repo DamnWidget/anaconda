@@ -5,6 +5,7 @@
 import sublime
 
 from .typing import List
+from Default.history_list import get_jump_history_for_view
 
 
 class ExplorerPanel:
@@ -125,6 +126,7 @@ class Jumper:
         if transient is True:
             flags |= sublime.TRANSIENT
 
+        get_jump_history_for_view(self.view).push_selection(self.view)
         sublime.active_window().open_file(self.position, flags)
         if not transient:
             self._toggle_indicator()
