@@ -13,7 +13,7 @@ class Goto(Command):
         self.script = script
         super(Goto, self).__init__(callback, uid)
 
-    def _get_definitons(self):
+    def _get_definitions(self):
         definitions = self.script.goto_assignments()
         if all(d.type == 'import' for d in definitions):
             definitions = self.script.goto_definitions()

@@ -44,7 +44,7 @@ class TestGotoAssignment(object):
     """
 
     def test_goto_assignment_command(self):
-        GotoAssignment(self._check_goto_assignment, 0, jedi.Script(src))
+        GotoAssignment(self._check_goto_assignment, 0, jedi.Script(src, line=1, column=13))
 
     def test_goto_assignment_handler(self):
         data = {'source': src, 'line': 1, 'offset': 13}
