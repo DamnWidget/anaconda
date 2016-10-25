@@ -9,6 +9,10 @@
                 "caption": "Goto Definition"
             },
             {
+                "command": "anaconda_goto_assignment",
+                "caption": "Goto Assignment"
+            },
+            {
                 "command": "anaconda_find_usages",
                 "caption": "Find Usages"
             },

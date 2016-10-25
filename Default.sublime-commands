@@ -56,6 +56,10 @@
         "command": "anaconda_goto"
     },
     {
+        "caption": "Anaconda: Goto object assignment",
+        "command": "anaconda_goto_assignment"
+    },
+    {
         "caption": "Anaconda: Goto Python object",
         "command": "anaconda_goto_python_object"
     },
