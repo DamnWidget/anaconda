@@ -18,16 +18,21 @@ class Goto(Command):
         """
 
         try:
-            definitions = self.script.goto_assignments()
-            if all(d.type == 'import' for d in definitions):
-                definitions = self.script.goto_definitions()
+            assignments = self.script.goto_assignments()
+            if all(d.type == 'import' for d in assignments):
+                definitions = filter(lambda x: not x.in_builtin_module(),
+                                     self.script.goto_definitions())
+                if not definitions:
+                    definitions = assignments
+            else:
+                definitions = assignments
         except:
             data = None
             success = False
         else:
             # we use a set here to avoid duplication
             data = set([(i.full_name, i.module_path, i.line, i.column + 1)
-                        for i in definitions if not i.in_builtin_module()])
+                        for i in definitions])
             success = True
 
         self.callback(
