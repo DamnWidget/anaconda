@@ -283,11 +283,7 @@
     "anaconda_linter_mark_style": "outline",
 
     /*
-        If anaconda_linter_mark_style is set to none and this is set to false,
-        anaconda will not underline errors
-
-        If anaconda_linter_mark_style is set to anything else, this option is
-        ignored
+        If this is set to false, anaconda will not underline errors
     */
     "anaconda_linter_underlines": true,
 
