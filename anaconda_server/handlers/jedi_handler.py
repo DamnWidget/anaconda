@@ -8,7 +8,7 @@ import logging
 import jedi
 from lib.anaconda_handler import AnacondaHandler
 from jedi import refactoring as jedi_refactor
-from commands import Doc, Goto, Rename, FindUsages
+from commands import Doc, Goto, GotoAssignment, Rename, FindUsages
 from commands import CompleteParameters, AutoComplete
 
 logger = logging.getLogger('')
@@ -85,6 +85,12 @@ class JediHandler(AnacondaHandler):
         """
 
         Goto(self.callback, self.uid, self.script)
+
+    def goto_assignment(self):
+        """Call goto_assignment
+        """
+
+        GotoAssignment(self.callback, self.uid, self.script)
 
     def doc(self, html=False):
         """Call doc

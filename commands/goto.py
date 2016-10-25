@@ -11,13 +11,15 @@ from ..anaconda_lib.helpers import prepare_send_data, is_python
 
 
 class AnacondaGoto(sublime_plugin.TextCommand):
-    """Jedi GoTo a Python defunition for Sublime Text
+    """Jedi GoTo a Python definition for Sublime Text
     """
+
+    JEDI_COMMAND = 'goto'
 
     def run(self, edit: sublime.Edit) -> None:
         try:
             location = self.view.rowcol(self.view.sel()[0].begin())
-            data = prepare_send_data(location, 'goto', 'jedi')
+            data = prepare_send_data(location, self.JEDI_COMMAND, 'jedi')
             Worker().execute(self.on_success, **data)
         except:
             pass
@@ -47,6 +49,12 @@ class AnacondaGoto(sublime_plugin.TextCommand):
             })
 
         ExplorerPanel(self.view, symbols).show([])
+
+
+class AnacondaGotoAssignment(AnacondaGoto):
+    """Jedi GoTo a Python assignment for Sublime Text
+    """
+    JEDI_COMMAND = 'goto_assignment'
 
 
 class AnacondaGotoPythonObject(sublime_plugin.TextCommand):

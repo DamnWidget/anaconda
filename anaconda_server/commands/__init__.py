@@ -5,7 +5,7 @@
 from .doc import Doc
 from .mypy import MyPy
 from .lint import Lint
-from .goto import Goto
+from .goto import Goto, GotoAssignment
 from .pep8 import PEP8
 from .pep257 import PEP257
 from .mccabe import McCabe
@@ -24,6 +24,7 @@ __all__ = [
     'MyPy',
     'Lint',
     'Goto',
+    'GotoAssignment',
     'PEP8',
     'PEP257',
     'McCabe',

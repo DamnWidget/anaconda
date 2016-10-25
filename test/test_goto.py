@@ -7,7 +7,7 @@ import sys
 
 import jedi
 
-from commands.goto import Goto
+from commands.goto import Goto, GotoAssignment
 from handlers.jedi_handler import JediHandler
 
 src = 'import re; re.compile'
@@ -37,3 +37,24 @@ class TestGoto(object):
                 assert result['result'][0][1] == file_name[:-1]
             else:
                 assert result['result'][0][1] == file_name
+
+
+class TestGotoAssignment(object):
+    """Goto test suite
+    """
+
+    def test_goto_assignment_command(self):
+        GotoAssignment(self._check_goto_assignment, 0, jedi.Script(src, line=1, column=13))
+
+    def test_goto_assignment_handler(self):
+        data = {'source': src, 'line': 1, 'offset': 13}
+        handler = JediHandler('goto_assignment', data, 0, 0, self._check_goto_assignment)
+        handler.run()
+
+    def _check_goto_assignment(self, result):
+        assert result['success'] is True
+        assert len(result['result']) == 1
+        result = result['result'][0]
+        assert result[1] is None
+        assert result[2] == 1
+        assert result[3] == 8
