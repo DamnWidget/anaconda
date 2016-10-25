@@ -10,16 +10,13 @@ Anaconda imports validator
 from jedi import Script
 
 
-DEBUG = True
-
-
 class Validator:
     """Try to import whatever import that is in the given source
     """
 
     def __init__(self, source, filename):
         self.source = source
-        self.errors = []
+        self.errors = []  # type: List
         self.filename = filename
 
     def is_valid(self):
@@ -54,7 +51,8 @@ class Validator:
                     valid = False
                 error.append(word)
 
-        return '' if valid else error_string.format(' '.join(error)), valid
+        err = '' if valid else error_string.format(' '.join(error))
+        return err, valid
 
     def _extract_imports(self):
         """Extract imports from the source
@@ -62,7 +60,7 @@ class Validator:
 
         found = []
         lineno = 1
-        buffer_found = []
+        buffer_found = []  # type: List
         in_docstring = False
         for line in self.source.splitlines():
             if self.__detect_docstring(line):
@@ -73,22 +71,22 @@ class Validator:
                 lineno += 1
                 continue
             else:
-                l = line.strip()
+                line = line.strip()
                 if len(buffer_found) > 0:
-                    if ')' in l:
-                        buffer_found.append(l.replace(')', '').strip())
+                    if ')' in line:
+                        buffer_found.append(line.replace(')', '').strip())
                         found.append((' '.join(buffer_found), lineno))
                         buffer_found = []
                     else:
-                        buffer_found.append(l)
+                        buffer_found.append(line)
                 else:
                     if self.__detect_docstring(line):
                         continue
-                if l.startswith('import ') or l.startswith('from '):
-                    if '(' in l:
-                        buffer_found.append(l.replace('(', '').strip())
+                if line.startswith('import ') or line.startswith('from '):
+                    if '(' in line:
+                        buffer_found.append(line.replace('(', '').strip())
                     else:
-                        found.append((l, lineno))
+                        found.append((line, lineno))
             lineno += 1
         return found
 
