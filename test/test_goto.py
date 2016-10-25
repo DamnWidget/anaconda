@@ -54,7 +54,7 @@ class TestGotoAssignment(object):
     def _check_goto_assignment(self, result):
         assert result['success'] is True
         assert len(result['result']) == 1
-        result = result[0]
+        result = result['result'][0]
         assert result[1] is None
         assert result[2] == 1
         assert result[3] == 8
