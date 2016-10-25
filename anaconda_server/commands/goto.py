@@ -20,8 +20,8 @@ class Goto(Command):
         try:
             assignments = self.script.goto_assignments()
             if all(d.type == 'import' for d in assignments):
-                definitions = filter(lambda x: not x.in_builtin_module(),
-                                     self.script.goto_definitions())
+                definitions = [x for x in self.script.goto_definitions()
+                               if not x.in_builtin_module()]
                 if not definitions:
                     definitions = assignments
             else:
