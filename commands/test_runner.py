@@ -16,6 +16,11 @@ DEFAULT_TEST_COMMAND = "nosetests"
 TEST_DELIMETER = "."
 TB_FILE = r'[ ]*File \"(...*?)\", line ([0-9]*)'
 COMMAND_SEPARATOR = "&" if os.name == "nt" else ";"
+TEST_PARAMS = {
+    'current_file_tests': '',
+    'current_test': '',
+    'project_tests': ''
+}
 
 
 def virtualenv(func):
@@ -181,6 +186,7 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
             self.view, 'test_root', self.view.window().folders()[0]
         )
         self.test_command = gs(self.view, 'test_command', DEFAULT_TEST_COMMAND)
+        self.test_params_dict = gs(self.view, 'test_params', TEST_PARAMS)
         self.before_test = gs(self.view, 'test_before_command')
         if type(self.before_test) is list:
             self.before_test = sep.join(self.before_test)
@@ -201,7 +207,7 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         """Prepare the command to run adding pre tests and after tests
         """
 
-        command = [self.test_command, self.test_path]
+        command = [self.test_command, self.test_params, self.test_path]
         if self.before_test is not None:
             command = [self.before_test, COMMAND_SEPARATOR] + command
         if self.after_test is not None:
@@ -235,6 +241,10 @@ class AnacondaRunCurrentFileTests(AnacondaRunTestsBase):
     """
 
     @property
+    def test_params(self):
+        return self.test_params_dict.get('current_file_tests', '')
+
+    @property
     def test_path(self) -> str:
         return super(AnacondaRunCurrentFileTests, self).test_path
 
@@ -243,6 +253,10 @@ class AnacondaRunProjectTests(AnacondaRunTestsBase):
 
     """Run all tests in a project
     """
+
+    @property
+    def test_params(self):
+        return self.test_params_dict.get('project_tests', '')
 
     @property
     def test_path(self) -> str:
@@ -258,6 +272,10 @@ class AnacondaRunCurrentTest(AnacondaRunTestsBase):
 
     """Run test under cursor
     """
+
+    @property
+    def test_params(self):
+        return self.test_params_dict.get('current_test', '')
 
     @property
     def test_path(self) -> str:
