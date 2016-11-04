@@ -74,7 +74,7 @@ class TestMethodMatcher(object):
         """
 
         match_methods = re.findall(
-            r'\s?def\s+(test_\w+)\s?\(', test_file_content)
+            r'\s?def\s+(\w+)\s?\(', test_file_content)
         if match_methods:
             return match_methods[-1]  # the last one?
 

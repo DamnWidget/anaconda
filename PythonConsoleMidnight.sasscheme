@@ -1,0 +1,62 @@
+@name "PythonTestOutputTheme"
+
+@hidden true
+
+@uuid "76063104-cbee-402a-b396-dc23a2d05139"
+
+$bg: #33333F
+$fg: #DFDFEE
+$fire-red: #FF3B6A
+$sunny-yellow: #FFC823
+$error-red: saturate($fire-red, 10%)
+$calming-blue: #749BD0
+$sea-blue: #2F8CAA
+$brick-orange: #EE823A
+$grass-green: #A6E22E
+$dark-violet: #845F82
+$violet: saturate($dark-violet, 70%)
+
+
+*
+    background: $bg
+    foreground: $fg
+    caret: $fire-red
+    invisibles: lighten($bg, 5%)
+    lineHighlight: lighten($bg, 15%)
+    selection: lighten($bg, 25%)
+
+
+test.pass
+    foreground: $grass-green
+
+test.error
+    foreground: $brick-orange
+
+test.fail
+    foreground: $error-red
+
+test.skip
+    foreground: $sea-blue
+
+test.filename
+    foreground: $calming-blue
+
+test.module
+    foreground: $sunny-yellow
+
+
+traceback.lineno
+    fontStyle: italic
+    foreground: $grass-green
+
+traceback.file
+    fontStyle: italic
+    foreground: $sunny-yellow
+
+traceback.line
+    fontStyle: bold
+    foreground: $error-red
+
+traceback.function
+    fontStyle: italic
+    foreground: $sea-blue
