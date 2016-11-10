@@ -333,7 +333,8 @@ def run_linter(view=None, hook=None):
         'pyflakes_explicit_ignore': get_settings(
             view, 'pyflakes_explicit_ignore', []),
         'use_mypy': get_settings(view, 'mypy', False),
-        'mypy_settings': get_mypy_settings(view)
+        'mypy_settings': get_mypy_settings(view),
+        'mypypath': get_settings(view, 'mypy_mypypath', '')
     }
 
     text = view.substr(sublime.Region(0, view.size()))

@@ -118,7 +118,10 @@ class PythonLintHandler(AnacondaHandler):
         """
 
         lint = AnacondaMyPy
-        MyPy(self._merge, self.uid, self.vid, lint, code, filename, settings)
+        MyPy(
+            self._merge, self.uid, self.vid, lint,
+            code, filename, self.mypypath, settings
+        )
 
     def _normalize(self, settings, data):
         """Normalize pylint data before to merge
@@ -167,6 +170,9 @@ class PythonLintHandler(AnacondaHandler):
         # disable pyflakes if pylint is in use
         if self._linters['pylint'] is True:
             self._linters['pyflakes'] = False
+
+        if self._linters['mypy']:
+            self.mypypath = settings.get('mypypath')
 
     def _merge(self, lint_result):
         """Merge the given linter results

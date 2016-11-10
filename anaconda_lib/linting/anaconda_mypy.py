@@ -31,9 +31,10 @@ class MyPy(object):
     """MyPy class for Anaconda
     """
 
-    def __init__(self, code, filename, settings):
+    def __init__(self, code, filename, mypypath, settings):
         self.code = code
         self.filename = filename
+        self.mypypath = mypypath
         self.settings = settings
 
     @property
@@ -71,10 +72,14 @@ class MyPy(object):
             sys.executable, err_ctx,
             ' '.join(self.settings[:-1]), self.filename)
         )
+        env = os.environ.copy()
+        if self.mypypath is not None and self.mypypath != "":
+            env['MYPYPATH'] = self.mypypath
+
         kwargs = {
             'cwd': os.path.dirname(os.path.abspath(__file__)),
             'bufsize': -1,
-            'env': os.environ.copy()
+            'env': env
         }
         if os.name == 'nt':
             startupinfo = subprocess.STARTUPINFO()

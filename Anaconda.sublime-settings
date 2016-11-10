@@ -450,6 +450,11 @@
     "mypy": false,
 
     /*
+        Set the following variable to set MyPy MYPYPATH
+     */
+    "mypy_mypypath": "",
+
+    /*
     	MyPy Silent Imports
 
     	If true don't follow imports to .py files

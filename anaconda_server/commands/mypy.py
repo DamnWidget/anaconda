@@ -12,10 +12,13 @@ class MyPy(Command):
     """Run mypy linter and return back results
     """
 
-    def __init__(self, callback, uid, vid, linter, code, filename, settings):
+    def __init__(
+            self, callback, uid, vid, linter,
+            code, filename, mypypath, settings):
         self.vid = vid
         self.code = code
         self.filename = filename
+        self.mypypath = mypypath
         self.settings = settings['mypy_settings']
         self.linter = linter
         super(MyPy, self).__init__(callback, uid)
@@ -28,7 +31,8 @@ class MyPy(Command):
             self.callback({
                 'success': True,
                 'errors': self.linter(
-                    self.code, self.filename, self.settings).execute(),
+                    self.code, self.filename, self.mypypath, self.settings
+                ).execute(),
                 'uid': self.uid,
                 'vid': self.vid,
             })
