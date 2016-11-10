@@ -616,5 +616,12 @@
 
     	NOTE: Ignore errors is dangerous do it under your own responsibility
      */
+
+     /* Parameters to include after test_command specific to testing scope */
+     "test_params": {
+        "current_file_tests": "",
+        "current_test": "",
+        "project_tests": ""
+    },
 	"swallow_startup_errors": false
 }
