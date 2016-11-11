@@ -90,7 +90,7 @@ anaconda capabilities to other languages, the complete list of them can be shown
 
 | Language | Web Site | Package Control | Status |
 | --- | --- | --- | --- |
-| **Go** | https://github.com/DamnWidget/anaconda_go | No | Under heavy development |
+| **Go** | https://github.com/DamnWidget/anaconda_go | Yes | Active |
 | **Rust** | https://github.com/DamnWidget/anaconda_rust | Yes | Active |
 | **PHP** | https://github.com/DamnWidget/anaconda_php | Yes | Active |
 
