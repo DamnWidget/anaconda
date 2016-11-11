@@ -1,0 +1,17 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+Anaconda v2.1.6
+===============
+
+Welcome to new anaconda v2.1.6, what do you can find in this minor release?
+
+## Enhancements
+
+  - Added scope specific test params for test runner. Resolves #580
+  - Added configurable setting to define MYPYPATH. Resolves #581
