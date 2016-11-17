@@ -12,6 +12,9 @@ import sys
 import logging
 from string import Template
 
+import sublime
+import sublime_text
+
 from .anaconda_lib import ioloop
 
 from .commands import *
@@ -20,6 +23,7 @@ from .listeners import *
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda works with Sublime Text 3 only')
 
+DISABLED_PLUGINS = []
 LOOP_RUNNING = False
 
 logger = logging.getLogger(__name__)
@@ -45,6 +49,9 @@ def plugin_loaded() -> None:
                 'package_folder': os.path.basename(package_folder)
             }))
 
+    # unload any conflictive package while anaconda is running
+    sublime.set_timeout_async(monitor_plugins, 0)
+
     if not LOOP_RUNNING:
         ioloop.loop()
 
@@ -53,5 +60,32 @@ def plugin_unloaded() -> None:
     """Called directly from sublime on plugin unload
     """
 
+    # reenable any conflictive package
+    enable_plugins()
+
     if LOOP_RUNNING:
         ioloop.terminate()
+
+
+def monitor_plugins():
+    """Monitor for any plugin that conflicts with anaconda
+    """
+
+    plist = [
+        'Jedi - Python autocompletion', 'SublimePythonIDE', 'SublimeCodeIntel'
+    ]
+    for plugin in plist:
+        if plugin in sys.modules:
+            sublime_plugin.unload_plugin(plugin)
+            if plugin not in DISABLED_PLUGINS:
+                DISABLED_PLUGINS.append(plugin)
+
+    sublime.set_timeout_async(monitor_plugins, 30000)
+
+
+def enable_plugins():
+    """Reenable disabled plugins by anaconda
+    """
+
+    for plugin in DISABLED_PLUGINS:
+        sublime_plugin.reload_plugin(plugin)
