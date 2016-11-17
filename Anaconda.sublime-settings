@@ -635,5 +635,11 @@
         "current_test": "",
         "project_tests": ""
     },
-	"swallow_startup_errors": false
+	"swallow_startup_errors": false,
+
+    /*
+        If this is set to true, anaconda will uload plugins that
+        make it malfunction intefering with it
+    */
+    "auto_unload_conflictive_plugins": true
 }
