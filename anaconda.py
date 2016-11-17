@@ -13,7 +13,7 @@ import logging
 from string import Template
 
 import sublime
-import sublime_text
+import sublime_plugin
 
 from .anaconda_lib import ioloop
 
@@ -76,7 +76,7 @@ def monitor_plugins():
     ]
     for plugin in plist:
         if plugin in sys.modules:
-            sublime_plugin.unload_plugin(plugin)
+            [sublime_plugin.unload_module(m) for k, m in sys.modules.items() if plugin in k]  # noqa
             if plugin not in DISABLED_PLUGINS:
                 DISABLED_PLUGINS.append(plugin)
 
