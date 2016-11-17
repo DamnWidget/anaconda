@@ -5,35 +5,35 @@
     /*
         Anaconda Tooltip Options
 
-        Sublime Text 3 supports tooltips since build 3070, if anaconda
-        runs in a ST3 instalation equal or newer than build 3070 it can
-        be configured to show tooltips for documentation and signatures
+        Sublime Text 3 supports tooltips since build 3070; if anaconda
+        runs in a ST3 installation equal to or newer than build 3070, it
+        can be configured to show tooltips for documentation and signatures.
 
-        The options below sets how the tooltip is shown. Set the theme
+        The options below set how the tooltip is shown. Set the theme
         as dark if you are using a dark theme or light if you are using
         a light one.
     */
-    "anaconda_tooltip_theme": "dark",  // possible options "light" or "dark"
+    "anaconda_tooltip_theme": "dark",  // possible options: "light" or "dark"
 
     /*
         If you set the following option as true, anaconda will display the
-        signatures of the methods in a floating popup
+        signatures of the methods in a floating popup.
 
-        *note*: this action takes effect if "display_signatures" is true
+        *note*: this only has an effect if "display_signatures" is true.
     */
     "enable_signatures_tooltip": true,
 
     /*
         If you set the following option as true, anaconda will display the
-        documentation of modules, classes or methods in a floating popup
+        documentation of modules, classes or methods in a floating popup.
     */
     "enable_docstrings_tooltip": true,
 
     /*
         If the option below is set as true, anaconda will merge the
-        outputs of display_signatures and show documentation
+        outputs of display_signatures and show documentation.
 
-        *note*: This has only effect if tooltips are enabled
+        *note*: This only has an effect if tooltips are enabled.
     */
     "merge_signatures_and_doc": true,
 
@@ -43,7 +43,7 @@
 
         If you set this to true, anaconda will detect project switches and
         will reconnect a new JsonServer with the switched project
-        configuration
+        configuration.
     */
     "auto_project_switch": true,
 
@@ -52,10 +52,10 @@
 
         If enabled, anaconda will add your configured interpreter (if any)
         into your per-project `builder_systems` list if any, or create a
-        new one in case that you don't define one yourself.
+        new one in case you don't define one yourself.
 
-        This is enabled by default, disable it if you experience slowdowns
-        when you switch between projects, and fill an issue in GitHub
+        This is enabled by default; disable it if you experience slowdowns
+        when you switch between projects, and file an issue in GitHub.
     */
     "auto_python_builder_enabled": true,
 
@@ -72,20 +72,20 @@
             2. Set the debug_port to your desired port
             3. Close Sublime Text 3
             4. cd to your Packages/Anaconda directory
-            5. start the jsonserver manually:
+            5. Start the jsonserver manually:
                 python -B anaconda_server/jsonserver.py -p test 9999 DEBUG
             6. Start your Sublime Text 3 and
 
-        Then your anaconda plugin will use the configured server and you will
-        get debug messages in the terminal where you ran it
+        Then your anaconda plugin will use the configured server, and you will
+        get debug messages in the terminal where you ran it.
     */
     "jsonserver_debug": false,
     "jsonserver_debug_port": 9999,
 
     /*
-        Default python interpreter.
+        Default python interpreter
 
-        This can (and should) be overridden by project settings
+        This can (and should) be overridden by project settings.
 
         NOTE: if you want anaconda to lint and complete using a remote
         python interpreter that runs the anaconda's minserver.py script
@@ -99,7 +99,7 @@
     /*
         Disable anaconda completion
 
-        WARNING: set this as true will totally disable anaconda completion
+        WARNING: setting this as true will totally disable anaconda completion.
     */
     "disable_anaconda_completion": false,
 
@@ -126,7 +126,8 @@
     "display_signatures": true,
 
     /*
-        The following set of options controls the pep8 autoformating behaviour
+        The following set of options controls the autopep autoformatting
+        behaviour.
 
         The full list of errors that can be fixed are:
 
@@ -190,14 +191,15 @@
         This option is disabled by default, AutoPEP8 is really slow and it get
         the file buffer read only while its working in the background.
 
-        Use this at your risk
+        Use this at your own risk.
     */
     "auto_formatting": false,
 
     /*
         Timeout for the autoformatting tool before fail
+
         Note: Take into account that depending on the size of the file you
-        want to autoformat, this can take a while
+        want to autoformat, this can take a while.
     */
     "auto_formatting_timeout": 1,  // seconds
 
@@ -205,7 +207,7 @@
         Enable unsafe changes:
             https://github.com/hhatto/autopep8#more-advanced-usage
 
-        Set it as 0 if you are unsure here
+        Set it as 0 if you are unsure here.
     */
     "aggressive": 0,
 
@@ -227,12 +229,12 @@
     ],
 
     /*
-        Set the threshold limit for McCabe complexity checker
+        Set the threshold limit for McCabe complexity checker.
     */
     "mccabe_threshold": 7,
 
     /*
-        Set is a false to disable Anaconda Linting totally
+        Set to false to disable Anaconda linting entirely.
     */
     "anaconda_linting": true,
 
@@ -257,11 +259,11 @@
     "anaconda_linter_delay": 0.5,
 
     /*
-        If true anaconda does not remove lint marks while you type
+        If true, anaconda does not remove lint marks while you type.
     */
     "anaconda_linter_persistent": false,
 
-    // If true, anaconda draws gutter marks on line with errors
+    // If true, anaconda draws gutter marks on line with errors.
     "anaconda_gutter_marks": true,
 
     /*
@@ -270,31 +272,31 @@
         Theme 'basic' only adds dots and circles to gutter.
 
         Other available themes are 'alpha', 'bright', 'dark', 'hard', "retina"
-       (for retina displays) and 'simple'. To see icons that will be used for
+        (for retina displays) and 'simple'. To see icons that will be used for
         each theme check gutter_icon_themes folder in Anaconda package.
     */
     "anaconda_gutter_theme": "basic",
 
     /*
-        If 'outline' (default) anaconda will outline error lines
-        If 'fill' anaconda will fill the lines
-        If 'solid_underline' anaconda will draw a solid underline below regions
-        If 'stippled_underline' anaconda will draw a stippled underline below regions
-        If 'squiggly_underline' anaconda will draw a squiggly underline below regions
-        If 'none' anaconda will not draw anything on error lines
+        If 'outline' (default), anaconda will outline error lines.
+        If 'fill', anaconda will fill the lines.
+        If 'solid_underline', anaconda will draw a solid underline below regions.
+        If 'stippled_underline', anaconda will draw a stippled underline below regions.
+        If 'squiggly_underline', anaconda will draw a squiggly underline below regions.
+        If 'none', anaconda will not draw anything on error lines.
     */
     "anaconda_linter_mark_style": "outline",
 
     /*
-        If this is set to false, anaconda will not underline errors
+        If this is set to false, anaconda will not underline errors.
     */
     "anaconda_linter_underlines": true,
 
     /*
         If anaconda_linter_show_errors_on_save is set to true, anaconda
-        will show a list of errors when the user save the file
+        will show a list of errors when you save the file.
 
-        This is disabled by default
+        This is disabled by default.
     */
     "anaconda_linter_show_errors_on_save": false,
 
@@ -303,24 +305,24 @@
 
         **** WARNING ****
 
-        - If you set this value as true, PyFlakes and pep8 will not bet used
-        - PyLint does *NOT* support lint buffers that are not already saved in
-          the file system
+        - If you set this value as true, PyFlakes and pep8 will not bet used.
+        - PyLint does *NOT* support linting buffers that are not already saved in
+          the file system.
 
         **** WARNING ****
     */
     "use_pylint": false,
 
-    // Set this to false to turn pep8 checking off completely
+    // Set this to false to turn pep8 checking off completely.
     "pep8": true,
 
     /*
-        If setted, the given file will be used as configuration for pep8
+        If set, the given file will be used as configuration for pep8.
 
         **** WARNING ****
 
-        - If this option is set to something different than false,
-          pep8_ignore and pep8_max_line_length will be silently ignored
+        - If this option is set to something other than false,
+          pep8_ignore and pep8_max_line_length will be silently ignored.
 
         **** WARNING ****
     */
@@ -328,7 +330,8 @@
 
     /*
         A list of pep8 error numbers to ignore.
-        The list of error codes is in this file: https://github.com/jcrocholl/pep8/blob/master/pep8.py.
+        The list of error codes is in this file:
+            https://github.com/jcrocholl/pep8/blob/master/pep8.py.
         Search for "Ennn:", where nnn is a 3-digit number.
         E309 is ignored by default as it conflicts with pep257 E211
     */
@@ -354,16 +357,19 @@
     */
     "pep8_error_levels": {"E": "W", "W": "V", "V": "V"},
 
-    // Set this to true to turn pep257 checking on
+    // Set this to true to turn pep257 checking on.
     "pep257": false,
 
     /*
         A list of pep257 error numbers to ignore.
+
         The list can be found here: https://github.com/GreenSteam/pep257/#error-codes
-        D209 Multi-line docstring should end with 1 blank line is ignored by
-        default as it has been deprecated.
-        D203 1 blank line before class docstring is ignored by default as it has been
-        deprecated.
+
+        D209: Multi-line docstring should end with 1 blank line is ignored by
+        default as this rule has been deprecated.
+
+        D203: 1 blank line before class docstring is ignored by default, as
+        this rule has been dprecated.
     */
     "pep257_ignore":
     [
@@ -372,9 +378,10 @@
     ],
 
     /*
-        You can ignore some of the "undefined name xxx"
-        errors (comes in handy if you work with post-processors, globals/builtins available only at runtime, etc.).
-        You can control what names will be ignored with the user setting "pyflakes_ignore".
+        You can ignore some of the "undefined name xxx" errors (comes
+        in handy if you work with post-processors, globals/builtins
+        available only at runtime, etc.). You can control what names
+        will be ignored with the user setting "pyflakes_ignore".
 
         Example:
 
@@ -389,8 +396,8 @@
     ],
 
     /*
-        Now is possible to ignore specific error types adding them on this
-        list, (just uncomment them)
+        Specific error types to ignore for pyflakes.
+        (Uncomment to ignore the below error types.)
     */
     "pyflakes_explicit_ignore":
     [
@@ -405,7 +412,7 @@
     ],
 
     /*
-        If setted, the given file will be used as configuration for PyLint
+        If set, the given file will be used as configuration for PyLint.
 
         **** WARNING ****
 
@@ -418,8 +425,9 @@
 
     /*
         You can ignore specific PyLint error codes using this configuration.
+
         We strongly suggest that you better configure your pylintrc file to
-        determine which type of error is important to you
+        determine which type of error is important to you.
     */
     "pylint_ignore":
     [
@@ -428,13 +436,14 @@
 
     /*
         Ordinarily pyflakes will issue a warning when 'from foo import *'
-        is used, but it is ignored since the warning is not that helpful.
+        is used; this is ignored by default.
+
         If you want to see this warning, set this option to false.
     */
     "pyflakes_ignore_import_*": true,
 
     /*
-        Set the following option to true if you want that anaconda check
+        Set the following option to true if you want anaconda to check
         the validity of your imports when the linting process is fired.
 
         WARNING: take into account that anaconda compiles and import the
@@ -445,40 +454,40 @@
     /*
     	MyPy
 
-    	Set the following options as true to enable MyPy checker
+    	Set the following option to true to enable MyPy checker.
     */
     "mypy": false,
 
     /*
-        Set the following variable to set MyPy MYPYPATH
+        Set the following variable to set MyPy MYPYPATH.
      */
     "mypy_mypypath": "",
 
     /*
     	MyPy Silent Imports
 
-    	If true don't follow imports to .py files
+    	If true, mypy will not follow imports to .py files.
     */
     "mypy_silent_imports": false,
 
     /*
     	MyPy Almost Silent
 
-		As Silent Imports but report the imports as errors
+		Same as Silent Imports, but report the imports as errors.
     */
     "mypy_almost_silent": false,
 
     /*
         MyPy suppress stub warnings
 
-        Suppress stub warnings when silent_imports is not used
+        Suppress stub warnings when silent_imports is not used.
      */
     "mypy_suppress_stub_warnings": true,
 
     /*
     	MyPy py2
 
-    	Use Python 2 mode
+    	Use Python 2 mode.
     */
     "mypy_py2": false,
 
@@ -486,7 +495,7 @@
     	MyPy Disallow Untyped Calls
 
     	Disallow calling functions without type annotations from
-    	functions with type annotations
+    	functions with type annotations.
     */
     "mypy_disallow_untyped_calls": false,
 
@@ -494,22 +503,21 @@
     	MyPy Disallow Untyped Defs
 
     	Disallow defining functions without type annotations or
-    	with incomplete type annotations
+    	with incomplete type annotations.
     */
     "mypy_disallow_untyped_defs": false,
 
 	/*
 		MyPy Check Untyped Defs
 
-		Type check the interior of functions without type annotations
+		Type check the interior of functions without type annotations.
 	*/
 	"mypy_check_untyped_defs": false,
 
 	/*
 		MyPy Custom Typing
 
-		Use a custom typing module
-		Note: Uncoment to enable
+		Use a custom typing module. Uncomment to enable.
 	*/
 	// "mypy_custom_typing": "",
 
@@ -586,10 +594,14 @@
     */
     //"test_after_command": "",
 
-    /* This is the delimiter between the module and the class */
+    /*
+        This is the delimiter between the module and the class.
+    */
     "test_delimeter": ":",
 
-    /* This is the delimiter between the class and the method */
+    /*
+        This is the delimiter between the class and the method.
+    */
     "test_method_delimeter": ".",
 
     /*
@@ -614,7 +626,7 @@
     	being able to connect to your localhost on ST3 startup but it
     	works normally after closing the error message.
 
-    	NOTE: Ignore errors is dangerous do it under your own responsibility
+    	NOTE: Ignoring errors may be dangerous.
      */
 
      /* Parameters to include after test_command specific to testing scope */
