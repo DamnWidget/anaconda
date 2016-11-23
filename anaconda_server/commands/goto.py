@@ -26,12 +26,13 @@ class Goto(Command):
         try:
             definitions = self._get_definitions()
         except:
-            data = None
+            data = []
             success = False
         else:
             # we use a set here to avoid duplication
             data = set([(i.full_name, i.module_path, i.line, i.column + 1)
                         for i in definitions if not i.in_builtin_module()])
+
             success = True
 
         self.callback(
