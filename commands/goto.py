@@ -75,7 +75,7 @@ class AnacondaGotoAssignment(AnacondaGoto):
     JEDI_COMMAND = 'goto_assignment'
 
 
-class AnacondaGotoPythonObject(sublime_plugin.TextCommand):
+class AnacondaGotoPythonObject(AnacondaGoto):
     """Open prompt asking for Python path and JediGoto
     """
 
@@ -108,23 +108,3 @@ class AnacondaGotoPythonObject(sublime_plugin.TextCommand):
             'Provide object path:', '',
             self.input_package, None, None
         )
-
-    def on_success(self, data):
-        """Called when there is a response from the query
-        """
-
-        if not data['result']:
-            sublime.status_message('Symbol not found...')
-            return
-
-        symbols = []
-        for result in data['result']:
-            symbols.append({
-                'title': result[0],
-                'location': 'File: {} Line: {} Column: {}'.format(
-                    result[1], result[2], result[3]
-                ),
-                'position': '{}:{}:{}'.format(result[1], result[2], result[3])
-            })
-
-        ExplorerPanel(self.view, symbols).show([])
