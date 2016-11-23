@@ -55,6 +55,7 @@ import re
 import sys
 import time
 import tokenize
+import warnings
 
 from fnmatch import fnmatch
 from optparse import OptionParser
@@ -65,7 +66,7 @@ try:
 except ImportError:
     from ConfigParser import RawConfigParser
 
-__version__ = '2.1.0.dev0'
+__version__ = '2.2.0'
 
 DEFAULT_EXCLUDE = '.svn,CVS,.bzr,.hg,.git,__pycache__,.tox'
 DEFAULT_IGNORE = 'E121,E123,E126,E226,E24,E704,W503'
@@ -253,6 +254,8 @@ def blank_lines(logical_line, blank_lines, indent_level, line_number,
     Okay: def a():\n    pass\n\n\ndef b():\n    pass
     Okay: def a():\n    pass\n\n\nasync def b():\n    pass
     Okay: def a():\n    pass\n\n\n# Foo\n# Bar\n\ndef b():\n    pass
+    Okay: default = 1\nfoo = 1
+    Okay: classify = 1\nfoo = 1
 
     E301: class Foo:\n    b = 0\n    def bar():\n        pass
     E302: def a():\n    pass\n\ndef b(n):\n    pass
@@ -290,7 +293,7 @@ def blank_lines(logical_line, blank_lines, indent_level, line_number,
         elif blank_before != 2:
             yield 0, "E302 expected 2 blank lines, found %d" % blank_before
     elif (logical_line and not indent_level and blank_before != 2 and
-          previous_unindented_logical_line.startswith(('def', 'class'))):
+          previous_unindented_logical_line.startswith(('def ', 'class '))):
         yield 0, "E305 expected 2 blank lines after " \
             "class or function definition, found %d" % blank_before
 
@@ -2144,8 +2147,14 @@ def read_config(options, args, arglist, parser):
             print('cli configuration: %s' % cli_conf)
         config.read(cli_conf)
 
-    pep8_section = parser.prog
-    if config.has_section(pep8_section):
+    pycodestyle_section = None
+    if config.has_section(parser.prog):
+        pycodestyle_section = parser.prog
+    elif config.has_section('pep8'):
+        pycodestyle_section = 'pep8'  # Deprecated
+        warnings.warn('[pep8] section is deprecated. Use [pycodestyle].')
+
+    if pycodestyle_section:
         option_list = dict([(o.dest, o.type or o.action)
                             for o in parser.option_list])
 
@@ -2153,20 +2162,21 @@ def read_config(options, args, arglist, parser):
         (new_options, __) = parser.parse_args([])
 
         # Second, parse the configuration
-        for opt in config.options(pep8_section):
+        for opt in config.options(pycodestyle_section):
             if opt.replace('_', '-') not in parser.config_options:
                 print("  unknown option '%s' ignored" % opt)
                 continue
             if options.verbose > 1:
-                print("  %s = %s" % (opt, config.get(pep8_section, opt)))
+                print("  %s = %s" % (opt,
+                                     config.get(pycodestyle_section, opt)))
             normalized_opt = opt.replace('-', '_')
             opt_type = option_list[normalized_opt]
             if opt_type in ('int', 'count'):
-                value = config.getint(pep8_section, opt)
+                value = config.getint(pycodestyle_section, opt)
             elif opt_type in ('store_true', 'store_false'):
-                value = config.getboolean(pep8_section, opt)
+                value = config.getboolean(pycodestyle_section, opt)
             else:
-                value = config.get(pep8_section, opt)
+                value = config.get(pycodestyle_section, opt)
                 if normalized_opt == 'exclude':
                     value = normalize_paths(value, local_dir)
             setattr(new_options, normalized_opt, value)
