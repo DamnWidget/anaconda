@@ -8,7 +8,7 @@ import sublime_plugin
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.explore_panel import ExplorerPanel
 from ..anaconda_lib.helpers import prepare_send_data, is_python
-from ..anaconda_lib.helper import is_remote_session, get_interpreter
+from ..anaconda_lib.helpers import is_remote_session, get_interpreter
 
 
 class AnacondaGoto(sublime_plugin.TextCommand):
