@@ -8,6 +8,7 @@ import sublime_plugin
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.explore_panel import ExplorerPanel
 from ..anaconda_lib.helpers import prepare_send_data, is_python
+from ..anaconda_lib.helper import is_remote_session, get_interpreter
 
 
 class AnacondaGoto(sublime_plugin.TextCommand):
@@ -40,15 +41,32 @@ class AnacondaGoto(sublime_plugin.TextCommand):
 
         symbols = []
         for result in data['result']:
+            path = self._infere_context_data(result[1])
             symbols.append({
                 'title': result[0],
                 'location': 'File: {} Line: {} Column: {}'.format(
-                    result[1], result[2], result[3]
+                    path, result[2], result[3]
                 ),
-                'position': '{}:{}:{}'.format(result[1], result[2], result[3])
+                'position': '{}:{}:{}'.format(path, result[2], result[3])
             })
 
         ExplorerPanel(self.view, symbols).show([])
+
+    def _infere_context_data(self, path: str) -> str:
+        """If this is a remote session, infere context data if any
+        """
+
+        if is_remote_session(self.view):
+            interpreter = get_interpreter(self.view)
+            directory_map = interpreter.pathmap
+            if directory_map is None:
+                return path
+
+            for local_dir, remote_dir in directory_map.items():
+                if remote_dir in path:
+                    return path.replace(remote_dir, local_dir)
+
+        return path
 
 
 class AnacondaGotoAssignment(AnacondaGoto):
