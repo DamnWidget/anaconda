@@ -1,0 +1,26 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+Anaconda v2.1.8
+===============
+
+Welcome to new anaconda v2.1.8, what do you can find in this minor release?
+
+## Updates
+
+  - PyCodestyle updated to last master version
+
+## Enhancements
+
+  - Auto enable autocompletion on [dot]
+
+## Fixes
+
+  - set goto value as empty list instead of None in errors, resolves #590
+  - workaround what seems to be a Jedi bug, reported in #488 and #432
+  - made AnacondaGotoPythonObject to inherit from AnacondaGoto so it is inherits it's ability to infere context paths, fixes #591
