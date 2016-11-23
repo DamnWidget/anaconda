@@ -81,10 +81,6 @@ def monitor_plugins():
         'SublimePythonIDE',  # interfere with autocompletion
         'SublimeCodeIntel'  # breaks everything, SCI is a mess
     ]
-    hllist = [
-        'MagicPython',  # breaks autocompletion on [dot]
-        'Python 3'  # breeaks autocompletion on [dot]
-    ]
 
     for plugin in plist:
         if plugin in sys.modules:
@@ -95,26 +91,16 @@ def monitor_plugins():
             if plugin not in DISABLED_PLUGINS:
                 DISABLED_PLUGINS.append(plugin)
 
-    for highlighter in hllist:
-        paths = os.listdir(sublime.packages_path()) + \
-            os.listdir(sublime.installed_packages_path())
-
-        for p in paths:
-            if highlighter in p:
-                fname = '{0}.sublime-settings'.format(highlighter)
-                s = sublime.load_settings(fname)
-                if all((s.has('auto_complete_triggers'), s.has('extensions'))):
-                    break
-                auto_complete = [
-                    {
-                        'characters': '.',
-                        'selector': 'source.python - string - constant.numeric',  # noqa
-                    }
-                ]
-                s.set('extensions', ['py'])
-                s.set('auto_complete_triggers', auto_complete)
-                sublime.save_settings(fname)
-                break
+    # check fro completion trigger on [dot]
+    s = view.settings()
+    auto_complete = [
+        {
+            'characters': '.',
+            'selector': 'source.python - string - constant.numeric',
+        }
+    ]
+    if auto_complete not in s.get('auto_complete_triggers'):
+        s.set('auto_complete_triggers', auto_complete)
 
     sublime.set_timeout_async(monitor_plugins, 500000)
 
