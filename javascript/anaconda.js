@@ -46,9 +46,9 @@
 
     $('.anaconda-container [href]').click(function (e) {
       // hugo/blackfriday sucks hard
-      if (~this.href.indexOf("#toc_")) {
+      if (~this.href.indexOf("#")) {
         e.preventDefault();
-        var i = this.href.indexOf("#toc_");
+        var i = this.href.indexOf("#");
         document.location.href = document.location.pathname + this.href.substr(i);
       }
     });
