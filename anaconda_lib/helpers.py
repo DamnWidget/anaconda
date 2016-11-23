@@ -31,6 +31,44 @@ NOT_SCRATCH = 0x02
 LINTING_ENABLED = 0x04
 
 ENVIRON_HOOK_INVALID = defaultdict(lambda: False)
+AUTO_COMPLETION_DOT_VIEWS = []
+
+
+def dot_completion(view):
+    """Determine if autocompletion on dot is enabled for the view
+    """
+
+    if view is None:
+        return False
+
+    if (view.window().id(), view.id()) in AUTO_COMPLETION_DOT_VIEWS:
+        return True
+
+    for trigger in view.settings().get('auto_complete_triggers', []):
+        if trigger.get('character', '') == '.':
+            if 'source.python' in trigger.get('selector'):
+                return True
+
+    return False
+
+
+def enable_dot_completion(view):
+    """Enable dot completion for the given view
+    """
+
+    global AUTO_COMPLETION_DOT_VIEWS
+
+    if view is None:
+        return
+
+    triggers = view.settings().get('auto_complete_triggers', [])
+    triggers.append({
+        'characters': '.',
+        'selector': 'source.python - string - constant.numeric'
+    })
+    view.settings().set('auto_complete_triggers', triggers)
+
+    AUTO_COMPLETION_DOT_VIEWS.append((view.window().id(), view.id()))
 
 
 def completion_is_disabled(view):

@@ -8,7 +8,7 @@ import sublime_plugin
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.helpers import (
     prepare_send_data, get_settings, active_view, is_python,
-    completion_is_disabled
+    completion_is_disabled, dot_completion, enable_dot_completion
 )
 from ..anaconda_lib.decorators import profile
 from ..anaconda_lib.typing import Dict, List, Tuple, Any
@@ -33,6 +33,9 @@ class AnacondaCompletionEventListener(sublime_plugin.EventListener):
 
         if completion_is_disabled(view):
             return
+
+        if not dot_completion(view):
+            enable_dot_completion(view)
 
         global JUST_COMPLETED
 

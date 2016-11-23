@@ -68,26 +68,6 @@ def plugin_unloaded() -> None:
         ioloop.terminate()
 
 
-def monitor_autocompletion_on_dot():
-    """Make autocompletion on [dot] available if it is not
-    """
-
-    view = sublime.active_window().active_view()
-    if is_python(view):
-        # check fro completion trigger on [dot]
-        s = view.settings()
-        auto_complete = {
-            'characters': '.',
-            'selector': 'source.python - string - constant.numeric',
-        }
-        triggers = s.get('auto_complete_triggers')
-        if auto_complete not in triggers:
-            triggers.append(auto_complete)
-            s.set('auto_complete_triggers', triggers),
-
-    sublime.set_timeout_async(monitor_autocompletion_on_dot, 5*60*1000)
-
-
 def monitor_plugins():
     """Monitor for any plugin that conflicts with anaconda
     """
