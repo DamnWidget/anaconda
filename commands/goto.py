@@ -6,9 +6,10 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
+from ..anaconda_lib.workers.market import Market
+from ..anaconda_lib.helpers import is_remote_session
 from ..anaconda_lib.explore_panel import ExplorerPanel
 from ..anaconda_lib.helpers import prepare_send_data, is_python
-from ..anaconda_lib.helpers import is_remote_session, get_interpreter
 
 
 class AnacondaGoto(sublime_plugin.TextCommand):
@@ -57,7 +58,14 @@ class AnacondaGoto(sublime_plugin.TextCommand):
         """
 
         if is_remote_session(self.view):
-            interpreter = get_interpreter(self.view)
+            window = self.view.window().id()
+            try:
+                interpreter = Market().get(window).interpreter
+            except Exception as e:
+                print('while getting interp for Window ID {}: {}'.format(
+                    window, e)
+                )
+                return path
             directory_map = interpreter.pathmap
             if directory_map is None:
                 return path
