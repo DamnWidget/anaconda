@@ -14,9 +14,13 @@ class AnacondaEnableLinting(sublime_plugin.WindowCommand):
     """
 
     def run(self) -> None:
-        filename = self.window.active_view().file_name()
+        view = self.window.active_view()
+        window_view = (self.window.id(), view.id())
+        filename = view.file_name()
         if filename is not None and filename in ANACONDA['DISABLED']:
             ANACONDA['DISABLED'].remove(filename)
+        elif filename is None and window_view in ANACONDA['DISABLED_BUFFERS']:
+            ANACONDA['DISABLED_BUFFERS'].remove(window_view)
 
         run_linter(self.window.active_view())
 
@@ -25,7 +29,9 @@ class AnacondaEnableLinting(sublime_plugin.WindowCommand):
         """
 
         view = self.window.active_view()
-        if (view.file_name() not in ANACONDA['DISABLED']
+        window_view = (self.window.id(), view.id())
+        if ((view.file_name() not in ANACONDA['DISABLED']
+                and window_view not in ANACONDA['DISABLED_BUFFERS'])
                 or not get_settings(view, 'anaconda_linting')):
             return False
 
