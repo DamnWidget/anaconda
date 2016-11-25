@@ -24,13 +24,13 @@ class Validator:
         """
 
         for line, lineno in self._extract_imports():
-            error, valid = self._validate_import(line)
+            error, valid = self._validate_import(line, lineno)
             if not valid:
                 self.errors.append((error, lineno))
 
         return not self.errors
 
-    def _validate_import(self, module_line):
+    def _validate_import(self, module_line, lineno):
         """Try to validate the given iport line
         """
 
@@ -45,7 +45,11 @@ class Validator:
                 continue
 
             offset = int(module_line.find(word) + len(word) / 2)
-            if not Script(module_line, 1, offset, '').goto_assignments():
+            s = Script(self.source, lineno, offset, self.filename)
+            if not self.filename:
+                s = Script(module_line, 1, offset)
+
+            if not s.goto_assignments():
                 if valid is True:
                     valid = False
                 error.append(word)
