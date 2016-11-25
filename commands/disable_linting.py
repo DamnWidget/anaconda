@@ -14,17 +14,21 @@ class AnacondaDisableLinting(sublime_plugin.WindowCommand):
     """
 
     def run(self) -> None:
-        if self.window.active_view().file_name() is not None:
-            ANACONDA['DISABLED'].append(self.window.active_view().file_name())
+        view = self.window.active_view()
+        if view.file_name() is not None:
+            ANACONDA['DISABLED'].append(view.file_name())
+        else:
+            ANACONDA['DISABLED_BUFFERS'].append((self.window.id(), view.id()))
 
-        erase_lint_marks(self.window.active_view())
+        erase_lint_marks(view)
 
     def is_enabled(self) -> bool:
         """Determines if the command is enabled
         """
 
         view = self.window.active_view()
-        if (view.file_name() in ANACONDA['DISABLED']
+        if ((view.file_name() in ANACONDA['DISABLED']
+                and view.id() in ANACONDA['DISABLED_BUFFERS'])
                 or not get_settings(view, 'anaconda_linting')):
             return False
 
