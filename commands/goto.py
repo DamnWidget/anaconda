@@ -37,8 +37,8 @@ class AnacondaGoto(sublime_plugin.TextCommand):
         """
 
         if not data['result']:
-            sublime.status_message('Could not find symbol')
-            return
+            # fallback to ST3 builtin Goto Definition
+            return self.view.window().run_command('goto_definition')
 
         symbols = []
         for result in data['result']:
