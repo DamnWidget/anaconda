@@ -12,8 +12,14 @@ import sublime
 from .helpers import get_settings
 from .typing import Callable, Union, Dict
 
+MDPOPUPS = True
+try:
+    import mdpopups
+except ImportError:
+    MDPOPUPS = False
 
-class Tooltip(object):
+
+class Tooltip:
     """Just a wrapper around Sublime Text 3 tooltips
     """
 
@@ -21,6 +27,8 @@ class Tooltip(object):
     tooltips = {}  # type: Dict[str, str]
     loaded = False
     basesize = 75
+    if MDPOPUPS:
+        _css = None
 
     def __init__(self, theme: str) -> None:
         self.theme = theme
@@ -33,6 +41,9 @@ class Tooltip(object):
             self._load_tooltips()
             Tooltip.loaded = True
 
+        if MDPOPUPS and self._css is None:
+            self._load_mdpopups_data()
+
     def show_tooltip(self, view: sublime.View, tooltip: str, content: Dict[str, str], fallback: Callable) -> None:  # noqa
         """Generates and display a tooltip or pass execution to fallback
         """
@@ -40,6 +51,9 @@ class Tooltip(object):
         st_ver = int(sublime.version())
         if st_ver < 3070:
             return fallback()
+
+        if MDPOPUPS:
+            return self._md_show_tooltip(self, view, tooltip, content, fallback)  # noqa
 
         width = get_settings(view, 'font_size', 8) * 75
         kwargs = {'location': -1, 'max_width': width if width < 900 else 900}
@@ -50,6 +64,16 @@ class Tooltip(object):
             return fallback()
 
         return view.show_popup(text, **kwargs)
+
+    def _md_show_tooltip(self, view: sublime.View, tooltip: str, content: Dict[str, str], fallback: Callable) -> None:  # noqa
+        """Display tooltips using mdpopups library
+        """
+
+        data = self.tooltips['md_{}'.format(tooltip)].safe_substitute(content)
+        if data is None:
+            return fallback()
+
+        return mdpopups.show_popup(view, content, css=self._css)
 
     def _generate(self, tooltip: str, content: Dict[str, str]) -> Union[Dict[str, str], None]:  # noqa
         """Generate a tooltip with the given text
@@ -114,3 +138,16 @@ class Tooltip(object):
             self.themes[theme_name] = resource.read()
 
         return theme_name
+
+    def _load_mdpopups_data(self):
+        """Load mdpopups data from file system
+        """
+
+        cssfile = os.path.join(
+            os.path.dirname(__file__), os.pardir, 'css', 'css.tpl')
+        with open(cssfile, 'r') as resource:
+            self._css = resource.read()
+
+        self.tooltips['md_signature'] = '###`#!python ${content}`'
+        self.tooltips['md_doc'] = '### Docstring for *${name}*:\n${content}'
+        self.tooltips['md_signature_doc'] = '###`#!python ${content}`\n<div class="inner_doc">${content}</div>'  # noqa
