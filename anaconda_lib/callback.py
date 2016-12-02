@@ -14,7 +14,7 @@ from functools import partial
 
 import sublime
 
-from ..anaconda_lib import enum
+from ..anaconda_lib import aenum as enum
 from .typing import Callable, Any, Union
 
 logger = logging.getLogger(__name__)

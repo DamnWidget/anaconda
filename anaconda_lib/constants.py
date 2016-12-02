@@ -2,7 +2,7 @@
 # Copyright (C) 2013 - 2016 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
-from ..anaconda_lib import enum
+from ..anaconda_lib import aenum as enum
 
 
 class WorkerStatus(enum.Enum):
