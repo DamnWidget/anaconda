@@ -137,6 +137,15 @@ class Linter:
         ignore_star = get_settings(self.view, 'pyflakes_ignore_import_*', True)
 
         for error in errors:
+            try:
+                line_text = self.view.substr(self.view.full_line(
+                    self.view.text_point(error['lineno']-1, 0)
+                ))
+                if '# noqa' in line_text:
+                    continue
+            except Exception as e:
+                print(e)
+
             error_level = error.get('level', 'W')
             messages = errors_level[error_level]['messages']
             underlines = errors_level[error_level]['underlines']
