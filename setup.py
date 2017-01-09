@@ -6,6 +6,5 @@ except ImportError:
 
     setup(
         name='anaconda_tests',
-        packages=find_packages(),
-        namespace_packages=['test']
+        packages=find_packages()
     )

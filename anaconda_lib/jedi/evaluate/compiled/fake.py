@@ -8,7 +8,7 @@ import os
 import inspect
 import types
 
-from jedi._compatibility import is_py3, builtins, unicode, is_py34, is_pypy32
+from jedi._compatibility import is_py3, builtins, unicode, is_py34
 from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.parser import tree as pt
 from jedi.evaluate.helpers import FakeName
@@ -35,11 +35,10 @@ NOT_CLASS_TYPES = (
 )
 
 if is_py3:
-    if not is_pypy32:
-        NOT_CLASS_TYPES += (
-            types.MappingProxyType,
-            types.SimpleNamespace
-        )
+    NOT_CLASS_TYPES += (
+        types.MappingProxyType,
+        types.SimpleNamespace
+    )
     if is_py34:
         NOT_CLASS_TYPES += (types.DynamicClassAttribute,)
 
