@@ -305,7 +305,7 @@
 
         **** WARNING ****
 
-        - If you set this value as true, PyFlakes and pep8 will not bet used.
+        - If you set this value as true, PyFlakes and pep8 will not be used.
         - PyLint does *NOT* support linting buffers that are not already saved in
           the file system.
 
