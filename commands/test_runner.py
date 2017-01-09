@@ -13,6 +13,7 @@ from ..anaconda_lib.typing import List, Tuple
 from ..anaconda_lib.helpers import get_settings, git_installation, is_python
 
 DEFAULT_TEST_COMMAND = "nosetests"
+TEST_INCLUDE_FULL_PATH = True
 TEST_DELIMETER = "."
 TB_FILE = r'[ ]*File \"(...*?)\", line ([0-9]*)'
 COMMAND_SEPARATOR = "&" if os.name == "nt" else ";"
@@ -74,7 +75,7 @@ class TestMethodMatcher(object):
         """
 
         match_methods = re.findall(
-            r'\s?def\s+(test_\w+)\s?\(', test_file_content)
+            r'\s?def\s+(\w+)\s?\(', test_file_content)
         if match_methods:
             return match_methods[-1]  # the last one?
 
@@ -193,6 +194,8 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         self.after_test = gs(self.view, 'test_after_command')
         if type(self.after_test) is list:
             self.after_test = sep.join(self.after_test)
+        self.test_include_full_path = gs(
+            self.view, 'test_include_full_path', TEST_INCLUDE_FULL_PATH)
         self.test_delimeter = gs(self.view, 'test_delimeter', TEST_DELIMETER)
         self.test_method_delimeter = gs(
             self.view, 'test_method_delimeter', TEST_DELIMETER
@@ -246,7 +249,11 @@ class AnacondaRunCurrentFileTests(AnacondaRunTestsBase):
 
     @property
     def test_path(self) -> str:
-        return super(AnacondaRunCurrentFileTests, self).test_path
+        path = super(AnacondaRunCurrentFileTests, self).test_path
+        if self.test_include_full_path:
+            return path
+        else:
+            return path.split(self.test_delimeter)[-1]
 
 
 class AnacondaRunProjectTests(AnacondaRunTestsBase):
@@ -295,7 +302,11 @@ class AnacondaRunCurrentTest(AnacondaRunTestsBase):
             method_delimeter=self.test_method_delimeter
         )
         if test_name is not None:
-            return test_path + test_name
+            path = test_path + test_name
+            if self.test_include_full_path:
+                return path
+            else:
+                return path.split(self.test_method_delimeter)[-1]
 
         return ''
 

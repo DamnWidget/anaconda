@@ -605,6 +605,11 @@
     "test_method_delimeter": ".",
 
     /*
+        Whether to include full path of the test file/method.
+    */
+    "test_include_full_path": true,
+
+    /*
         Uncomment the line below to enable filepath-based test runner
         patterns like those required for py.test.
     */
