@@ -5,7 +5,7 @@ python:
     - "3.3"
     - "3.5"
     - "pypy"
-    - "pypy3"
+    # - "pypy3"
 
 notifications:
   webhooks:
