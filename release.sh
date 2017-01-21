@@ -28,7 +28,7 @@ cat ./messages.json | json_verify -q || error "invalid JSON in messages.json"
 # no errors continue with the commits
 git add ./messages/$normalized_version.txt ./messages.json
 git commit -m "Updated version from $last_version to $new_version"
-git tag -a $new_version -m "$verdesc"
+git tag -s $new_version -m "$verdesc"
 echo "git tag $new_version created, ready to push..."
 
 function error {
