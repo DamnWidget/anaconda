@@ -74,7 +74,7 @@ class PyLinter(object):
         for error in data.splitlines():
             if '************* Module ' in error:
                 _, module = error.split('************* Module ')
-                if not module in self.filename:
+                if module not in self.filename:
                     continue
             else:
                 offset = None

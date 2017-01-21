@@ -57,7 +57,7 @@ class Tooltip(object):
 
         try:
             t = self.theme
-            theme = self.themes[t] if t in self.themes else self.themes['dark']
+            theme = self.themes[t] if t in self.themes else self.themes['popup']  # noqa
             context = {'css': theme}
             context.update(content)
             data = self.tooltips[tooltip].safe_substitute(context)

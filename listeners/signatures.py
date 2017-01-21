@@ -114,7 +114,7 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
             content = {'signature': self.signature, 'doc': self.doc}
             display_tooltip = 'signature_doc'
 
-        css = get_settings(view, 'anaconda_tooltip_theme', 'dark')
+        css = get_settings(view, 'anaconda_tooltip_theme', 'popup')
         Tooltip(css).show_tooltip(
             view, display_tooltip, content, partial(self._show_status, view))
 
