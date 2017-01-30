@@ -49,7 +49,8 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
             ),
             'pep8_max_line_length': get_settings(
                 self.view, 'pep8_max_line_length', 79
-            )
+            ),
+            'tab_size': get_settings(self.view, 'tab_size', 4)
         }
         try:
             messages = {

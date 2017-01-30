@@ -67,6 +67,8 @@ class AutoPep8(Command):
 
         args += ['--max-line-length={0}'.format(
             settings.get('pep8_max_line_length', 79))]
+        args += ['--indent-size={0}'.format(
+            settings.get('tab_size', 4))]
         args += ['anaconda_rocks']
 
         return args
