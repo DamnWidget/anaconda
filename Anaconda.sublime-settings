@@ -367,7 +367,7 @@
         default as this rule has been deprecated.
 
         D203: 1 blank line before class docstring is ignored by default, as
-        this rule has been dprecated.
+        this rule has been deprecated.
     */
     "pep257_ignore":
     [
