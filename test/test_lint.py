@@ -3,10 +3,30 @@
 # This program is Free Software see LICENSE file for details
 
 import sys
+import tempfile
+import os
+from nose.plugins.skip import SkipTest
 
 from handlers.python_lint_handler import PythonLintHandler
 
 PYTHON3 = sys.version_info >= (3, 0)
+
+
+class real_temp_file(object):
+
+    def __init__(self, contents):
+        self.contents = contents
+        self.filename = None
+
+    def __enter__(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(self.contents.encode())
+            self.filename = f.name
+            f.close()
+        return self.filename
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        os.remove(self.filename)
 
 
 class TestLint(object):
@@ -32,10 +52,24 @@ def main():
     idontexists('Hello World!')
     '''
 
+    _type_checkable_code = '''
+def f(a: int) -> str:
+    return a
+    '''
+
+    _type_checkable_async_code = '''
+import asyncio
+
+async def f(a: int) -> int:
+    await asyncio.sleep(2)
+    return a
+'''
+
     def setUp(self):
         self._settings = {
             'use_pyflakes': False, 'use_pylint': False, 'use_pep257': False,
-            'pep8': False, 'vapidate_imports': False
+            'pep8': False, 'vapidate_imports': False,
+            'use_mypy': False, 'mypypath': '', 'mypy_settings': ['']
         }
 
     def test_pyflakes_lint(self):
@@ -80,6 +114,23 @@ def main():
         self._settings['validate_imports'] = True
         handler = PythonLintHandler('lint', None, 0, 0, self._check_validate_imports)  # noqa
         handler.lint(self._settings, self._import_validator_code, '')
+
+    def test_mypy(self):
+        if not PYTHON3:
+            raise SkipTest()
+        with real_temp_file(self._type_checkable_code) as temp_file_name:
+            self._settings['use_mypy'] = True
+            handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy)
+            handler.lint(self._settings, self._type_checkable_code, temp_file_name)
+
+    def test_mypy_fast_parser(self):
+        if not PYTHON3:
+            raise SkipTest()
+        with real_temp_file(self._type_checkable_async_code) as temp_file_name:
+            self._settings['use_mypy'] = True
+            self._settings['mypy_settings'] = ['--fast-parser', '']
+            handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_async)
+            handler.lint(self._settings, self._type_checkable_code, temp_file_name)
 
     def _check_pyflakes(self, result):
         assert result['success'] is True
@@ -156,5 +207,19 @@ def main():
         assert result['errors'][0]['code'] == 801
         assert result['errors'][0]['level'] == 'E'
         assert result['errors'][0]['underline_range'] is True
+        assert result['uid'] == 0
+        assert result['vid'] == 0
+
+    def _check_mypy(self, result):
+        assert result['success'] is True
+        assert len(result['errors']) == 1
+        assert result['errors'][0]['raw_error'] == '[W] MyPy  error:  Incompatible return value type (got "int", expected "str")'  # noqa
+        assert result['errors'][0]['level'] == 'W'
+        assert result['uid'] == 0
+        assert result['vid'] == 0
+
+    def _check_mypy_async(self, result):
+        assert result['success'] is True
+        assert len(result['errors']) == 0
         assert result['uid'] == 0
         assert result['vid'] == 0
