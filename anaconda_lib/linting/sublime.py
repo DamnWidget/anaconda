@@ -382,6 +382,8 @@ def get_mypy_settings(view):
         mypy_settings.append('--disallow-untyped-defs')
     if get_settings(view, 'mypy_check_untyped_defs', False):
         mypy_settings.append('--check-untyped-defs')
+    if get_settings(view, 'mypy_fast_parser', False):
+        mypy_settings.append('--fast-parser')
     custom_typing = get_settings(view, 'mypy_custom_typing', None)
     if custom_typing is not None:
         mypy_settings.append('--custom-typing')
