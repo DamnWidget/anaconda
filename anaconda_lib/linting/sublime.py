@@ -406,7 +406,13 @@ def get_mypy_settings(view):
         mypy_settings.append('--custom-typing')
         mypy_settings.append(custom_typing)
 
-    mypy_settings.append('--incremental')  # use cache always
+    if get_settings(view, 'mypy_incremental', True):
+        mypy_settings.append('--incremental')  # use cache always
+
+    extra_args = get_settings(view, 'mypy_extra_arguments', [])
+    if extra_args:
+        mypy_settings.extend(extra_args)
+
     mypy_settings.append(
         get_settings(view, 'mypy_suppress_stub_warnings', False)
     )

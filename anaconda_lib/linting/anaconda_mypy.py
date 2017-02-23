@@ -12,21 +12,20 @@ import shlex
 import logging
 import subprocess
 from subprocess import PIPE, Popen
-
+import traceback
 
 MYPY_SUPPORTED = False
-MYPY_VERSION = None
 try:
     from mypy import main as mypy
     MYPY_SUPPORTED = True
-    MYPY_VERSION = tuple(
-      int(i) for i in mypy.__version__.replace('-dev', '').split('.')
-    )
     del mypy
 except ImportError:
     print('MyPy is enabled but we could not import it')
     logging.info('MyPy is enabled but we could not import it')
     pass
+
+
+from mypy import api as mypyApi
 
 
 class MyPy(object):
@@ -63,12 +62,51 @@ class MyPy(object):
         return errors
 
     def check_source(self):
+
+        err_ctx = '--hide-error-context'
+        args = [err_ctx, *self.settings[:-1], '--show-traceback', self.filename]
+
+        if self.mypypath is not None and self.mypypath != "":
+            os.environ['MYPYPATH'] = self.mypypath
+
+        logging.info('calling mypy with %s' % str(args))
+
+        (out, err, status) = mypyApi.run(args)
+		
+        if err is not None and len(err) > 0:
+            raise RuntimeError(err)
+
+        errors = []
+        for line in out.splitlines():
+            if (self.settings[-1] and not
+                    self.silent and 'stub' in line.lower()):
+                continue
+
+            data = line.split(':') if os.name != 'nt' else line[2:].split(':')
+
+            filename = data[0]
+            if not self.filename.endswith(filename):
+                continue
+            errors.append({
+                'level': 'W',
+                'lineno': int(data[1]),
+                'offset': 0,
+                'code': ' ',
+                'raw_error': '[W] MyPy {0}: {1}'.format(
+                    data[2], data[3]
+                ),
+                'message': '[W] MyPy%s: %s',
+                'underline_range': True
+            })
+
+        return errors
+
+
+    def check_source_old(self):
         """Wrap calls to MyPy as a library
         """
 
         err_ctx = '--hide-error-context'
-        if MYPY_VERSION < (0, 4, 5):
-            err_ctx = '--suppress-error-context'
 
         args = shlex.split('\'{0}\' -O -m mypy {1} {2} \'{3}\''.format(
             sys.executable, err_ctx,
@@ -76,7 +114,7 @@ class MyPy(object):
         )
         env = os.environ.copy()
         if self.mypypath is not None and self.mypypath != "":
-            env['MYPYPATH'] = self.mypypath
+            env['MYPYPATH'] = ['.']
 
         kwargs = {
             'cwd': os.path.dirname(os.path.abspath(__file__)),
@@ -93,6 +131,8 @@ class MyPy(object):
         if err is not None and len(err) > 0:
             if sys.version_info >= (3,):
                 err = err.decode('utf8')
+            print(out)
+            print(err)
             raise RuntimeError(err)
 
         if sys.version_info >= (3,):

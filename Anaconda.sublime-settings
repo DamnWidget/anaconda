@@ -536,6 +536,21 @@
     */
     "mypy_fast_parser": false,
 
+    /*
+        MyPy Extra Arguments
+
+        An array of arbitrary arguments to pass to MyPy. For example,
+        ['--strict-optional', '--platform', 'linux']
+    */
+    "mypy_extra_arguments": [],
+
+    /*
+        MyPy Incremental
+
+        Use the incremental type checker. Fast, but sometimes causes crashes.
+    */
+    "mypy_incremental": true,
+
 	/*
 		MyPy Custom Typing
 

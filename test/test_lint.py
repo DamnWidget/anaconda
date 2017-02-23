@@ -29,6 +29,33 @@ class real_temp_file(object):
         os.remove(self.filename)
 
 
+class temp_dir(object):
+
+    def __init__(self):
+        self._dir = None
+        self.dirname = None
+
+    def __enter__(self):
+        self._dir = tempfile.TemporaryDirectory()
+        self.dirname = self._dir.__enter__()
+
+        return self
+
+    def dumpInto(self, filename, filecontents):
+        if self._dir is None:
+            raise Exception('invalid usage. with temp_dir() as dir:...')
+
+        filepath = os.path.join(self.dirname, filename)
+        with open(filepath, 'w') as f:
+            f.write(filecontents)
+            f.close()
+        return filepath
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._dir.__exit__(exc_type, exc_value, traceback)
+        self.dirname = None
+
+
 class TestLint(object):
     """Linting test suite
     """
@@ -64,6 +91,27 @@ async def f(a: int) -> int:
     await asyncio.sleep(2)
     return a
 '''
+
+    _type_checkable_extra_args = '''
+
+def f(a: int) -> int:
+    return None
+'''
+
+    _mypy_file_overlap_broken = '''
+def f1(a: int) -> bool:
+    i = 1 + 1 + 3 + a
+    return i
+'''
+    _mypy_file_overlap_broken_filename = 'broken.py'
+    
+    _mypy_file_overlap_ok = '''
+from .broken import f1
+
+def f2(a: int) -> int:
+    return 'no'
+'''
+    _mypy_file_overlap_ok_filename = 'ok.py'
 
     def setUp(self):
         self._settings = {
@@ -139,6 +187,72 @@ async def f(a: int) -> int:
             self._settings['mypy_settings'] = ['--fast-parser', '']
             handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_async)  # noqa
             handler.lint(self._settings, self._type_checkable_code, temp_file_name)  # noqa
+
+    def test_mypy_extra_args(self):
+        if not PYTHON3:
+            raise SkipTest()
+        with real_temp_file(self._type_checkable_extra_args) as temp_file_name:
+            self._settings['use_mypy'] = True
+            self._settings['mypy_settings'] = ['--strict-optional', False]
+            handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_extra_args)
+            handler.lint(self._settings, self._type_checkable_extra_args, temp_file_name)
+    
+    def test_mypy_extra_args(self):
+        if not PYTHON3:
+            raise SkipTest()
+        with real_temp_file(self._type_checkable_extra_args) as temp_file_name:
+            self._settings['use_mypy'] = True
+            self._settings['mypy_settings'] = ['--strict-optional', False]
+            handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_extra_args)
+            handler.lint(self._settings, self._type_checkable_extra_args, temp_file_name)
+    
+    def test_mypy_file_isolation(self):
+        if not PYTHON3:
+            raise SkipTest()
+        with temp_dir() as tempdir:
+            tempdir.dumpInto(
+                self._mypy_file_overlap_broken_filename,
+                self._mypy_file_overlap_broken
+            )
+            ok_name = tempdir.dumpInto(
+                self._mypy_file_overlap_ok_filename,
+                self._mypy_file_overlap_ok
+            )
+            tempdir.dumpInto(
+                '__init__.py',
+                ''
+            )
+
+            self._settings['use_mypy'] = True
+            self._settings['mypy_settings'] = ['--strict-optional', False]
+            handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_file_isolation)
+            handler.lint(self._settings, self._mypy_file_overlap_ok, ok_name)
+
+    def test_mypy_file_isolation_relpaths(self):
+        if not PYTHON3:
+            raise SkipTest()
+        #raise SkipTest()
+        with temp_dir() as tempdir:
+            old_dir = os.getcwd()
+            os.chdir(tempdir.dirname)
+            tempdir.dumpInto(
+                self._mypy_file_overlap_broken_filename,
+                self._mypy_file_overlap_broken
+            )
+            ok_file = tempdir.dumpInto(
+                self._mypy_file_overlap_ok_filename,
+                self._mypy_file_overlap_ok
+            )
+            tempdir.dumpInto(
+                '__init__.py',
+                ''
+            )
+
+            self._settings['use_mypy'] = True
+            self._settings['mypy_settings'] = ['--strict-optional', False]
+            handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_file_isolation)
+            handler.lint(self._settings, self._mypy_file_overlap_ok, ok_file)
+            os.chdir(old_dir)
 
     def _check_pyflakes(self, result):
         assert result['success'] is True
@@ -229,5 +343,21 @@ async def f(a: int) -> int:
     def _check_mypy_async(self, result):
         assert result['success'] is True
         assert len(result['errors']) == 0
+        assert result['uid'] == 0
+        assert result['vid'] == 0
+
+    def _check_mypy_extra_args(self, result):
+        assert result['success'] is True
+        assert len(result['errors']) == 1
+        assert result['errors'][0]['raw_error'] == '[W] MyPy  error:  Incompatible return value type (got None, expected "int")'  # noqa
+        assert result['errors'][0]['level'] == 'W'
+        assert result['uid'] == 0
+        assert result['vid'] == 0
+
+    def _check_mypy_file_isolation(self, result):
+        assert result['success'] is True
+        assert len(result['errors']) == 1
+        assert result['errors'][0]['raw_error'] == '[W] MyPy  error:  Incompatible return value type (got "str", expected "int")'  # noqa
+        assert result['errors'][0]['level'] == 'W'
         assert result['uid'] == 0
         assert result['vid'] == 0
