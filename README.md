@@ -56,7 +56,7 @@ Sublime Text 3's default Python package cancels the auto-completion when some wo
 **Work-around**: Create a new Python directory in your Packages directory and copy the contents of the file [Completion Rules.tmPreferences][Completion-Rules] there with the same name.
 Delete your Sublime Text Cache file `Cache/Python/Completion Rules.tmPreferences.cache`.
 
-**NOTE**: The cache path can be optained from the Sublime TExt 3 console using the code `sublime.cache_path()`
+**NOTE**: The cache path can be obtained from the Sublime TExt 3 console using the code `sublime.cache_path()`
 
 #### Auto-complete drop-down shows up incorrectly.
 SublimeCodeIntel interferes with anaconda's auto-completion.
@@ -81,7 +81,7 @@ Giving feedback about the plugin and how it works in your platform, helps make t
 Did you found a bug and you know how to fix it? First of all, Thank you very much. You just have to report the bug as a new issue, fork the repository, make your changes and send a new pull request.
 
 ### Suggesting and Implementing Features
-So you thought of a new killer feature to implement in Anaconda? Great! Open an issue for it and and we will discuss it with you.
+So you thought of a new killer feature to implement in Anaconda? Great! Open an issue for it and we will discuss it with you.
 
 ### Available plugins for Anaconda
 Anaconda is a plugable architecture platform itself, it means that anaconda can be extended to offer rich IDE like features to other languages, I created other extensions that brings
