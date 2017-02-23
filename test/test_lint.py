@@ -118,19 +118,27 @@ async def f(a: int) -> int:
     def test_mypy(self):
         if not PYTHON3:
             raise SkipTest()
+        try:
+            import mypy  # noqa
+        except ImportError:
+            raise SkipTest('MyPy not installed')
         with real_temp_file(self._type_checkable_code) as temp_file_name:
             self._settings['use_mypy'] = True
             handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy)
-            handler.lint(self._settings, self._type_checkable_code, temp_file_name)
+            handler.lint(self._settings, self._type_checkable_code, temp_file_name)  # noqa
 
     def test_mypy_fast_parser(self):
         if not PYTHON3:
             raise SkipTest()
+        try:
+            import mypy  # noqa
+        except ImportError:
+            raise SkipTest('MyPy not installed')
         with real_temp_file(self._type_checkable_async_code) as temp_file_name:
             self._settings['use_mypy'] = True
             self._settings['mypy_settings'] = ['--fast-parser', '']
-            handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_async)
-            handler.lint(self._settings, self._type_checkable_code, temp_file_name)
+            handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_async)  # noqa
+            handler.lint(self._settings, self._type_checkable_code, temp_file_name)  # noqa
 
     def _check_pyflakes(self, result):
         assert result['success'] is True
