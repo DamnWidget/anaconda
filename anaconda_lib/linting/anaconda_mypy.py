@@ -19,7 +19,9 @@ MYPY_VERSION = None
 try:
     from mypy import main as mypy
     MYPY_SUPPORTED = True
-    MYPY_VERSION = tuple(int(i) for i in mypy.__version__.split('.'))
+    MYPY_VERSION = tuple(
+      int(i) for i in mypy.__version__.replace('-dev', '').split('.')
+    )
     del mypy
 except ImportError:
     print('MyPy is enabled but we could not import it')
