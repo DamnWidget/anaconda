@@ -6,62 +6,77 @@
         [
             {
                 "command": "anaconda_goto",
+                "id": "anaconda_goto",
                 "caption": "Goto Definition"
             },
             {
                 "command": "anaconda_goto_assignment",
+                "id": "anaconda_goto_assignment",
                 "caption": "Goto Assignment"
             },
             {
                 "command": "anaconda_find_usages",
+                "id": "anaconda_find_usages",
                 "caption": "Find Usages"
             },
             {
                 "command": "anaconda_doc",
+                "id": "anaconda_doc",
                 "caption": "Show Documentation"
             },
             {
                 "command": "anaconda_rename",
+                "id": "anaconda_rename",
                 "caption": "Rename object under cursor"
             },
             {
                 "command": "anaconda_get_lines",
+                "id": "anaconda_get_lines",
                 "caption": "Show error list"
             },
             {
                 "command": "anaconda_next_lint_error",
+                "id": "anaconda_next_lint_error",
                 "caption": "Next lint error"
             },
             {
                 "command": "anaconda_prev_lint_error",
+                "id": "anaconda_prev_lint_error",
                 "caption": "Previous lint error"
             },
             {
                 "command": "anaconda_auto_format",
+                "id": "anaconda_auto_format",
                 "caption": "Autoformat PEP8 Errors"
             },
             {
                 "command": "anaconda_mc_cabe",
+                "id": "anaconda_mc_cabe",
                 "caption": "McCabe complexity check"
             },
             {
                 "command": "anaconda_auto_import",
+                "id": "anaconda_auto_import",
                 "caption": "Auto import undefined word under cursor"
             },
             {
                 "command": "anaconda_run_current_file_tests",
+                "id": "anaconda_run_current_file_tests",
                 "caption": "Run tests on current file"
             },
             {
                 "command": "anaconda_run_project_tests",
+                "id": "anaconda_run_project_tests",
                 "caption": "Run full project tests= suite",
             },
             {
                 "command": "anaconda_run_current_test",
+                "id": "anaconda_run_current_test",
                 "caption": "Run test under the cursor",
             },
             {
                 "command": "anaconda_run_last_test",
+                "id": "anaconda_run_last_test",
                 "caption": "Repeat last test run"
             }
         ]
