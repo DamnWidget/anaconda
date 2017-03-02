@@ -291,6 +291,11 @@
     "anaconda_linter_underlines": true,
 
     /*
+        If this is set to true, anaconda will show errors inline.
+    */
+    "anaconda_linter_phantoms": false,
+
+    /*
         If anaconda_linter_show_errors_on_save is set to true, anaconda
         will show a list of errors when you save the file.
 
