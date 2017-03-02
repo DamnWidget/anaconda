@@ -28,7 +28,8 @@ ANACONDA = {
     'LAST_PULSE': time.time(),
     'ALREADY_LINTED': False,
     'DISABLED': PersistentList(),
-    'DISABLED_BUFFERS': []
+    'DISABLED_BUFFERS': [],
+    'PHANTOMSETS': {}
 }
 
 marks = {
@@ -182,6 +183,10 @@ class Linter:
 def erase_lint_marks(view):
     """Erase all the lint marks
     """
+    if get_settings(view, 'anaconda_linter_phantoms', False):
+        vid = view.id()
+        if vid in ANACONDA['PHANTOMSETS']:
+            ANACONDA['PHANTOMSETS'][vid].update([])
 
     types = ['illegal', 'warning', 'violation']
     for t in types:
@@ -226,6 +231,20 @@ def add_lint_marks(view, lines, **errors):
             'Packages/' + package_name + '/anaconda_lib/linting/'
             'gutter_mark_themes/{theme}-{type}.png'
         )
+
+        if get_settings(view, 'anaconda_linter_phantoms', False):
+            vid = view.id()
+            if vid not in ANACONDA['PHANTOMSETS']:
+                ANACONDA['PHANTOMSETS'][vid] = sublime.PhantomSet(view, "Anaconda")
+            phantoms = []
+            for k in ['ERRORS', 'WARNINGS', 'VIOLATIONS']:
+                d = ANACONDA.get(k)
+                for l in d[vid]:
+                    region = view.full_line(view.text_point(l, 0))
+                    errors = "\n".join(get_lineno_msgs(view, l))
+                    content = """<pre style="color: red"> {}</pre>""".format(errors)
+                    phantoms.append(sublime.Phantom(region, content, sublime.LAYOUT_BLOCK))
+            ANACONDA['PHANTOMSETS'][vid].update(phantoms)
 
         for lint_type, lints in get_outlines(view).items():
             if len(lints) > 0:
