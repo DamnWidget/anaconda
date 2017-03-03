@@ -1,0 +1,19 @@
+html, body { padding: 0; margin: 0; }
+
+.anaconda {
+    background-color: color(var(--background) blend(gray 80%));
+    display: block;
+    padding: 0.2rem;
+}
+
+.anaconda .phantom .errors {
+    color: red;
+}
+
+.anaconda .phantom .warnings {
+    color: orange;
+}
+
+.anaconda .phantom .violations {
+    color: blue;
+}

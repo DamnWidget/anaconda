@@ -16,6 +16,7 @@ from ..persistent_list import PersistentList
 from ..helpers import (
     get_settings, is_code, get_view, check_linting, LINTING_ENABLED
 )
+from ..phantoms import Phantom
 
 
 sublime_api = sublime.sublime_api
@@ -28,8 +29,7 @@ ANACONDA = {
     'LAST_PULSE': time.time(),
     'ALREADY_LINTED': False,
     'DISABLED': PersistentList(),
-    'DISABLED_BUFFERS': [],
-    'PHANTOMSETS': {}
+    'DISABLED_BUFFERS': []
 }
 
 marks = {
@@ -184,9 +184,7 @@ def erase_lint_marks(view):
     """Erase all the lint marks
     """
     if get_settings(view, 'anaconda_linter_phantoms', False):
-        vid = view.id()
-        if vid in ANACONDA['PHANTOMSETS']:
-            ANACONDA['PHANTOMSETS'][vid].update([])
+        Phantom().clear_phantoms(view)
 
     types = ['illegal', 'warning', 'violation']
     for t in types:
@@ -233,18 +231,17 @@ def add_lint_marks(view, lines, **errors):
         )
 
         if get_settings(view, 'anaconda_linter_phantoms', False):
+            phantom = Phantom()
             vid = view.id()
-            if vid not in ANACONDA['PHANTOMSETS']:
-                ANACONDA['PHANTOMSETS'][vid] = sublime.PhantomSet(view, "Anaconda")
             phantoms = []
-            for k in ['ERRORS', 'WARNINGS', 'VIOLATIONS']:
-                d = ANACONDA.get(k)
-                for l in d[vid]:
-                    region = view.full_line(view.text_point(l, 0))
-                    errors = "\n".join(get_lineno_msgs(view, l))
-                    content = """<pre style="color: red"> {}</pre>""".format(errors)
-                    phantoms.append(sublime.Phantom(region, content, sublime.LAYOUT_BLOCK))
-            ANACONDA['PHANTOMSETS'][vid].update(phantoms)
+            for level in ['ERRORS', 'WARNINGS', 'VIOLATIONS']:
+                for line in ANACONDA.get(level)[vid]:
+                    phantoms.append({
+                        "line": line,
+                        "level": level.lower(),
+                        "messages": "\n".join(get_lineno_msgs(view, line))
+                    })
+            phantom.update_phantoms(view, phantoms)
 
         for lint_type, lints in get_outlines(view).items():
             if len(lints) > 0:

@@ -296,6 +296,16 @@
     "anaconda_linter_phantoms": false,
 
     /*
+        This determines what theme is phantoms used.
+    */
+    "anaconda_linter_phantoms_theme": "phantom",
+
+    /*
+        This determines what template is phantoms used.
+    */
+    "anaconda_linter_phantoms_template": "default",
+
+    /*
         If anaconda_linter_show_errors_on_save is set to true, anaconda
         will show a list of errors when you save the file.
 
