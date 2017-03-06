@@ -1085,6 +1085,21 @@ about the method or class being used.&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&#34;http://damnwidget.github.io/anaconda/anaconda/img/tooltips.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
 
+&lt;h1 id=&#34;display-lint-errors-inline&#34;&gt;Display lint errors inline&lt;/h1&gt;
+
+&lt;h2 id=&#34;how-it-works-4&#34;&gt;How it works?&lt;/h2&gt;
+
+&lt;p&gt;Sublime Text 3 build 3124 introduced the &lt;code&gt;Phantoms&lt;/code&gt; API that allows HTML
+annotations to be added to the view buffer by plugins. When enabled, Anaconda
+will show an HTML box in the line below the error containing information about
+it so the user does not need to hover the error or look at the message bar or
+show up the errors list.&lt;/p&gt;
+
+&lt;p&gt;This feature is disabled by default, to enable it set the
+&lt;code&gt;anaconda_linter_phantoms&lt;/code&gt; configuration option as &lt;code&gt;true&lt;/code&gt; in the settings file.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://damnwidget.github.io/anaconda/anaconda/img/a7cbf944-0010-11e7-93e8-f66cebf68906.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
 &lt;h1 id=&#34;get-documentation&#34;&gt;Get Documentation&lt;/h1&gt;
 
 &lt;p&gt;Anaconda can look for and show the user the docstring of whatever function,
@@ -1093,7 +1108,7 @@ symbol that want to get the docstring from (or after a parenthesis, for example
 after write &lt;code&gt;sys.exit(&lt;/code&gt;) and then trigger the command to get the function
 signature and docstring in a bottom panel without lose focus form the buffer.&lt;/p&gt;
 
-&lt;h2 id=&#34;how-it-works-4&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;how-it-works-5&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;As usual, anaconda asks the underlying jedi engine about the symbol under the
 cursor signature and docstring (if any) and then show it to the user using
@@ -1127,7 +1142,7 @@ tool in whatever python file that they want. It&amp;rsquo;s threshold can be adj
 configuring the option &lt;code&gt;mccabe_threshold&lt;/code&gt; in the configuration file on in
 the project configuration file.&lt;/p&gt;
 
-&lt;h2 id=&#34;how-it-works-5&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;how-it-works-6&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;Anaconda includes part of the &lt;a href=&#34;https://github.com/flintwork/mccabe&#34;&gt;McCabe&lt;/a&gt;
 Python tool and can execute it in any open buffer, get the results and present
@@ -1153,7 +1168,7 @@ block if the anaconda auto importer is used in an undefined name in the buffer.&
 &lt;p&gt;&lt;strong&gt;note&lt;/strong&gt;: Anaconda will &lt;strong&gt;NOT&lt;/strong&gt; check if that import is valid or not before
 place it in the buffer.&lt;/p&gt;
 
-&lt;h2 id=&#34;how-it-works-6&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;how-it-works-7&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;Anaconda auto-import feature is really a dummy or toy feature and is under
 redesign to offer a better experience to the user.&lt;/p&gt;
@@ -1170,7 +1185,7 @@ context menu &lt;code&gt;Anaconda &amp;gt; Autoimport undefined word under the c
 in the project files if the &lt;code&gt;validate_imports&lt;/code&gt; option is set as &lt;code&gt;true&lt;/code&gt;. Note
 that this option is set as &lt;code&gt;false&lt;/code&gt; by default.&lt;/p&gt;
 
-&lt;h2 id=&#34;how-it-works-7&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;how-it-works-8&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;Anaconda asks the underlying jedi engine about the buffer/file/project imports
 to detect if the symbols are valid and the configured python interpreter is
@@ -1229,7 +1244,7 @@ because that, anaconda&amp;rsquo;s linting is smooth and flawless.&lt;/p&gt;
 mechanisms, they can still block the ST3 GUI but seems to be smoother than
 old Sublime Linter for Sublime Text 2&lt;/p&gt;
 
-&lt;h2 id=&#34;how-it-works-8&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;how-it-works-9&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;Anaconda listen for events that come from the Sublime Text GUI itself, in
 certain events, the linter can be fired, for example, after save or open a
@@ -1413,7 +1428,7 @@ contextual menu.&lt;/p&gt;
 can timeout before has any effect, take a look in the next sections to know
 a bit more about autoformat and it&amp;rsquo;s options.&lt;/p&gt;
 
-&lt;h2 id=&#34;how-it-works-9&#34;&gt;How it works?&lt;/h2&gt;
+&lt;h2 id=&#34;how-it-works-10&#34;&gt;How it works?&lt;/h2&gt;
 
 &lt;p&gt;AutoPEP8 is not the fastest tool in the world as it perform several complex
 syntactic checks and parses. When the autoformat is fired, anaconda run it

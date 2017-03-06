@@ -124,7 +124,7 @@
   <div class="container">
     <h1><span class="anaconda">Anaconda</span> <span class="ide">Python IDE</span></h1>
     <p>Anaconda turns your Sublime Text 3 into a full featured Python development IDE</p>
-    <a role="button" class="btn btn-primary btn-large btn-download" href="https://github.com/DamnWidget/anaconda/archive/v2.1.13.tar.gz"><span class="glyphicon glyphicon-download-alt"></span> Download Anaconda v2.1.13</a>
+    <a role="button" class="btn btn-primary btn-large btn-download" href="https://github.com/DamnWidget/anaconda/archive/v2.1.15.tar.gz"><span class="glyphicon glyphicon-download-alt"></span> Download Anaconda v2.1.15</a>
     <button type="button" class="btn btn-primary btn-large btn-pc" data-toggle="modal" data-target="#package-control"><span class="glyphicon glyphicon-cloud"></span> Use Package Control</button>
   </div>
 </section>
@@ -205,9 +205,13 @@
 <ul class="nav">
 <li><a href="#how-it-works-3">How it works?</a></li>
 </ul></li>
+<li><a href="#display-lint-errors-inline">Display lint errors inline</a>
+<ul class="nav">
+<li><a href="#how-it-works-4">How it works?</a></li>
+</ul></li>
 <li><a href="#get-documentation">Get Documentation</a>
 <ul class="nav">
-<li><a href="#how-it-works-4">How it works?</a>
+<li><a href="#how-it-works-5">How it works?</a>
 <ul class="nav">
 <li><a href="#how-to-use-it-2">How to use it?</a></li>
 </ul></li>
@@ -221,26 +225,26 @@
 </ul></li>
 <li><a href="#mccabe-code-complxity-checker">McCabe code complxity checker</a>
 <ul class="nav">
-<li><a href="#how-it-works-5">How it works?</a>
+<li><a href="#how-it-works-6">How it works?</a>
 <ul class="nav">
 <li><a href="#how-to-use-it-4">How to use it?</a></li>
 </ul></li>
 </ul></li>
 <li><a href="#autoimport-undefined-names">Autoimport undefined names</a>
 <ul class="nav">
-<li><a href="#how-it-works-6">How it works?</a>
+<li><a href="#how-it-works-7">How it works?</a>
 <ul class="nav">
 <li><a href="#how-to-use-it-5">How to use it?</a></li>
 </ul></li>
 </ul></li>
 <li><a href="#imports-validator">Imports Validator</a>
 <ul class="nav">
-<li><a href="#how-it-works-7">How it works?</a></li>
+<li><a href="#how-it-works-8">How it works?</a></li>
 </ul></li>
 <li><a href="#anaconda-s-build-system">Anaconda&rsquo;s Build System</a></li>
 <li><a href="#anaconda-linting">Anaconda Linting</a>
 <ul class="nav">
-<li><a href="#how-it-works-8">How it works?</a></li>
+<li><a href="#how-it-works-9">How it works?</a></li>
 <li><a href="#linting-behaviour">Linting behaviour</a></li>
 <li><a href="#what-can-anaconda-lint">What can anaconda lint?</a></li>
 <li><a href="#disabling-the-linter">Disabling the linter</a></li>
@@ -256,7 +260,7 @@
 </ul></li>
 <li><a href="#autoformat-pep8-errors">Autoformat PEP8 Errors</a>
 <ul class="nav">
-<li><a href="#how-it-works-9">How it works?</a></li>
+<li><a href="#how-it-works-10">How it works?</a></li>
 <li><a href="#what-about-the-timeout">What about the timeout?</a></li>
 <li><a href="#fire-pep8-autoformating-on-save">Fire PEP8 autoformating on save</a></li>
 <li><a href="#supported-pep8-autoformat-errors-list">Supported PEP8 Autoformat errors list?</a></li>
@@ -411,6 +415,21 @@ about the method or class being used.</p>
 
 <p><img src="/anaconda/img/tooltips.png" alt="" /></p>
 
+<h1 id="display-lint-errors-inline">Display lint errors inline</h1>
+
+<h2 id="how-it-works-4">How it works?</h2>
+
+<p>Sublime Text 3 build 3124 introduced the <code>Phantoms</code> API that allows HTML
+annotations to be added to the view buffer by plugins. When enabled, Anaconda
+will show an HTML box in the line below the error containing information about
+it so the user does not need to hover the error or look at the message bar or
+show up the errors list.</p>
+
+<p>This feature is disabled by default, to enable it set the
+<code>anaconda_linter_phantoms</code> configuration option as <code>true</code> in the settings file.</p>
+
+<p><img src="/anaconda/img/a7cbf944-0010-11e7-93e8-f66cebf68906.png" alt="" /></p>
+
 <h1 id="get-documentation">Get Documentation</h1>
 
 <p>Anaconda can look for and show the user the docstring of whatever function,
@@ -419,7 +438,7 @@ symbol that want to get the docstring from (or after a parenthesis, for example
 after write <code>sys.exit(</code>) and then trigger the command to get the function
 signature and docstring in a bottom panel without lose focus form the buffer.</p>
 
-<h2 id="how-it-works-4">How it works?</h2>
+<h2 id="how-it-works-5">How it works?</h2>
 
 <p>As usual, anaconda asks the underlying jedi engine about the symbol under the
 cursor signature and docstring (if any) and then show it to the user using
@@ -453,7 +472,7 @@ tool in whatever python file that they want. It&rsquo;s threshold can be adjuste
 configuring the option <code>mccabe_threshold</code> in the configuration file on in
 the project configuration file.</p>
 
-<h2 id="how-it-works-5">How it works?</h2>
+<h2 id="how-it-works-6">How it works?</h2>
 
 <p>Anaconda includes part of the <a href="https://github.com/flintwork/mccabe">McCabe</a>
 Python tool and can execute it in any open buffer, get the results and present
@@ -479,7 +498,7 @@ block if the anaconda auto importer is used in an undefined name in the buffer.<
 <p><strong>note</strong>: Anaconda will <strong>NOT</strong> check if that import is valid or not before
 place it in the buffer.</p>
 
-<h2 id="how-it-works-6">How it works?</h2>
+<h2 id="how-it-works-7">How it works?</h2>
 
 <p>Anaconda auto-import feature is really a dummy or toy feature and is under
 redesign to offer a better experience to the user.</p>
@@ -496,7 +515,7 @@ context menu <code>Anaconda &gt; Autoimport undefined word under the cursor</cod
 in the project files if the <code>validate_imports</code> option is set as <code>true</code>. Note
 that this option is set as <code>false</code> by default.</p>
 
-<h2 id="how-it-works-7">How it works?</h2>
+<h2 id="how-it-works-8">How it works?</h2>
 
 <p>Anaconda asks the underlying jedi engine about the buffer/file/project imports
 to detect if the symbols are valid and the configured python interpreter is
@@ -555,7 +574,7 @@ because that, anaconda&rsquo;s linting is smooth and flawless.</p>
 mechanisms, they can still block the ST3 GUI but seems to be smoother than
 old Sublime Linter for Sublime Text 2</p>
 
-<h2 id="how-it-works-8">How it works?</h2>
+<h2 id="how-it-works-9">How it works?</h2>
 
 <p>Anaconda listen for events that come from the Sublime Text GUI itself, in
 certain events, the linter can be fired, for example, after save or open a
@@ -739,7 +758,7 @@ contextual menu.</p>
 can timeout before has any effect, take a look in the next sections to know
 a bit more about autoformat and it&rsquo;s options.</p>
 
-<h2 id="how-it-works-9">How it works?</h2>
+<h2 id="how-it-works-10">How it works?</h2>
 
 <p>AutoPEP8 is not the fastest tool in the world as it perform several complex
 syntactic checks and parses. When the autoformat is fired, anaconda run it
