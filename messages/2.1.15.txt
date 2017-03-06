@@ -1,0 +1,21 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+Anaconda v2.1.15
+================
+
+Welcome to new anaconda v2.1.15, what do you can find in this minor release?
+
+## Fixes
+    - Added support for MyPy `in-development` versions
+
+## Improvements
+    - Added `ids` to menu entries to support Localication
+
+## New Features
+    - Added support to display linting errors inline using phantoms (disable by default)
