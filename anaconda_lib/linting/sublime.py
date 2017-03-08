@@ -236,11 +236,13 @@ def add_lint_marks(view, lines, **errors):
             phantoms = []
             for level in ['ERRORS', 'WARNINGS', 'VIOLATIONS']:
                 for line in ANACONDA.get(level)[vid]:
-                    phantoms.append({
-                        "line": line,
-                        "level": level.lower(),
-                        "messages": "\n".join(get_lineno_msgs(view, line))
-                    })
+                    messages = get_lineno_errors(view, line)[level]
+                    for message in messages:
+                        phantoms.append({
+                            "line": line,
+                            "level": level.lower(),
+                            "messages": message
+                        })
             phantom.update_phantoms(view, phantoms)
 
         for lint_type, lints in get_outlines(view).items():
@@ -308,25 +310,32 @@ def update_statusbar(view):
         view.erase_status('Linter')
 
 
-def get_lineno_msgs(view, lineno):
-    """Get lineno error messages and return it back
+def get_lineno_errors(view, lineno):
+    """Get lineno error messages and levels
     """
-
     ERRORS = ANACONDA.get('ERRORS')
     WARNINGS = ANACONDA.get('WARNINGS')
     VIOLATIONS = ANACONDA.get('VIOLATIONS')
 
-    errors_msg = []
+    errors = {}
     if lineno is not None:
         vid = view.id()
         if vid in ERRORS:
-            errors_msg.extend(ERRORS[vid].get(lineno, []))
+            errors['ERRORS'] = ERRORS[vid].get(lineno, [])
         if vid in WARNINGS:
-            errors_msg.extend(WARNINGS[vid].get(lineno, []))
+            errors['WARNINGS'] = WARNINGS[vid].get(lineno, [])
         if vid in VIOLATIONS:
-            errors_msg.extend(VIOLATIONS[vid].get(lineno, []))
+            errors['VIOLATIONS'] = VIOLATIONS[vid].get(lineno, [])
 
-    return errors_msg
+    return errors
+
+
+def get_lineno_msgs(view, lineno):
+    """Get lineno error messages and return it back
+    """
+    errors = get_lineno_errors(view, lineno)
+
+    return [msg for level in errors.values() for msg in level]
 
 
 def run_linter(view=None, hook=None):
