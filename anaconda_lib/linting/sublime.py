@@ -235,8 +235,7 @@ def add_lint_marks(view, lines, **errors):
             vid = view.id()
             phantoms = []
             for level in ['ERRORS', 'WARNINGS', 'VIOLATIONS']:
-                for line in ANACONDA.get(level)[vid]:
-                    messages = get_lineno_errors(view, line)[level]
+                for line, messages in ANACONDA.get(level)[vid].items():
                     for message in messages:
                         phantoms.append({
                             "line": line,
@@ -310,32 +309,25 @@ def update_statusbar(view):
         view.erase_status('Linter')
 
 
-def get_lineno_errors(view, lineno):
-    """Get lineno error messages and levels
+def get_lineno_msgs(view, lineno):
+    """Get lineno error messages and return it back
     """
+
     ERRORS = ANACONDA.get('ERRORS')
     WARNINGS = ANACONDA.get('WARNINGS')
     VIOLATIONS = ANACONDA.get('VIOLATIONS')
 
-    errors = {}
+    errors_msg = []
     if lineno is not None:
         vid = view.id()
         if vid in ERRORS:
-            errors['ERRORS'] = ERRORS[vid].get(lineno, [])
+            errors_msg.extend(ERRORS[vid].get(lineno, []))
         if vid in WARNINGS:
-            errors['WARNINGS'] = WARNINGS[vid].get(lineno, [])
+            errors_msg.extend(WARNINGS[vid].get(lineno, []))
         if vid in VIOLATIONS:
-            errors['VIOLATIONS'] = VIOLATIONS[vid].get(lineno, [])
+            errors_msg.extend(VIOLATIONS[vid].get(lineno, []))
 
-    return errors
-
-
-def get_lineno_msgs(view, lineno):
-    """Get lineno error messages and return it back
-    """
-    errors = get_lineno_errors(view, lineno)
-
-    return [msg for level in errors.values() for msg in level]
+    return errors_msg
 
 
 def run_linter(view=None, hook=None):
