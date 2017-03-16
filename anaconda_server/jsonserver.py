@@ -8,6 +8,7 @@ import sys
 import time
 import socket
 import logging
+import platform
 import asyncore
 import asynchat
 import threading
@@ -137,7 +138,7 @@ class JSONServer(asyncore.dispatcher):
 
     allow_reuse_address = False
     request_queue_size = 5
-    if os.name == 'nt':
+    if platform.system().lower() != 'linux':
         address_family = socket.AF_INET
     else:
         address_family = socket.AF_UNIX
@@ -287,6 +288,7 @@ def log_traceback():
 if __name__ == "__main__":
 
     WINDOWS = os.name == 'nt'
+    LINUX = platform.system().lower() == 'linux'
     opt_parser = OptionParser(usage=(
         'usage: %prog -p <project> -e <extra_paths> port'
     )) if WINDOWS else OptionParser(usage=(
@@ -304,7 +306,7 @@ if __name__ == "__main__":
 
     options, args = opt_parser.parse_args()
     port, PID = None, None
-    if WINDOWS:
+    if not LINUX:
         if len(args) != 2:
             opt_parser.error('you have to pass a port number and PID')
 
@@ -333,7 +335,7 @@ if __name__ == "__main__":
     logger = get_logger(log_directory)
 
     try:
-        if WINDOWS:
+        if not LINUX:
             server = JSONServer(('localhost', port))
         else:
             unix_socket_path = UnixSocketPath(options.project)
