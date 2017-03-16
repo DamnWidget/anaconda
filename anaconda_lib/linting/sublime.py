@@ -235,12 +235,13 @@ def add_lint_marks(view, lines, **errors):
             vid = view.id()
             phantoms = []
             for level in ['ERRORS', 'WARNINGS', 'VIOLATIONS']:
-                for line in ANACONDA.get(level)[vid]:
-                    phantoms.append({
-                        "line": line,
-                        "level": level.lower(),
-                        "messages": "\n".join(get_lineno_msgs(view, line))
-                    })
+                for line, messages in ANACONDA.get(level)[vid].items():
+                    for message in messages:
+                        phantoms.append({
+                            "line": line,
+                            "level": level.lower(),
+                            "messages": message
+                        })
             phantom.update_phantoms(view, phantoms)
 
         for lint_type, lints in get_outlines(view).items():
