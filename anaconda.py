@@ -16,10 +16,10 @@ import sublime
 import sublime_plugin
 
 from .anaconda_lib import ioloop
-from .anaconda_lib.helpers import get_settings, is_python
+from .anaconda_lib.helpers import get_settings
 
-from .commands import *
-from .listeners import *
+from .commands import *   # noqa
+from .listeners import *  # noqa
 
 if sys.version_info < (3, 3):
     raise RuntimeError('Anaconda works with Sublime Text 3 only')
@@ -91,7 +91,7 @@ def monitor_plugins():
             if plugin not in DISABLED_PLUGINS:
                 DISABLED_PLUGINS.append(plugin)
 
-    sublime.set_timeout_async(monitor_plugins, 5*60*1000)
+    sublime.set_timeout_async(monitor_plugins, 5 * 60 * 1000)
 
 
 def enable_plugins():
