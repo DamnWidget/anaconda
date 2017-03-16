@@ -1,0 +1,12 @@
+{
+    /*
+        Enable this if you use Kite plugin for Sublime Text 3
+        but you still want to use anaconda functionality.
+
+        Note: this option will disable the following anaconda features:
+
+            * Autocompletion
+            * Signature popups
+     */
+    "integrate_with_kite": false
+}

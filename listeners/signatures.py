@@ -10,6 +10,7 @@ import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.tooltips import Tooltip
+from ..anaconda_lib.kite import Integration
 from ..anaconda_lib.typing import Dict, Tuple, Any
 from ..anaconda_lib.helpers import prepare_send_data, is_python, get_settings
 
@@ -33,6 +34,9 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
             return
 
         if not is_python(view) or not get_settings(view, 'display_signatures'):
+            return
+
+        if Integration.enabled():
             return
 
         try:

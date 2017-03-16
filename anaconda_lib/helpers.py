@@ -17,6 +17,8 @@ from collections import defaultdict
 
 import sublime
 
+from .kite import Integration
+
 # define if we are in a git installation
 git_installation = False
 try:
@@ -77,6 +79,10 @@ def completion_is_disabled(view):
 
     if view is None:
         return False
+
+    # check if Kite integration is enabled
+    if Integration.enabled():
+        return True
 
     return get_settings(view, "disable_anaconda_completion", False)
 
