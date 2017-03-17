@@ -1,0 +1,19 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+Anaconda v2.1.16
+================
+
+Welcome to new anaconda v2.1.16, what do you can find in this minor release?
+
+## Fixes
+    - Fixed performance degradation in macOS when long files where being edited #620, #558
+
+## Improvements
+    - Show one message per line on phantoms linting support
+    - Improved integration with Kite plugin
