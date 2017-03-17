@@ -34,7 +34,7 @@ class Worker(object):
         """
 
         for_local = self.interpreter.for_local
-        return for_local and sublime.platform() != 'windows'
+        return for_local and sublime.platform() == 'linux'
 
     def start(self):
         """Start the worker

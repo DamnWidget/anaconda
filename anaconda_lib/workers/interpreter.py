@@ -105,18 +105,18 @@ class Interpreter(object):
         """Extract the port to connect to
         """
 
-        if sublime.platform() == 'windows':
+        if sublime.platform() != 'linux':
             self.__data['host'] = 'localhost'
         else:
             self.__data['host'] = self.__get_unix_domain_socket()
             return
 
         if debug_enabled(view):
-            port = get_settings(view, 'jsonserver_debug_port', 999)
+            port = get_settings(view, 'jsonserver_debug_port', 9999)
             self.__data['port'] = port
             return
 
-        if sublime.platform() == 'windows':
+        if sublime.platform() != 'linux':
             s = socket.socket()
             s.bind(('', 0))
             self.__data['port'] = s.getsockname()[1]
@@ -173,7 +173,7 @@ class Interpreter(object):
         """Compound the Unix domain socket path
         """
 
-        if sublime.platform() == 'windows':
+        if sublime.platform() != 'linux':
             return 'localhost'
 
         return UnixSocketPath(self.project_name).socket

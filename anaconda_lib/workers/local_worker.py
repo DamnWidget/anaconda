@@ -102,7 +102,7 @@ class LocalWorker(Worker):
 
         check = 'that you can connect to your localhost'
         addr = '("localhost", {})'.format(self.interpreter.port)
-        if sublime.platform() != 'windows':
+        if sublime.platform() == 'linux':
             check = (
                 'that the Unix Domain Socket file {} exists and that you can '
                 'connect to it'
