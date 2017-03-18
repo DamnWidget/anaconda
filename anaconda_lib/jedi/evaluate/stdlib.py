@@ -16,9 +16,10 @@ from jedi._compatibility import unicode
 from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
+from jedi.evaluate.instance import InstanceFunctionExecution, \
+    AbstractInstanceContext, CompiledInstance, BoundMethod
 from jedi.evaluate import iterable
 from jedi.parser import ParserWithRecovery
-from jedi.parser import tree
 from jedi import debug
 from jedi.evaluate import precedence
 from jedi.evaluate import param
@@ -30,15 +31,18 @@ class NotInStdLib(LookupError):
 
 
 def execute(evaluator, obj, arguments):
+    if isinstance(obj, BoundMethod):
+        raise NotInStdLib()
+
     try:
-        obj_name = str(obj.name)
+        obj_name = obj.name.string_name
     except AttributeError:
         pass
     else:
-        if obj.parent == evaluator.BUILTINS:
+        if obj.parent_context == evaluator.BUILTINS:
             module_name = 'builtins'
-        elif isinstance(obj.parent, tree.Module):
-            module_name = str(obj.parent.name)
+        elif isinstance(obj.parent_context, er.ModuleContext):
+            module_name = obj.parent_context.name.string_name
         else:
             module_name = ''
 
@@ -54,14 +58,14 @@ def execute(evaluator, obj, arguments):
 
 def _follow_param(evaluator, arguments, index):
     try:
-        key, values = list(arguments.unpack())[index]
+        key, lazy_context = list(arguments.unpack())[index]
     except IndexError:
         return set()
     else:
-        return unite(evaluator.eval_element(v) for v in values)
+        return lazy_context.infer()
 
 
-def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=False):
+def argument_clinic(string, want_obj=False, want_context=False, want_arguments=False):
     """
     Works like Argument Clinic (PEP 436), to validate function params.
     """
@@ -91,8 +95,8 @@ def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=Fal
                 return set()
             else:
                 kwargs = {}
-                if want_scope:
-                    kwargs['scope'] = arguments.scope()
+                if want_context:
+                    kwargs['context'] = arguments.context
                 if want_obj:
                     kwargs['obj'] = obj
                 if want_arguments:
@@ -105,17 +109,36 @@ def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=Fal
     return f
 
 
+@argument_clinic('iterator[, default], /')
+def builtins_next(evaluator, iterators, defaults):
+    """
+    TODO this function is currently not used. It's a stab at implementing next
+    in a different way than fake objects. This would be a bit more flexible.
+    """
+    if evaluator.python_version[0] == 2:
+        name = 'next'
+    else:
+        name = '__next__'
+
+    types = set()
+    for iterator in iterators:
+        if isinstance(iterator, AbstractInstanceContext):
+            for filter in iterator.get_filters(include_self_names=True):
+                for n in filter.get(name):
+                    for context in n.infer():
+                        types |= context.execute_evaluated()
+    if types:
+        return types
+    return defaults
+
+
 @argument_clinic('object, name[, default], /')
 def builtins_getattr(evaluator, objects, names, defaults=None):
     # follow the first param
     for obj in objects:
-        if not isinstance(obj, (er.Instance, er.Class, tree.Module, compiled.CompiledObject)):
-            debug.warning('getattr called without instance')
-            continue
-
         for name in names:
             if precedence.is_string(name):
-                return evaluator.find_types(obj, name.obj)
+                return obj.py__getattribute__(name.obj)
             else:
                 debug.warning('getattr called without str')
                 continue
@@ -131,29 +154,19 @@ def builtins_type(evaluator, objects, bases, dicts):
         return set([o.py__class__() for o in objects])
 
 
-class SuperInstance(er.Instance):
+class SuperInstance(AbstractInstanceContext):
     """To be used like the object ``super`` returns."""
     def __init__(self, evaluator, cls):
         su = cls.py_mro()[1]
         super().__init__(evaluator, su and su[0] or self)
 
 
-@argument_clinic('[type[, obj]], /', want_scope=True)
-def builtins_super(evaluator, types, objects, scope):
+@argument_clinic('[type[, obj]], /', want_context=True)
+def builtins_super(evaluator, types, objects, context):
     # TODO make this able to detect multiple inheritance super
-    accept = (tree.Function, er.FunctionExecution)
-    if scope.isinstance(*accept):
-        wanted = (tree.Class, er.Instance)
-        cls = scope.get_parent_until(accept + wanted,
-                                     include_current=False)
-        if isinstance(cls, wanted):
-            if isinstance(cls, tree.Class):
-                cls = er.Class(evaluator, cls)
-            elif isinstance(cls, er.Instance):
-                cls = cls.base
-            su = cls.py__bases__()
-            if su:
-                return evaluator.execute(su[0])
+    if isinstance(context, InstanceFunctionExecution):
+        su = context.instance.py__class__().py__bases__()
+        return unite(context.execute_evaluated() for context in su[0].infer())
     return set()
 
 
@@ -162,18 +175,17 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     # While we could do without this variable (just by using sequences), we
     # want static analysis to work well. Therefore we need to generated the
     # values again.
-    first_arg = next(arguments.as_tuple())[0]
-    ordered = list(iterable.py__iter__(evaluator, sequences, first_arg))
+    key, lazy_context = next(arguments.unpack())
+    ordered = list(iterable.py__iter__(evaluator, sequences, lazy_context.data))
 
-    rev = [iterable.AlreadyEvaluated(o) for o in reversed(ordered)]
+    rev = list(reversed(ordered))
     # Repack iterator values and then run it the normal way. This is
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
-    rev = iterable.AlreadyEvaluated(
-        [iterable.FakeSequence(evaluator, rev, 'list')]
-    )
-    return set([er.Instance(evaluator, obj, param.Arguments(evaluator, [rev]))])
+    seq = iterable.FakeSequence(evaluator, 'list', rev)
+    arguments = param.ValuesArguments([[seq]])
+    return set([CompiledInstance(evaluator, evaluator.BUILTINS, obj, arguments)])
 
 
 @argument_clinic('obj, type, /', want_arguments=True)
@@ -193,18 +205,21 @@ def builtins_isinstance(evaluator, objects, types, arguments):
         for cls_or_tup in types:
             if cls_or_tup.is_class():
                 bool_results.add(cls_or_tup in mro)
-            elif str(cls_or_tup.name) == 'tuple' \
-                    and cls_or_tup.get_parent_scope() == evaluator.BUILTINS:
+            elif cls_or_tup.name.string_name == 'tuple' \
+                    and cls_or_tup.get_root_context() == evaluator.BUILTINS:
                 # Check for tuples.
-                classes = unite(cls_or_tup.py__iter__())
+                classes = unite(
+                    lazy_context.infer()
+                    for lazy_context in cls_or_tup.py__iter__()
+                )
                 bool_results.add(any(cls in mro for cls in classes))
             else:
-                _, nodes = list(arguments.unpack())[1]
-                for node in nodes:
-                    message = 'TypeError: isinstance() arg 2 must be a ' \
-                              'class, type, or tuple of classes and types, ' \
-                              'not %s.' % cls_or_tup
-                    analysis.add(evaluator, 'type-error-isinstance', node, message)
+                _, lazy_context = list(arguments.unpack())[1]
+                node = lazy_context.data
+                message = 'TypeError: isinstance() arg 2 must be a ' \
+                          'class, type, or tuple of classes and types, ' \
+                          'not %s.' % cls_or_tup
+                analysis.add(cls_or_tup, 'type-error-isinstance', node, message)
 
     return set(compiled.create(evaluator, x) for x in bool_results)
 
@@ -229,11 +244,12 @@ def collections_namedtuple(evaluator, obj, arguments):
     _fields = list(_follow_param(evaluator, arguments, 1))[0]
     if isinstance(_fields, compiled.CompiledObject):
         fields = _fields.obj.replace(',', ' ').split()
-    elif isinstance(_fields, iterable.Array):
-        try:
-            fields = [v.obj for v in unite(_fields.py__iter__())]
-        except AttributeError:
-            return set()
+    elif isinstance(_fields, iterable.AbstractSequence):
+        fields = [
+            v.obj
+            for lazy_context in _fields.py__iter__()
+            for v in lazy_context.infer() if hasattr(v, 'obj')
+        ]
     else:
         return set()
 
@@ -250,7 +266,7 @@ def collections_namedtuple(evaluator, obj, arguments):
 
     # Parse source
     generated_class = ParserWithRecovery(evaluator.grammar, unicode(source)).module.subscopes[0]
-    return set([er.Class(evaluator, generated_class)])
+    return set([er.ClassContext(evaluator, generated_class, evaluator.BUILTINS)])
 
 
 @argument_clinic('first, /')

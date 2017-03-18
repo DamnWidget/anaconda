@@ -35,6 +35,7 @@ class CompleteParameters(Command):
                 name = p[0]
                 value = None
 
+            name = name.replace('param ', '')
             if value is None:
                 completions.append('${%d:%s}' % (i + 1, name))
             else:
