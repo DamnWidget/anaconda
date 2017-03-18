@@ -10,9 +10,11 @@ class Integration:
         """Returns True if Kite integration is enabled
         """
 
+        globalsettings = sublime.load_settings('Preferences.sublime-settings')
         settings = sublime.load_settings('AnacondaKite.sublime-settings')
         enabled = settings.get('integrate_with_kite', False)
-        if enabled:
+        not_ignored = 'Kite' not in globalsettings.get('ignored_packages')
+        if enabled and not_ignored:
             try:
                 from Kite.lib.installer import check
                 from Kite.lib.exceptions import KiteNotSupported

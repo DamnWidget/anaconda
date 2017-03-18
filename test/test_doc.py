@@ -19,8 +19,6 @@ class TestDoc(object):
     """
 
     def test_doc_command(self):
-        print(jedi)
-        print(jedi.Script(src, path='').call_signatures())
         Doc(self._check_html, 0, jedi.Script(src), True)
 
     def test_doc_plain(self):
@@ -40,14 +38,13 @@ class TestDoc(object):
     def _check_html(self, kwrgs):
         self._common_assertions(kwrgs)
         assert kwrgs['doc'].strip() == (
-            "test_src\ntest_src()<br><br>Test String<br>"
+            '__main__.test_src\ntest_src()<br><br>Test String<br>'
         )
 
     def _check_plain(self, kwrgs):
-        print(kwrgs)
         self._common_assertions(kwrgs)
         assert kwrgs['doc'].strip() == "Docstring for {0}\n{1}\n{2}".format(
-            'test_src',
+            '__main__.test_src',
             '=' * 40,
             'test_src()\n\nTest String'
         )
@@ -56,11 +53,11 @@ class TestDoc(object):
         self._common_assertions(kwrgs)
         if sys.version_info >= (3, 4):
             print(kwrgs['doc'])
-            assert kwrgs['doc'].strip() == 'test_src\ntest_src()<br><br>&lt;strong&gt;Espańa currency €&lt;/strong&gt;'  # noqa
+            assert kwrgs['doc'].strip() == '__main__.test_src\ntest_src()<br><br>&lt;strong&gt;Espańa currency €&lt;/strong&gt;'  # noqa
 
         if sys.version_info < (3, 0):
             print(repr(kwrgs['doc']))
-            assert kwrgs['doc'].strip() == 'test_src\ntest_src()<br><br>&lt;strong&gt;Espa&amp;nacute;a currency \xe2\x82\xac&lt;/strong&gt;'  # noqa
+            assert kwrgs['doc'].strip() == '__main__.test_src\ntest_src()<br><br>&lt;strong&gt;Espa&amp;nacute;a currency \xe2\x82\xac&lt;/strong&gt;'  # noqa
 
     def _check_no_definition(self, kwrgs):
         assert kwrgs['success'] is False
