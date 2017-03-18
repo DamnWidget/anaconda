@@ -1,49 +1,68 @@
-from jedi._compatibility import unicode
 from jedi.api import classes
 from jedi.parser import tree
 from jedi.evaluate import imports
+from jedi.evaluate.filters import TreeNameDefinition
+from jedi.evaluate.representation import ModuleContext
 
 
 def usages(evaluator, definition_names, mods):
     """
     :param definitions: list of Name
     """
-    def compare_array(definitions):
+    def resolve_names(definition_names):
+        for name in definition_names:
+            if name.api_type == 'module':
+                found = False
+                for context in name.infer():
+                    found = True
+                    yield context.name
+                if not found:
+                    yield name
+            else:
+                yield name
+
+    def compare_array(definition_names):
         """ `definitions` are being compared by module/start_pos, because
         sometimes the id's of the objects change (e.g. executions).
         """
-        result = []
-        for d in definitions:
-            module = d.get_parent_until()
-            result.append((module, d.start_pos))
-        return result
+        return [
+            (name.get_root_context(), name.start_pos)
+            for name in resolve_names(definition_names)
+        ]
 
-    search_name = unicode(list(definition_names)[0])
+    search_name = list(definition_names)[0].string_name
     compare_definitions = compare_array(definition_names)
-    mods |= set([d.get_parent_until() for d in definition_names])
-    definitions = []
+    mods = mods | set([d.get_root_context() for d in definition_names])
+    definition_names = set(resolve_names(definition_names))
     for m in imports.get_modules_containing_name(evaluator, mods, search_name):
-        try:
-            check_names = m.used_names[search_name]
-        except KeyError:
-            continue
-        for name in check_names:
+        if isinstance(m, ModuleContext):
+            for name_node in m.tree_node.used_names.get(search_name, []):
+                context = evaluator.create_context(m, name_node)
+                result = evaluator.goto(context, name_node)
+                if [c for c in compare_array(result) if c in compare_definitions]:
+                    name = TreeNameDefinition(context, name_node)
+                    definition_names.add(name)
+                    # Previous definitions might be imports, so include them
+                    # (because goto might return that import name).
+                    compare_definitions += compare_array([name])
+        else:
+            # compiled objects
+            definition_names.add(m.name)
 
-            result = evaluator.goto(name)
-            if [c for c in compare_array(result) if c in compare_definitions]:
-                definitions.append(classes.Definition(evaluator, name))
-                # Previous definitions might be imports, so include them
-                # (because goto might return that import name).
-                compare_definitions += compare_array([name])
-    return definitions
+    return [classes.Definition(evaluator, n) for n in definition_names]
 
 
-def usages_add_import_modules(evaluator, definitions):
+def resolve_potential_imports(evaluator, definitions):
     """ Adds the modules of the imports """
     new = set()
     for d in definitions:
-        imp_or_stmt = d.get_definition()
-        if isinstance(imp_or_stmt, tree.Import):
-            s = imports.ImportWrapper(evaluator, d)
-            new |= set(s.follow(is_goto=True))
+        if isinstance(d, TreeNameDefinition):
+            imp_or_stmt = d.tree_name.get_definition()
+            if isinstance(imp_or_stmt, tree.Import):
+                new |= resolve_potential_imports(
+                    evaluator,
+                    set(imports.infer_import(
+                        d.parent_context, d.tree_name, is_goto=True
+                    ))
+                )
     return set(definitions) | new

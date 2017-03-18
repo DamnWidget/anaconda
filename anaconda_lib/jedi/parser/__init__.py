@@ -18,10 +18,11 @@ complexity of the ``Parser`` (there's another parser sitting inside
 import os
 import re
 
+from jedi._compatibility import FileNotFoundError
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
-                               STRING)
+                               STRING, tok_name)
 from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.pgen2.parse import PgenParser
 
@@ -40,7 +41,7 @@ class ParseError(Exception):
     """
 
 
-def load_grammar(version='3.4'):
+def load_grammar(version='3.6'):
     # For now we only support two different Python syntax versions: The latest
     # Python 3 and Python 2. This may change.
     if version in ('3.2', '3.3'):
@@ -55,7 +56,11 @@ def load_grammar(version='3.4'):
     try:
         return _loaded_grammars[path]
     except KeyError:
-        return _loaded_grammars.setdefault(path, generate_grammar(path))
+        try:
+            return _loaded_grammars.setdefault(path, generate_grammar(path))
+        except FileNotFoundError:
+            # Just load the default if the file does not exist.
+            return load_grammar()
 
 
 class ParserSyntaxError(object):
@@ -100,20 +105,14 @@ class Parser(object):
         # Todo Remove start_parsing (with False)
 
         self._used_names = {}
-        self._scope_names_stack = [{}]
-        self._last_failed_start_pos = (0, 0)
-        self._global_names = []
 
-        # For the fast parser.
-        self.position_modifier = pt.PositionModifier()
-
+        self.source = source
         self._added_newline = False
         # The Python grammar needs a newline at the end of each statement.
         if not source.endswith('\n') and start_symbol == 'file_input':
             source += '\n'
             self._added_newline = True
 
-        self.source = source
         self._start_symbol = start_symbol
         self._grammar = grammar
 
@@ -129,15 +128,12 @@ class Parser(object):
             return self._parsed
 
         start_number = self._grammar.symbol2number[self._start_symbol]
-        pgen_parser = PgenParser(
+        self.pgen_parser = PgenParser(
             self._grammar, self.convert_node, self.convert_leaf,
             self.error_recovery, start_number
         )
 
-        try:
-            self._parsed = pgen_parser.parse(tokenizer)
-        finally:
-            self.stack = pgen_parser.stack
+        self._parsed = self.pgen_parser.parse(tokenizer)
 
         if self._start_symbol == 'file_input' != self._parsed.type:
             # If there's only one statement, we get back a non-module. That's
@@ -148,9 +144,15 @@ class Parser(object):
 
         if self._added_newline:
             self.remove_last_newline()
+        # The stack is empty now, we don't need it anymore.
+        del self.pgen_parser
+        return self._parsed
 
     def get_parsed_node(self):
-        # TODO rename to get_root_node
+        # TODO remove in favor of get_root_node
+        return self._parsed
+
+    def get_root_node(self):
         return self._parsed
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
@@ -167,71 +169,39 @@ class Parser(object):
         """
         symbol = grammar.number2symbol[type]
         try:
-            new_node = Parser.AST_MAPPING[symbol](children)
+            return Parser.AST_MAPPING[symbol](children)
         except KeyError:
-            new_node = pt.Node(symbol, children)
-
-        # We need to check raw_node always, because the same node can be
-        # returned by convert multiple times.
-        if symbol == 'global_stmt':
-            self._global_names += new_node.get_global_names()
-        elif isinstance(new_node, pt.Lambda):
-            new_node.names_dict = self._scope_names_stack.pop()
-        elif isinstance(new_node, (pt.ClassOrFunc, pt.Module)) \
-                and symbol in ('funcdef', 'classdef', 'file_input'):
-            # scope_name_stack handling
-            scope_names = self._scope_names_stack.pop()
-            if isinstance(new_node, pt.ClassOrFunc):
-                n = new_node.name
-                scope_names[n.value].remove(n)
-                # Set the func name of the current node
-                arr = self._scope_names_stack[-1].setdefault(n.value, [])
-                arr.append(n)
-            new_node.names_dict = scope_names
-        elif isinstance(new_node, pt.CompFor):
-            # The name definitions of comprehenions shouldn't be part of the
-            # current scope. They are part of the comprehension scope.
-            for n in new_node.get_defined_names():
-                self._scope_names_stack[-1][n.value].remove(n)
-        return new_node
+            if symbol == 'suite':
+                # We don't want the INDENT/DEDENT in our parser tree. Those
+                # leaves are just cancer. They are virtual leaves and not real
+                # ones and therefore have pseudo start/end positions and no
+                # prefixes. Just ignore them.
+                children = [children[0]] + children[2:-1]
+            return pt.Node(symbol, children)
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
         # print('leaf', repr(value), token.tok_name[type])
         if type == tokenize.NAME:
             if value in grammar.keywords:
-                if value in ('def', 'class', 'lambda'):
-                    self._scope_names_stack.append({})
-
-                return pt.Keyword(self.position_modifier, value, start_pos, prefix)
+                return pt.Keyword(value, start_pos, prefix)
             else:
-                name = pt.Name(self.position_modifier, value, start_pos, prefix)
+                name = pt.Name(value, start_pos, prefix)
                 # Keep a listing of all used names
                 arr = self._used_names.setdefault(name.value, [])
                 arr.append(name)
-                arr = self._scope_names_stack[-1].setdefault(name.value, [])
-                arr.append(name)
                 return name
         elif type == STRING:
-            return pt.String(self.position_modifier, value, start_pos, prefix)
+            return pt.String(value, start_pos, prefix)
         elif type == NUMBER:
-            return pt.Number(self.position_modifier, value, start_pos, prefix)
+            return pt.Number(value, start_pos, prefix)
         elif type == NEWLINE:
-            return pt.Newline(self.position_modifier, value, start_pos, prefix)
-        elif type == INDENT:
-            return pt.Indent(self.position_modifier, value, start_pos, prefix)
-        elif type == DEDENT:
-            return pt.Dedent(self.position_modifier, value, start_pos, prefix)
+            return pt.Newline(value, start_pos, prefix)
         elif type == ENDMARKER:
-            return pt.EndMarker(self.position_modifier, value, start_pos, prefix)
+            return pt.EndMarker(value, start_pos, prefix)
         else:
-            return pt.Operator(self.position_modifier, value, start_pos, prefix)
+            return pt.Operator(value, start_pos, prefix)
 
     def remove_last_newline(self):
-        """
-        In all of this we need to work with _start_pos, because if we worked
-        with start_pos, we would need to check the position_modifier as well
-        (which is accounted for in the start_pos property).
-        """
         endmarker = self._parsed.children[-1]
         # The newline is either in the endmarker as a prefix or the previous
         # leaf as a newline token.
@@ -247,37 +217,17 @@ class Parser(object):
                 except IndexError:
                     pass
             last_line = re.sub('.*\n', '', prefix)
-            endmarker._start_pos = endmarker._start_pos[0] - 1, last_end + len(last_line)
+            endmarker.start_pos = endmarker.line - 1, last_end + len(last_line)
         else:
             try:
                 newline = endmarker.get_previous_leaf()
             except IndexError:
                 return  # This means that the parser is empty.
-            while True:
-                if newline.value == '':
-                    # Must be a DEDENT, just continue.
-                    try:
-                        newline = newline.get_previous_leaf()
-                    except IndexError:
-                        # If there's a statement that fails to be parsed, there
-                        # will be no previous leaf. So just ignore it.
-                        break
-                elif newline.value != '\n':
-                    # TODO REMOVE, error recovery was simplified.
-                    # This may happen if error correction strikes and removes
-                    # a whole statement including '\n'.
-                    break
-                else:
-                    newline.value = ''
-                    if self._last_failed_start_pos > newline._start_pos:
-                        # It may be the case that there was a syntax error in a
-                        # function. In that case error correction removes the
-                        # right newline. So we use the previously assigned
-                        # _last_failed_start_pos variable to account for that.
-                        endmarker._start_pos = self._last_failed_start_pos
-                    else:
-                        endmarker._start_pos = newline._start_pos
-                    break
+
+            assert newline.value.endswith('\n')
+            newline.value = newline.value[:-1]
+            endmarker.start_pos = \
+                newline.start_pos[0], newline.start_pos[1] + len(newline.value)
 
 
 class ParserWithRecovery(Parser):
@@ -296,6 +246,7 @@ class ParserWithRecovery(Parser):
 
         self._omit_dedent_list = []
         self._indent_counter = 0
+        self._module_path = module_path
 
         # TODO do print absolute import detection here.
         # try:
@@ -311,14 +262,13 @@ class ParserWithRecovery(Parser):
             tokenizer=tokenizer,
             start_parsing=start_parsing
         )
-        if start_parsing:
-            self.module = self._parsed
-            self.module.used_names = self._used_names
-            self.module.path = module_path
-            self.module.global_names = self._global_names
 
     def parse(self, tokenizer):
-        return super(ParserWithRecovery, self).parse(self._tokenize(self._tokenize(tokenizer)))
+        root_node = super(ParserWithRecovery, self).parse(self._tokenize(tokenizer))
+        self.module = root_node
+        self.module.used_names = self._used_names
+        self.module.path = self._module_path
+        return root_node
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):
@@ -364,7 +314,7 @@ class ParserWithRecovery(Parser):
                 # Otherwise the parser will get into trouble and DEDENT too early.
                 self._omit_dedent_list.append(self._indent_counter)
             else:
-                error_leaf = pt.ErrorLeaf(self.position_modifier, typ, value, start_pos, prefix)
+                error_leaf = pt.ErrorLeaf(tok_name[typ].lower(), value, start_pos, prefix)
                 stack[-1][2][1].append(error_leaf)
 
     def _stack_removal(self, grammar, stack, arcs, start_index, value, start_pos):
@@ -378,12 +328,8 @@ class ParserWithRecovery(Parser):
                 symbol = grammar.number2symbol[typ]
                 failed_stack.append((symbol, nodes))
                 all_nodes += nodes
-            if nodes and nodes[0] in ('def', 'class', 'lambda'):
-                self._scope_names_stack.pop()
         if failed_stack:
             stack[start_index - 1][2][1].append(pt.ErrorNode(all_nodes))
-
-        self._last_failed_start_pos = start_pos
 
         stack[start_index:] = []
         return failed_stack
