@@ -10,8 +10,11 @@ from functools import partial
 from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
-from jedi.parser.tree import Param, Base, Operator, zero_position_modifier
+from jedi.parser.tree import Param, Operator
 from jedi.evaluate.helpers import FakeName
+from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
+    ContextNameMixin
+from jedi.evaluate.context import Context, LazyKnownContext
 from . import fake
 
 
@@ -31,46 +34,62 @@ class CheckAttribute(object):
 
     def __get__(self, instance, owner):
         # This might raise an AttributeError. That's wanted.
-        getattr(instance.obj, self.check_name)
+        if self.check_name == '__iter__':
+            # Python iterators are a bit strange, because there's no need for
+            # the __iter__ function as long as __getitem__ is defined (it will
+            # just start with __getitem__(0). This is especially true for
+            # Python 2 strings, where `str.__iter__` is not even defined.
+            try:
+                iter(instance.obj)
+            except TypeError:
+                raise AttributeError
+        else:
+            getattr(instance.obj, self.check_name)
         return partial(self.func, instance)
 
 
-class CompiledObject(Base):
-    # comply with the parser
-    start_pos = 0, 0
+class CompiledObject(Context):
     path = None  # modules have this attribute - set it to None.
     used_names = {}  # To be consistent with modules.
 
-    def __init__(self, evaluator, obj, parent=None):
-        self._evaluator = evaluator
+    def __init__(self, evaluator, obj, parent_context=None, faked_class=None):
+        super(CompiledObject, self).__init__(evaluator, parent_context)
         self.obj = obj
-        self.parent = parent
+        # This attribute will not be set for most classes, except for fakes.
+        self.tree_node = faked_class
+
+    def get_root_node(self):
+        # To make things a bit easier with filters we add this method here.
+        return self.get_root_context()
 
     @CheckAttribute
     def py__call__(self, params):
         if inspect.isclass(self.obj):
-            from jedi.evaluate.representation import Instance
-            return set([Instance(self._evaluator, self, params)])
+            from jedi.evaluate.instance import CompiledInstance
+            return set([CompiledInstance(self.evaluator, self.parent_context, self, params)])
         else:
             return set(self._execute_function(params))
 
     @CheckAttribute
     def py__class__(self):
-        return create(self._evaluator, self.obj.__class__)
+        return create(self.evaluator, self.obj.__class__)
 
     @CheckAttribute
     def py__mro__(self):
-        return tuple(create(self._evaluator, cls) for cls in self.obj.__mro__)
+        return (self,) + tuple(create(self.evaluator, cls) for cls in self.obj.__mro__[1:])
 
     @CheckAttribute
     def py__bases__(self):
-        return tuple(create(self._evaluator, cls) for cls in self.obj.__bases__)
+        return tuple(create(self.evaluator, cls) for cls in self.obj.__bases__)
 
     def py__bool__(self):
         return bool(self.obj)
 
     def py__file__(self):
-        return self.obj.__file__
+        try:
+            return self.obj.__file__
+        except AttributeError:
+            return None
 
     def is_class(self):
         return inspect.isclass(self.obj)
@@ -80,7 +99,8 @@ class CompiledObject(Base):
         return inspect.getdoc(self.obj) or ''
 
     @property
-    def params(self):
+    def get_params(self):
+        return []  # TODO Fix me.
         params_str, ret = self._parse_function_doc()
         tokens = params_str.split(',')
         if inspect.ismethoddescriptor(self.obj):
@@ -89,12 +109,23 @@ class CompiledObject(Base):
         for p in tokens:
             parts = [FakeName(part) for part in p.strip().split('=')]
             if len(parts) > 1:
-                parts.insert(1, Operator(zero_position_modifier, '=', (0, 0)))
+                parts.insert(1, Operator('=', (0, 0)))
             params.append(Param(parts, self))
         return params
 
+    def get_param_names(self):
+        params_str, ret = self._parse_function_doc()
+        tokens = params_str.split(',')
+        if inspect.ismethoddescriptor(self.obj):
+            tokens.insert(0, 'self')
+        for p in tokens:
+            parts = p.strip().split('=')
+            if len(parts) > 1:
+                parts.insert(1, Operator('=', (0, 0)))
+            yield UnresolvableParamName(self, parts[0])
+
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, repr(self.obj))
+        return '<%s: %s>' % (self.__class__.__name__, repr(self.obj))
 
     @underscore_memoization
     def _parse_function_doc(self):
@@ -103,6 +134,7 @@ class CompiledObject(Base):
 
         return _parse_function_doc(self.doc)
 
+    @property
     def api_type(self):
         obj = self.obj
         if inspect.isclass(obj):
@@ -148,25 +180,21 @@ class CompiledObject(Base):
             # automatically by doing `import numpy`.
             return type
 
-    @property
-    def names_dict(self):
-        # For compatibility with `representation.Class`.
-        return self.names_dicts(False)[0]
-
-    def names_dicts(self, search_global, is_instance=False):
-        return self._names_dict_ensure_one_dict(is_instance)
+    def get_filters(self, search_global=False, is_instance=False,
+                    until_position=None, origin_scope=None):
+        yield self._ensure_one_filter(is_instance)
 
     @memoize_method
-    def _names_dict_ensure_one_dict(self, is_instance):
+    def _ensure_one_filter(self, is_instance):
         """
         search_global shouldn't change the fact that there's one dict, this way
         there's only one `object`.
         """
-        return [LazyNamesDict(self._evaluator, self, is_instance)]
+        return CompiledObjectFilter(self.evaluator, self, is_instance)
 
     def get_subscope_by_name(self, name):
         if name in dir(self.obj):
-            return CompiledName(self._evaluator, self, name).parent
+            return CompiledName(self.evaluator, self, name).parent
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
 
@@ -176,7 +204,7 @@ class CompiledObject(Base):
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return set()
 
-        return set([create(self._evaluator, self.obj[index])])
+        return set([create(self.evaluator, self.obj[index])])
 
     @CheckAttribute
     def py__iter__(self):
@@ -185,7 +213,13 @@ class CompiledObject(Base):
             return
 
         for part in self.obj:
-            yield set([create(self._evaluator, part)])
+            yield LazyKnownContext(create(self.evaluator, part))
+
+    def py__name__(self):
+        try:
+            return self._get_class().__name__
+        except AttributeError:
+            return None
 
     @property
     def name(self):
@@ -193,7 +227,7 @@ class CompiledObject(Base):
             name = self._get_class().__name__
         except AttributeError:
             name = repr(self.obj)
-        return FakeName(name, self)
+        return CompiledContextName(self, name)
 
     def _execute_function(self, params):
         if self.type != 'funcdef':
@@ -209,27 +243,9 @@ class CompiledObject(Base):
                     # We want to evaluate everything except None.
                     # TODO do we?
                     continue
-                bltn_obj = create(self._evaluator, bltn_obj)
-                for result in self._evaluator.execute(bltn_obj, params):
+                bltn_obj = create(self.evaluator, bltn_obj)
+                for result in self.evaluator.execute(bltn_obj, params):
                     yield result
-
-    @property
-    @underscore_memoization
-    def subscopes(self):
-        """
-        Returns only the faked scopes - the other ones are not important for
-        internal analysis.
-        """
-        module = self.get_parent_until()
-        faked_subscopes = []
-        for name in dir(self.obj):
-            try:
-                faked_subscopes.append(
-                    fake.get_faked(module.obj, self.obj, parent=self, name=name)
-                )
-            except fake.FakeDoesNotExist:
-                pass
-        return faked_subscopes
 
     def is_scope(self):
         return True
@@ -241,77 +257,102 @@ class CompiledObject(Base):
         return []  # Builtins don't have imports
 
 
-class CompiledName(FakeName):
-    def __init__(self, evaluator, compiled_obj, name):
-        super(CompiledName, self).__init__(name)
+class CompiledName(AbstractNameDefinition):
+    def __init__(self, evaluator, parent_context, name):
         self._evaluator = evaluator
-        self._compiled_obj = compiled_obj
-        self.name = name
+        self.parent_context = parent_context
+        self.string_name = name
 
     def __repr__(self):
         try:
-            name = self._compiled_obj.name  # __name__ is not defined all the time
+            name = self.parent_context.name  # __name__ is not defined all the time
         except AttributeError:
             name = None
-        return '<%s: (%s).%s>' % (type(self).__name__, name, self.name)
-
-    def is_definition(self):
-        return True
+        return '<%s: (%s).%s>' % (self.__class__.__name__, name, self.string_name)
 
     @property
+    def api_type(self):
+        return next(iter(self.infer())).api_type
+
     @underscore_memoization
-    def parent(self):
-        module = self._compiled_obj.get_parent_until()
-        return _create_from_name(self._evaluator, module, self._compiled_obj, self.name)
-
-    @parent.setter
-    def parent(self, value):
-        pass  # Just ignore this, FakeName tries to overwrite the parent attribute.
+    def infer(self):
+        module = self.parent_context.get_root_context()
+        return [_create_from_name(self._evaluator, module, self.parent_context, self.string_name)]
 
 
-class LazyNamesDict(object):
+class UnresolvableParamName(AbstractNameDefinition):
+    api_type = 'param'
+
+    def __init__(self, compiled_obj, name):
+        self.parent_context = compiled_obj.parent_context
+        self.string_name = name
+
+    def infer(self):
+        return set()
+
+
+class CompiledContextName(ContextNameMixin, AbstractNameDefinition):
+    def __init__(self, context, name):
+        self.string_name = name
+        self._context = context
+        self.parent_context = context.parent_context
+
+
+class EmptyCompiledName(AbstractNameDefinition):
     """
-    A names_dict instance for compiled objects, resembles the parser.tree.
+    Accessing some names will raise an exception. To avoid not having any
+    completions, just give Jedi the option to return this object. It infers to
+    nothing.
     """
+    def __init__(self, evaluator, name):
+        self.parent_context = evaluator.BUILTINS
+        self.string_name = name
+
+    def infer(self):
+        return []
+
+
+class CompiledObjectFilter(AbstractFilter):
     name_class = CompiledName
 
-    def __init__(self, evaluator, compiled_obj, is_instance=False):
+    def __init__(self, evaluator, compiled_object, is_instance=False):
         self._evaluator = evaluator
-        self._compiled_obj = compiled_obj
+        self._compiled_object = compiled_object
         self._is_instance = is_instance
 
-    def __iter__(self):
-        return (v[0].value for v in self.values())
-
     @memoize_method
-    def __getitem__(self, name):
+    def get(self, name):
+        name = str(name)
+        obj = self._compiled_object.obj
         try:
-            getattr(self._compiled_obj.obj, name)
+            getattr(obj, name)
+            if self._is_instance and name not in dir(obj):
+                return []
         except AttributeError:
-            raise KeyError('%s in %s not found.' % (name, self._compiled_obj))
+            return []
         except Exception:
             # This is a bit ugly. We're basically returning this to make
             # lookups possible without having the actual attribute. However
             # this makes proper completion possible.
-            return [FakeName(name, create(self._evaluator, None), is_definition=True)]
-        return [self.name_class(self._evaluator, self._compiled_obj, name)]
+            return [EmptyCompiledName(self._evaluator, name)]
+        return [self._create_name(name)]
 
     def values(self):
-        obj = self._compiled_obj.obj
+        obj = self._compiled_object.obj
 
-        values = []
+        names = []
         for name in dir(obj):
-            try:
-                values.append(self[name])
-            except KeyError:
-                # The dir function can be wrong.
-                pass
+            names += self.get(name)
 
         is_instance = self._is_instance or fake.is_class_instance(obj)
         # ``dir`` doesn't include the type names.
-        if not inspect.ismodule(obj) and obj != type and not is_instance:
-            values += create(self._evaluator, type).names_dict.values()
-        return values
+        if not inspect.ismodule(obj) and (obj is not type) and not is_instance:
+            for filter in create(self._evaluator, type).get_filters():
+                names += filter.values()
+        return names
+
+    def _create_name(self, name):
+        return self.name_class(self._evaluator, self._compiled_object, name)
 
 
 def dotted_from_fs_path(fs_path, sys_path):
@@ -453,20 +494,25 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-def _create_from_name(evaluator, module, parent, name):
+def _create_from_name(evaluator, module, compiled_object, name):
+    obj = compiled_object.obj
+    faked = None
     try:
-        return fake.get_faked(module.obj, parent.obj, parent=parent, name=name)
+        faked = fake.get_faked(evaluator, module, obj, parent_context=compiled_object, name=name)
+        if faked.type == 'funcdef':
+            from jedi.evaluate.representation import FunctionContext
+            return FunctionContext(evaluator, compiled_object, faked)
     except fake.FakeDoesNotExist:
         pass
 
     try:
-        obj = getattr(parent.obj, name)
+        obj = getattr(obj, name)
     except AttributeError:
         # Happens e.g. in properties of
         # PyQt4.QtGui.QStyleOptionComboBox.currentText
         # -> just set it to None
         obj = None
-    return create(evaluator, obj, parent)
+    return create(evaluator, obj, parent_context=compiled_object, faked=faked)
 
 
 def builtin_from_name(evaluator, string):
@@ -491,7 +537,7 @@ _SPECIAL_OBJECTS = {
 
 def get_special_object(evaluator, identifier):
     obj = _SPECIAL_OBJECTS[identifier]
-    return create(evaluator, obj, parent=create(evaluator, _builtins))
+    return create(evaluator, obj, parent_context=create(evaluator, _builtins))
 
 
 def compiled_objects_cache(attribute_name):
@@ -501,21 +547,17 @@ def compiled_objects_cache(attribute_name):
         Caching the id has the advantage that an object doesn't need to be
         hashable.
         """
-        def wrapper(evaluator, obj, parent=None, module=None):
+        def wrapper(evaluator, obj, parent_context=None, module=None, faked=None):
             cache = getattr(evaluator, attribute_name)
             # Do a very cheap form of caching here.
-            key = id(obj), id(parent)
+            key = id(obj), id(parent_context)
             try:
                 return cache[key][0]
             except KeyError:
-                # TODO this whole decorator looks way too ugly and this if
-                # doesn't make it better. Find a more generic solution.
-                if parent or module:
-                    result = func(evaluator, obj, parent, module)
-                else:
-                    result = func(evaluator, obj)
+                # TODO this whole decorator is way too ugly
+                result = func(evaluator, obj, parent_context, module, faked)
                 # Need to cache all of them, otherwise the id could be overwritten.
-                cache[key] = result, obj, parent, module
+                cache[key] = result, obj, parent_context, module, faked
                 return result
         return wrapper
 
@@ -523,22 +565,25 @@ def compiled_objects_cache(attribute_name):
 
 
 @compiled_objects_cache('compiled_cache')
-def create(evaluator, obj, parent=None, module=None):
+def create(evaluator, obj, parent_context=None, module=None, faked=None):
     """
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
     if inspect.ismodule(obj):
-        if parent is not None:
+        if parent_context is not None:
             # Modules don't have parents, be careful with caching: recurse.
             return create(evaluator, obj)
     else:
-        if parent is None and obj != _builtins:
+        if parent_context is None and obj != _builtins:
             return create(evaluator, obj, create(evaluator, _builtins))
 
         try:
-            return fake.get_faked(module and module.obj, obj, parent=parent)
+            faked = fake.get_faked(evaluator, module, obj, parent_context=parent_context)
+            if faked.type == 'funcdef':
+                from jedi.evaluate.representation import FunctionContext
+                return FunctionContext(evaluator, parent_context, faked)
         except fake.FakeDoesNotExist:
             pass
 
-    return CompiledObject(evaluator, obj, parent)
+    return CompiledObject(evaluator, obj, parent_context, faked)

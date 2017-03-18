@@ -1,5 +1,3 @@
-from itertools import chain
-
 from jedi.parser import token
 from jedi.parser import tree
 from jedi import debug
@@ -8,37 +6,33 @@ from jedi.api import classes
 from jedi.api import helpers
 from jedi.evaluate import imports
 from jedi.api import keywords
-from jedi.evaluate import compiled
-from jedi.evaluate.helpers import call_of_leaf
-from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
+from jedi.evaluate.helpers import evaluate_call_of_leaf
+from jedi.evaluate.filters import get_global_filters
 
 
 def get_call_signature_param_names(call_signatures):
     # add named params
     for call_sig in call_signatures:
-        # Allow protected access, because it's a public API.
-        module = call_sig._name.get_parent_until()
-        # Compiled modules typically don't allow keyword arguments.
-        if not isinstance(module, compiled.CompiledObject):
-            for p in call_sig.params:
+        for p in call_sig.params:
+            # Allow protected access, because it's a public API.
+            tree_name = p._name.tree_name
+            # Compiled modules typically don't allow keyword arguments.
+            if tree_name is not None:
                 # Allow access on _definition here, because it's a
                 # public API and we don't want to make the internal
                 # Name object public.
-                if p._definition.stars == 0:  # no *args/**kwargs
+                tree_param = tree.search_ancestor(tree_name, 'param')
+                if tree_param.stars == 0:  # no *args/**kwargs
                     yield p._name
 
 
 def filter_names(evaluator, completion_names, stack, like_name):
     comp_dct = {}
-    for name in set(completion_names):
+    for name in completion_names:
         if settings.case_insensitive_completion \
-                and str(name).lower().startswith(like_name.lower()) \
-                or str(name).startswith(like_name):
+                and name.string_name.lower().startswith(like_name.lower()) \
+                or name.string_name.startswith(like_name):
 
-            if isinstance(name.parent, (tree.Function, tree.Class)):
-                # TODO I think this is a hack. It should be an
-                #   er.Function/er.Class before that.
-                name = evaluator.wrap(name.parent).name
             new = classes.Completion(
                 evaluator,
                 name,
@@ -53,11 +47,11 @@ def filter_names(evaluator, completion_names, stack, like_name):
                 yield new
 
 
-def get_user_scope(module, position):
+def get_user_scope(module_context, position):
     """
     Returns the scope in which the user resides. This includes flows.
     """
-    user_stmt = module.get_statement_for_position(position)
+    user_stmt = module_context.tree_node.get_statement_for_position(position)
     if user_stmt is None:
         def scan(scope):
             for s in scope.children:
@@ -68,19 +62,31 @@ def get_user_scope(module, position):
                         return scan(s)
             return None
 
-        return scan(module) or module
+        scanned_node = scan(module_context.tree_node)
+        if scanned_node:
+            return module_context.create_context(scanned_node, node_is_context=True)
+        return module_context
     else:
-        return user_stmt.get_parent_scope(include_flows=True)
+        return module_context.create_context(user_stmt)
+
+
+def get_flow_scope_node(module_node, position):
+    node = module_node.get_leaf_for_position(position, include_prefixes=True)
+    while not isinstance(node, (tree.Scope, tree.Flow)):
+        node = node.parent
+
+    return node
 
 
 class Completion:
     def __init__(self, evaluator, module, code_lines, position, call_signatures_method):
         self._evaluator = evaluator
-        self._module = evaluator.wrap(module)
+        self._module_context = module
+        self._module_node = module.tree_node
         self._code_lines = code_lines
 
         # The first step of completions is to get the name
-        self._like_name = helpers.get_on_completion_name(module, code_lines, position)
+        self._like_name = helpers.get_on_completion_name(self._module_node, code_lines, position)
         # The actual cursor position is not what we need to calculate
         # everything. We want the start of the name we're on.
         self._position = position[0], position[1] - len(self._like_name)
@@ -115,7 +121,7 @@ class Completion:
 
         try:
             self.stack = helpers.get_stack_at_position(
-                grammar, self._code_lines, self._module, self._position
+                grammar, self._code_lines, self._module_node, self._position
             )
         except helpers.OnErrorLeaf as e:
             self.stack = None
@@ -132,7 +138,7 @@ class Completion:
 
         completion_names = list(self._get_keyword_completion_names(allowed_keywords))
 
-        if token.NAME in allowed_tokens:
+        if token.NAME in allowed_tokens or token.INDENT in allowed_tokens:
             # This means that we actually have to do type inference.
 
             symbol_names = list(self.stack.get_node_names(grammar))
@@ -159,9 +165,8 @@ class Completion:
                 # Also true for defining names as a class or function.
                 return list(self._get_class_context_completions(is_function=True))
             elif symbol_names[-1] == 'trailer' and nodes[-1] == '.':
-                dot = self._module.get_leaf_for_position(self._position)
-                atom_expr = call_of_leaf(dot.get_previous_leaf())
-                completion_names += self._trailer_completions(atom_expr)
+                dot = self._module_node.get_leaf_for_position(self._position)
+                completion_names += self._trailer_completions(dot.get_previous_leaf())
             else:
                 completion_names += self._global_completions()
                 completion_names += self._get_class_context_completions(is_function=False)
@@ -177,38 +182,32 @@ class Completion:
             yield keywords.keyword(self._evaluator, k).name
 
     def _global_completions(self):
-        scope = get_user_scope(self._module, self._position)
-        if not scope.is_scope():  # Might be a flow (if/while/etc).
-            scope = scope.get_parent_scope()
-        scope = self._evaluator.wrap(scope)
-        debug.dbg('global completion scope: %s', scope)
-        names_dicts = global_names_dict_generator(
+        context = get_user_scope(self._module_context, self._position)
+        debug.dbg('global completion scope: %s', context)
+        flow_scope_node = get_flow_scope_node(self._module_node, self._position)
+        filters = get_global_filters(
             self._evaluator,
-            scope,
-            self._position
+            context,
+            self._position,
+            origin_scope=flow_scope_node
         )
         completion_names = []
-        for names_dict, pos in names_dicts:
-            names = list(chain.from_iterable(names_dict.values()))
-            if not names:
-                continue
-            completion_names += filter_definition_names(
-                names, self._module.get_statement_for_position(self._position), pos
-            )
+        for filter in filters:
+            completion_names += filter.values()
         return completion_names
 
-    def _trailer_completions(self, atom_expr):
-        scopes = self._evaluator.eval_element(atom_expr)
+    def _trailer_completions(self, previous_leaf):
+        user_context = get_user_scope(self._module_context, self._position)
+        evaluation_context = self._evaluator.create_context(
+            self._module_context, previous_leaf
+        )
+        contexts = evaluate_call_of_leaf(evaluation_context, previous_leaf)
         completion_names = []
-        debug.dbg('trailer completion scopes: %s', scopes)
-        for s in scopes:
-            names = []
-            for names_dict in s.names_dicts(search_global=False):
-                names += chain.from_iterable(names_dict.values())
-
-            completion_names += filter_definition_names(
-                names, self._module.get_statement_for_position(self._position)
-            )
+        debug.dbg('trailer completion contexts: %s', contexts)
+        for context in contexts:
+            for filter in context.get_filters(
+                    search_global=False, origin_scope=user_context.tree_node):
+                completion_names += filter.values()
         return completion_names
 
     def _parse_dotted_names(self, nodes):
@@ -227,30 +226,32 @@ class Completion:
         return level, names
 
     def _get_importer_names(self, names, level=0, only_modules=True):
-        names = [str(n) for n in names]
-        i = imports.Importer(self._evaluator, names, self._module, level)
+        names = [n.value for n in names]
+        i = imports.Importer(self._evaluator, names, self._module_context, level)
         return i.completion_names(self._evaluator, only_modules=only_modules)
 
     def _get_class_context_completions(self, is_function=True):
         """
         Autocomplete inherited methods when overriding in child class.
         """
-        leaf = self._module.get_leaf_for_position(self._position, include_prefixes=True)
+        leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         cls = leaf.get_parent_until(tree.Class)
         if isinstance(cls, (tree.Class, tree.Function)):
             # Complete the methods that are defined in the super classes.
-            cls = self._evaluator.wrap(cls)
+            random_context = self._module_context.create_context(
+                cls,
+                node_is_context=True
+            )
         else:
             return
 
         if cls.start_pos[1] >= leaf.start_pos[1]:
             return
 
-        names_dicts = cls.names_dicts(search_global=False, is_instance=True)
+        filters = random_context.get_filters(search_global=False, is_instance=True)
         # The first dict is the dictionary of class itself.
-        next(names_dicts)
-        for names_dict in names_dicts:
-            for values in names_dict.values():
-                for value in values:
-                    if (value.parent.type == 'funcdef') == is_function:
-                        yield value
+        next(filters)
+        for filter in filters:
+            for name in filter.values():
+                if (name.api_type == 'function') == is_function:
+                    yield name

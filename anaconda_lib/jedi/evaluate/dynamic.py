@@ -16,14 +16,14 @@ It works as follows:
 - search for function calls named ``foo``
 - execute these calls and check the input. This work with a ``ParamListener``.
 """
-from itertools import chain
 
-from jedi._compatibility import unicode
 from jedi.parser import tree
 from jedi import settings
 from jedi import debug
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import imports
+from jedi.evaluate.param import TreeArguments, create_default_param
+from jedi.common import to_list, unite
 
 
 MAX_PARAM_SEARCHES = 20
@@ -40,8 +40,19 @@ class ParamListener(object):
         self.param_possibilities += params
 
 
+class MergedExecutedParams(object):
+    """
+    Simulates being a parameter while actually just being multiple params.
+    """
+    def __init__(self, executed_params):
+        self._executed_params = executed_params
+
+    def infer(self):
+        return unite(p.infer() for p in self._executed_params)
+
+
 @debug.increase_indent
-def search_params(evaluator, param):
+def search_params(evaluator, parent_context, funcdef):
     """
     A dynamic search for param values. If you try to complete a type:
 
@@ -59,91 +70,132 @@ def search_params(evaluator, param):
 
     evaluator.dynamic_params_depth += 1
     try:
-        func = param.get_parent_until(tree.Function)
-        debug.dbg('Dynamic param search for %s in %s.', param, str(func.name), color='MAGENTA')
-        # Compare the param names.
-        names = [n for n in search_function_call(evaluator, func)
-                 if n.value == param.name.value]
-        # Evaluate the ExecutedParams to types.
-        result = set(chain.from_iterable(n.parent.eval(evaluator) for n in names))
-        debug.dbg('Dynamic param result %s', result, color='MAGENTA')
-        return result
+        debug.dbg('Dynamic param search in %s.', funcdef.name.value, color='MAGENTA')
+        module_context = parent_context.get_root_context()
+        function_executions = _search_function_executions(
+            evaluator,
+            module_context,
+            funcdef
+        )
+        if function_executions:
+            zipped_params = zip(*list(
+                function_execution.get_params()
+                for function_execution in function_executions
+            ))
+            params = [MergedExecutedParams(executed_params) for executed_params in zipped_params]
+            # Evaluate the ExecutedParams to types.
+        else:
+            params = [create_default_param(parent_context, p) for p in funcdef.params]
+        debug.dbg('Dynamic param result finished', color='MAGENTA')
+        return params
     finally:
         evaluator.dynamic_params_depth -= 1
 
 
 @memoize_default([], evaluator_is_first_arg=True)
-def search_function_call(evaluator, func):
+@to_list
+def _search_function_executions(evaluator, module_context, funcdef):
     """
     Returns a list of param names.
     """
     from jedi.evaluate import representation as er
 
-    def get_possible_nodes(module, func_name):
-            try:
-                names = module.used_names[func_name]
-            except KeyError:
+    func_string_name = funcdef.name.value
+    compare_node = funcdef
+    if func_string_name == '__init__':
+        cls = funcdef.get_parent_scope()
+        if isinstance(cls, tree.Class):
+            func_string_name = cls.name.value
+            compare_node = cls
+
+    found_executions = False
+    i = 0
+    for for_mod_context in imports.get_modules_containing_name(
+            evaluator, [module_context], func_string_name):
+        if not isinstance(module_context, er.ModuleContext):
+            return
+        for name, trailer in _get_possible_nodes(for_mod_context, func_string_name):
+            i += 1
+
+            # This is a simple way to stop Jedi's dynamic param recursion
+            # from going wild: The deeper Jedi's in the recursion, the less
+            # code should be evaluated.
+            if i * evaluator.dynamic_params_depth > MAX_PARAM_SEARCHES:
                 return
 
-            for name in names:
-                bracket = name.get_next_leaf()
-                trailer = bracket.parent
-                if trailer.type == 'trailer' and bracket == '(':
-                    yield name, trailer
+            random_context = evaluator.create_context(for_mod_context, name)
+            for function_execution in _check_name_for_execution(
+                    evaluator, random_context, compare_node, name, trailer):
+                found_executions = True
+                yield function_execution
 
-    def undecorate(typ):
-        # We have to remove decorators, because they are not the
-        # "original" functions, this way we can easily compare.
-        # At the same time we also have to remove InstanceElements.
-        if typ.isinstance(er.Function, er.Instance) \
-                and typ.decorates is not None:
-            return typ.decorates
-        elif isinstance(typ, er.InstanceElement):
-            return typ.var
-        else:
-            return typ
+        # If there are results after processing a module, we're probably
+        # good to process. This is a speed optimization.
+        if found_executions:
+            return
 
-    current_module = func.get_parent_until()
-    func_name = unicode(func.name)
-    compare = func
-    if func_name == '__init__':
-        cls = func.get_parent_scope()
-        if isinstance(cls, tree.Class):
-            func_name = unicode(cls.name)
-            compare = cls
 
-    # add the listener
-    listener = ParamListener()
-    func.listeners.add(listener)
-
+def _get_possible_nodes(module_context, func_string_name):
     try:
-        result = []
-        i = 0
-        for mod in imports.get_modules_containing_name(evaluator, [current_module], func_name):
-            for name, trailer in get_possible_nodes(mod, func_name):
-                i += 1
+        names = module_context.tree_node.used_names[func_string_name]
+    except KeyError:
+        return
 
-                # This is a simple way to stop Jedi's dynamic param recursion
-                # from going wild: The deeper Jedi's in the recursin, the less
-                # code should be evaluated.
-                if i * evaluator.dynamic_params_depth > MAX_PARAM_SEARCHES:
-                    return listener.param_possibilities
+    for name in names:
+        bracket = name.get_next_leaf()
+        trailer = bracket.parent
+        if trailer.type == 'trailer' and bracket == '(':
+            yield name, trailer
 
-                for typ in evaluator.goto_definitions(name):
-                    undecorated = undecorate(typ)
-                    if evaluator.wrap(compare) == undecorated:
-                        # Only if we have the correct function we execute
-                        # it, otherwise just ignore it.
-                        evaluator.eval_trailer([typ], trailer)
 
-            result = listener.param_possibilities
+def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
+    from jedi.evaluate import representation as er, instance
 
-            # If there are results after processing a module, we're probably
-            # good to process.
-            if result:
-                return result
-    finally:
-        # cleanup: remove the listener; important: should not stick.
-        func.listeners.remove(listener)
+    def create_func_excs():
+        arglist = trailer.children[1]
+        if arglist == ')':
+            arglist = ()
+        args = TreeArguments(evaluator, context, arglist, trailer)
+        if value_node.type == 'funcdef':
+            yield value.get_function_execution(args)
+        else:
+            created_instance = instance.TreeInstance(
+                evaluator,
+                value.parent_context,
+                value,
+                args
+            )
+            for execution in created_instance.create_init_executions():
+                yield execution
 
-    return set()
+    for value in evaluator.goto_definitions(context, name):
+        value_node = value.tree_node
+        if compare_node == value_node:
+            for func_execution in create_func_excs():
+                yield func_execution
+        elif isinstance(value.parent_context, er.FunctionExecutionContext) and \
+                compare_node.type == 'funcdef':
+            # Here we're trying to find decorators by checking the first
+            # parameter. It's not very generic though. Should find a better
+            # solution that also applies to nested decorators.
+            params = value.parent_context.get_params()
+            if len(params) != 1:
+                continue
+            values = params[0].infer()
+            nodes = [v.tree_node for v in values]
+            if nodes == [compare_node]:
+                # Found a decorator.
+                module_context = context.get_root_context()
+                execution_context = next(create_func_excs())
+                for name, trailer in _get_possible_nodes(module_context, params[0].string_name):
+                    if value_node.start_pos < name.start_pos < value_node.end_pos:
+                        random_context = evaluator.create_context(execution_context, name)
+                        iterator = _check_name_for_execution(
+                            evaluator,
+                            random_context,
+                            compare_node,
+                            name,
+                            trailer
+                        )
+                        for function_execution in iterator:
+                            yield function_execution

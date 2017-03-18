@@ -16,7 +16,6 @@ Completion output
 ~~~~~~~~~~~~~~~~~
 
 .. autodata:: case_insensitive_completion
-.. autodata:: add_dot_after_module
 .. autodata:: add_bracket_after_function
 .. autodata:: no_completion_duplicates
 
@@ -63,7 +62,6 @@ definitely worse in some cases. But a completion should also be fast.
 .. autodata:: max_function_recursion_level
 .. autodata:: max_executions_without_builtins
 .. autodata:: max_executions
-.. autodata:: max_dynamic_params_depth
 .. autodata:: scale_call_signatures
 
 

@@ -9,6 +9,7 @@ from jedi.parser import ParserWithRecovery
 from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
+from jedi.evaluate.compiled import CompiledObject
 from jedi.parser.utils import load_parser, save_parser
 
 
@@ -85,7 +86,7 @@ def _execute_code(module_path, code):
     return []
 
 
-def _paths_from_assignment(evaluator, expr_stmt):
+def _paths_from_assignment(module_context, expr_stmt):
     """
     Extracts the assigned strings from an assignment that looks as follows::
 
@@ -99,7 +100,7 @@ def _paths_from_assignment(evaluator, expr_stmt):
     for assignee, operator in zip(expr_stmt.children[::2], expr_stmt.children[1::2]):
         try:
             assert operator in ['=', '+=']
-            assert tree.is_node(assignee, 'power', 'atom_expr') and \
+            assert assignee.type in ('power', 'atom_expr') and \
                 len(assignee.children) > 1
             c = assignee.children
             assert c[0].type == 'name' and c[0].value == 'sys'
@@ -121,19 +122,19 @@ def _paths_from_assignment(evaluator, expr_stmt):
 
         from jedi.evaluate.iterable import py__iter__
         from jedi.evaluate.precedence import is_string
-        types = evaluator.eval_element(expr_stmt)
-        for types in py__iter__(evaluator, types, expr_stmt):
-            for typ in types:
-                if is_string(typ):
-                    yield typ.obj
+        types = module_context.create_context(expr_stmt).eval_node(expr_stmt)
+        for lazy_context in py__iter__(module_context.evaluator, types, expr_stmt):
+            for context in lazy_context.infer():
+                if is_string(context):
+                    yield context.obj
 
 
 def _paths_from_list_modifications(module_path, trailer1, trailer2):
     """ extract the path from either "sys.path.append" or "sys.path.insert" """
     # Guarantee that both are trailers, the first one a name and the second one
     # a function execution with at least one param.
-    if not (tree.is_node(trailer1, 'trailer') and trailer1.children[0] == '.'
-            and tree.is_node(trailer2, 'trailer') and trailer2.children[0] == '('
+    if not (trailer1.type == 'trailer' and trailer1.children[0] == '.'
+            and trailer2.type == 'trailer' and trailer2.children[0] == '('
             and len(trailer2.children) == 3):
         return []
 
@@ -146,24 +147,27 @@ def _paths_from_list_modifications(module_path, trailer1, trailer2):
     return _execute_code(module_path, arg.get_code())
 
 
-def _check_module(evaluator, module):
+def _check_module(module_context):
     """
     Detect sys.path modifications within module.
     """
     def get_sys_path_powers(names):
         for name in names:
             power = name.parent.parent
-            if tree.is_node(power, 'power', 'atom_expr'):
+            if power.type in ('power', 'atom_expr'):
                 c = power.children
                 if isinstance(c[0], tree.Name) and c[0].value == 'sys' \
-                        and tree.is_node(c[1], 'trailer'):
+                        and c[1].type == 'trailer':
                     n = c[1].children[1]
                     if isinstance(n, tree.Name) and n.value == 'path':
                         yield name, power
 
-    sys_path = list(evaluator.sys_path)  # copy
+    sys_path = list(module_context.evaluator.sys_path)  # copy
+    if isinstance(module_context, CompiledObject):
+        return sys_path
+
     try:
-        possible_names = module.used_names['path']
+        possible_names = module_context.tree_node.used_names['path']
     except KeyError:
         # module.used_names is MergedNamesDict whose getitem never throws
         # keyerror, this is superfluous.
@@ -172,15 +176,20 @@ def _check_module(evaluator, module):
         for name, power in get_sys_path_powers(possible_names):
             stmt = name.get_definition()
             if len(power.children) >= 4:
-                sys_path.extend(_paths_from_list_modifications(module.path, *power.children[2:4]))
+                sys_path.extend(
+                    _paths_from_list_modifications(
+                        module_context.py__file__(), *power.children[2:4]
+                    )
+                )
             elif name.get_definition().type == 'expr_stmt':
-                sys_path.extend(_paths_from_assignment(evaluator, stmt))
+                sys_path.extend(_paths_from_assignment(module_context, stmt))
     return sys_path
 
 
 @memoize_default(evaluator_is_first_arg=True, default=[])
-def sys_path_with_modifications(evaluator, module):
-    if module.path is None:
+def sys_path_with_modifications(evaluator, module_context):
+    path = module_context.py__file__()
+    if path is None:
         # Support for modules without a path is bad, therefore return the
         # normal path.
         return list(evaluator.sys_path)
@@ -188,13 +197,13 @@ def sys_path_with_modifications(evaluator, module):
     curdir = os.path.abspath(os.curdir)
     #TODO why do we need a chdir?
     with common.ignored(OSError):
-        os.chdir(os.path.dirname(module.path))
+        os.chdir(os.path.dirname(path))
 
     buildout_script_paths = set()
 
-    result = _check_module(evaluator, module)
-    result += _detect_django_path(module.path)
-    for buildout_script in _get_buildout_scripts(module.path):
+    result = _check_module(module_context)
+    result += _detect_django_path(path)
+    for buildout_script in _get_buildout_scripts(path):
         for path in _get_paths_from_buildout_script(evaluator, buildout_script):
             buildout_script_paths.add(path)
     # cleanup, back to old directory
@@ -216,11 +225,12 @@ def _get_paths_from_buildout_script(evaluator, buildout_script):
         return p.module
 
     cached = load_parser(buildout_script)
-    module = cached and cached.module or load(buildout_script)
-    if not module:
+    module_node = cached and cached.module or load(buildout_script)
+    if module_node is None:
         return
 
-    for path in _check_module(evaluator, module):
+    from jedi.evaluate.representation import ModuleContext
+    for path in _check_module(ModuleContext(evaluator, module_node)):
         yield path
 
 

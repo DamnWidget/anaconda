@@ -3,7 +3,7 @@ import keyword
 
 from jedi._compatibility import is_py3, is_py35
 from jedi import common
-from jedi.evaluate.helpers import FakeName
+from jedi.evaluate.filters import AbstractNameDefinition
 from jedi.parser.tree import Leaf
 try:
     from pydoc_data import topics as pydoc_topics
@@ -71,11 +71,22 @@ keywords_only_valid_as_leaf = (
 )
 
 
+class KeywordName(AbstractNameDefinition):
+    api_type = 'keyword'
+
+    def __init__(self, evaluator, name):
+        self.string_name = name
+        self.parent_context = evaluator.BUILTINS
+
+    def eval(self):
+        return set()
+
+
 class Keyword(object):
-    type = 'completion_keyword'
+    api_type = 'keyword'
 
     def __init__(self, evaluator, name, pos):
-        self.name = FakeName(name, self, pos)
+        self.name = KeywordName(evaluator, name)
         self.start_pos = pos
         self.parent = evaluator.BUILTINS
 

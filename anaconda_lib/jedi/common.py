@@ -3,7 +3,6 @@ import sys
 import contextlib
 import functools
 import re
-from itertools import chain
 from ast import literal_eval
 
 from jedi._compatibility import unicode, reraise
@@ -148,19 +147,43 @@ def source_to_unicode(source, encoding=None):
     return unicode(source, encoding, 'replace')
 
 
-def splitlines(string):
+def splitlines(string, keepends=False):
     """
     A splitlines for Python code. In contrast to Python's ``str.splitlines``,
     looks at form feeds and other special characters as normal text. Just
     splits ``\n`` and ``\r\n``.
     Also different: Returns ``['']`` for an empty string input.
+
+    In Python 2.7 form feeds are used as normal characters when using
+    str.splitlines. However in Python 3 somewhere there was a decision to split
+    also on form feeds.
     """
-    return re.split('\n|\r\n', string)
+    if keepends:
+        # If capturing parentheses are used in pattern, then the text of all
+        # groups in the pattern are also returned as part of the resulting
+        # list.
+        lst = re.split('(\n|\r\n)', string)
+
+        # Need to merge the new lines with the actual lines.
+        odd = False
+        lines = []
+        for string in lst:
+            if odd:
+                line += string
+                lines.append(line)
+            else:
+                line = string
+            odd = not odd
+        if odd:
+            lines.append(line)
+        return lines
+    else:
+        return re.split('\n|\r\n', string)
 
 
 def unite(iterable):
     """Turns a two dimensional array into a one dimensional."""
-    return set(chain.from_iterable(iterable))
+    return set(typ for types in iterable for typ in types)
 
 
 def to_list(func):

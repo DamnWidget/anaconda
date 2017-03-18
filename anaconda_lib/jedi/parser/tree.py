@@ -4,7 +4,7 @@ is pretty much that. The classes represent syntax elements like functions and
 imports.
 
 This is the "business logic" part of the parser. There's a lot of logic here
-that makes it easier for Jedi (and other libraries to deal with a Python syntax
+that makes it easier for Jedi (and other libraries) to deal with a Python syntax
 tree.
 
 By using `get_code` on a module, you can get back the 1-to-1 representation of
@@ -40,27 +40,35 @@ import textwrap
 import abc
 
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
-                                 literal_eval, use_metaclass, unicode)
-from jedi.parser import token
-from jedi.parser.utils import underscore_memoization
+                                 literal_eval, unicode)
 
 
-def is_node(node, *symbol_names):
+def _safe_literal_eval(value):
+    first_two = value[:2].lower()
+    if first_two[0] == 'f' or first_two in ('fr', 'rf'):
+        # literal_eval is not able to resovle f literals. We have to do that
+        # manually in a later stage
+        return ''
+
     try:
-        type = node.type
-    except AttributeError:
-        return False
-    else:
-        return type in symbol_names
+        return literal_eval(value)
+    except SyntaxError:
+        # It's possible to create syntax errors with literals like rb'' in
+        # Python 2. This should not be possible and in that case just return an
+        # empty string.
+        # Before Python 3.3 there was a more strict definition in which order
+        # you could define literals.
+        return ''
 
 
-class PositionModifier(object):
-    """A start_pos modifier for the fast parser."""
-    def __init__(self):
-        self.line = 0
+def search_ancestor(node, node_type_or_types):
+    if not isinstance(node_type_or_types, (list, tuple)):
+        node_type_or_types = (node_type_or_types,)
 
-
-zero_position_modifier = PositionModifier()
+    while True:
+        node = node.parent
+        if node is None or node.type in node_type_or_types:
+            return node
 
 
 class DocstringMixin(object):
@@ -73,8 +81,8 @@ class DocstringMixin(object):
             node = self.children[0]
         elif isinstance(self, ClassOrFunc):
             node = self.children[self.children.index(':') + 1]
-            if is_node(node, 'suite'):  # Normally a suite
-                node = node.children[2]  # -> NEWLINE INDENT stmt
+            if node.type == 'suite':  # Normally a suite
+                node = node.children[1]  # -> NEWLINE stmt
         else:  # ExprStmt
             simple_stmt = self.parent
             c = simple_stmt.parent.children
@@ -83,7 +91,7 @@ class DocstringMixin(object):
                 return ''
             node = c[index - 1]
 
-        if is_node(node, 'simple_stmt'):
+        if node.type == 'simple_stmt':
             node = node.children[0]
 
         if node.type == 'string':
@@ -91,7 +99,7 @@ class DocstringMixin(object):
             # leaves anymore that might be part of the docstring. A
             # docstring can also look like this: ``'foo' 'bar'
             # Returns a literal cleaned version of the ``Token``.
-            cleaned = cleandoc(literal_eval(node.value))
+            cleaned = cleandoc(_safe_literal_eval(node.value))
             # Since we want the docstr output to be always unicode, just
             # force it.
             if is_py3 or isinstance(cleaned, unicode):
@@ -114,6 +122,12 @@ class Base(object):
 
     def isinstance(self, *cls):
         return isinstance(self, cls)
+
+    def get_root_node(self):
+        scope = self
+        while scope.parent is not None:
+            scope = scope.parent
+        return scope
 
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False,
@@ -147,7 +161,7 @@ class Base(object):
         return scope
 
     def get_definition(self):
-        if self.type in ('newline', 'dedent', 'indent', 'endmarker'):
+        if self.type in ('newline', 'endmarker'):
             raise ValueError('Cannot get the indentation of whitespace or indentation.')
         scope = self
         while scope.parent is not None:
@@ -179,7 +193,7 @@ class Base(object):
         node = self.parent
         compare = self
         while node is not None:
-            if is_node(node, 'testlist_comp', 'testlist_star_expr', 'exprlist'):
+            if node.type in ('testlist_comp', 'testlist_star_expr', 'exprlist'):
                 for i, child in enumerate(node.children):
                     if child == compare:
                         indexes.insert(0, (int(i / 2), node))
@@ -275,43 +289,40 @@ class Base(object):
 
 
 class Leaf(Base):
-    __slots__ = ('position_modifier', 'value', 'parent', '_start_pos', 'prefix')
+    __slots__ = ('value', 'parent', 'line', 'indent', 'prefix')
 
-    def __init__(self, position_modifier, value, start_pos, prefix=''):
-        self.position_modifier = position_modifier
+    def __init__(self, value, start_pos, prefix=''):
         self.value = value
-        self._start_pos = start_pos
+        self.start_pos = start_pos
         self.prefix = prefix
         self.parent = None
 
     @property
     def start_pos(self):
-        return self._start_pos[0] + self.position_modifier.line, self._start_pos[1]
+        return self.line, self.indent
 
     @start_pos.setter
     def start_pos(self, value):
-        self._start_pos = value[0] - self.position_modifier.line, value[1]
+        self.line = value[0]
+        self.indent = value[1]
 
     def get_start_pos_of_prefix(self):
         try:
-            previous_leaf = self
-            while True:
-                previous_leaf = previous_leaf.get_previous_leaf()
-                if previous_leaf.type not in ('indent', 'dedent'):
-                    return previous_leaf.end_pos
+            return self.get_previous_leaf().end_pos
         except IndexError:
-            return 1, 0  # It's the first leaf.
+            return self.line - self.prefix.count('\n'), 0  # It's the first leaf.
 
     @property
     def end_pos(self):
-        return (self._start_pos[0] + self.position_modifier.line,
-                self._start_pos[1] + len(self.value))
+        return self.line, self.indent + len(self.value)
 
-    def move(self, line_offset, column_offset):
-        self._start_pos = (self._start_pos[0] + line_offset,
-                           self._start_pos[1] + column_offset)
+    def move(self, line_offset):
+        self.line += line_offset
 
     def first_leaf(self):
+        return self
+
+    def last_leaf(self):
         return self
 
     def get_code(self, normalized=False, include_prefix=True):
@@ -339,15 +350,14 @@ class LeafWithNewLines(Leaf):
         Literals and whitespace end_pos are more complicated than normal
         end_pos, because the containing newlines may change the indexes.
         """
-        end_pos_line, end_pos_col = self.start_pos
         lines = self.value.split('\n')
-        end_pos_line += len(lines) - 1
+        end_pos_line = self.line + len(lines) - 1
         # Check for multiline token
-        if self.start_pos[0] == end_pos_line:
-            end_pos_col += len(lines[-1])
+        if self.line == end_pos_line:
+            end_pos_indent = self.indent + len(lines[-1])
         else:
-            end_pos_col = len(lines[-1])
-        return end_pos_line, end_pos_col
+            end_pos_indent = len(lines[-1])
+        return end_pos_line, end_pos_indent
 
     @utf8_repr
     def __repr__(self):
@@ -385,7 +395,7 @@ class Name(Leaf):
 
     def __repr__(self):
         return "<%s: %s@%s,%s>" % (type(self).__name__, self.value,
-                                   self.start_pos[0], self.start_pos[1])
+                                   self.line, self.indent)
 
     def is_definition(self):
         if self.parent.type in ('power', 'atom_expr'):
@@ -413,7 +423,7 @@ class Literal(LeafWithNewLines):
     __slots__ = ()
 
     def eval(self):
-        return literal_eval(self.value)
+        return _safe_literal_eval(self.value)
 
 
 class Number(Literal):
@@ -423,16 +433,6 @@ class Number(Literal):
 
 class String(Literal):
     type = 'string'
-    __slots__ = ()
-
-
-class Indent(Leaf):
-    type = 'indent'
-    __slots__ = ()
-
-
-class Dedent(Leaf):
-    type = 'dedent'
     __slots__ = ()
 
 
@@ -501,12 +501,12 @@ class BaseNode(Base):
         self.children = children
         self.parent = None
 
-    def move(self, line_offset, column_offset):
+    def move(self, line_offset):
         """
         Move the Node's start_pos.
         """
         for c in self.children:
-            c.move(line_offset, column_offset)
+            c.move(line_offset)
 
     @property
     def start_pos(self):
@@ -519,13 +519,16 @@ class BaseNode(Base):
     def end_pos(self):
         return self.children[-1].end_pos
 
-    def get_code(self, normalized=False, include_prefix=True):
+    def _get_code_for_children(self, children, normalized, include_prefix):
         # TODO implement normalized (depending on context).
         if include_prefix:
-            return "".join(c.get_code(normalized) for c in self.children)
+            return "".join(c.get_code(normalized) for c in children)
         else:
-            first = self.children[0].get_code(include_prefix=False)
-            return first + "".join(c.get_code(normalized) for c in self.children[1:])
+            first = children[0].get_code(include_prefix=False)
+            return first + "".join(c.get_code(normalized) for c in children[1:])
+
+    def get_code(self, normalized=False, include_prefix=True):
+        return self._get_code_for_children(self.children, normalized, include_prefix)
 
     @Python3Method
     def name_for_position(self, position):
@@ -540,23 +543,29 @@ class BaseNode(Base):
         return None
 
     def get_leaf_for_position(self, position, include_prefixes=False):
-        for c in self.children:
-            if include_prefixes:
-                start_pos = c.get_start_pos_of_prefix()
-            else:
-                start_pos = c.start_pos
-
-            if start_pos <= position <= c.end_pos:
+        def binary_search(lower, upper):
+            if lower == upper:
+                element = self.children[lower]
+                if not include_prefixes and position < element.start_pos:
+                    # We're on a prefix.
+                    return None
+                # In case we have prefixes, a leaf always matches
                 try:
-                    return c.get_leaf_for_position(position, include_prefixes)
+                    return element.get_leaf_for_position(position, include_prefixes)
                 except AttributeError:
-                    while c.type in ('indent', 'dedent'):
-                        # We'd rather not have indents and dedents as a leaf,
-                        # because they don't contain indentation information.
-                        c = c.get_next_leaf()
-                    return c
+                    return element
 
-        return None
+
+            index = int((lower + upper) / 2)
+            element = self.children[index]
+            if position <= element.end_pos:
+                return binary_search(lower, index)
+            else:
+                return binary_search(index + 1, upper)
+
+        if not ((1, 0) <= position <= self.children[-1].end_pos):
+            raise ValueError('Please provide a position that exists within this node.')
+        return binary_search(0, len(self.children) - 1)
 
     @Python3Method
     def get_statement_for_position(self, pos):
@@ -591,10 +600,7 @@ class BaseNode(Base):
             return c[index + 1]
 
     def last_leaf(self):
-        try:
-            return self.children[-1].last_leaf()
-        except AttributeError:
-            return self.children[-1]
+        return self.children[-1].last_leaf()
 
     def get_following_comment_same_line(self):
         """
@@ -690,22 +696,13 @@ class ErrorLeaf(LeafWithNewLines):
     __slots__ = ('original_type')
     type = 'error_leaf'
 
-    def __init__(self, position_modifier, original_type, value, start_pos, prefix=''):
-        super(ErrorLeaf, self).__init__(position_modifier, value, start_pos, prefix)
+    def __init__(self, original_type, value, start_pos, prefix=''):
+        super(ErrorLeaf, self).__init__(value, start_pos, prefix)
         self.original_type = original_type
 
     def __repr__(self):
-        token_type = token.tok_name[self.original_type]
-        return "<%s: %s, %s)>" % (type(self).__name__, token_type, self.start_pos)
-
-
-class IsScopeMeta(type):
-    def __instancecheck__(self, other):
-        return other.is_scope()
-
-
-class IsScope(use_metaclass(IsScopeMeta)):
-    pass
+        return "<%s: %s:%s, %s)>" % \
+            (type(self).__name__, self.original_type, repr(self.value), self.start_pos)
 
 
 class Scope(BaseNode, DocstringMixin):
@@ -719,7 +716,7 @@ class Scope(BaseNode, DocstringMixin):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('names_dict',)
+    __slots__ = ()
 
     def __init__(self, children):
         super(Scope, self).__init__(children)
@@ -749,7 +746,7 @@ class Scope(BaseNode, DocstringMixin):
             for element in children:
                 if isinstance(element, typ):
                     elements.append(element)
-                if is_node(element, 'suite', 'simple_stmt', 'decorated') \
+                if element.type in ('suite', 'simple_stmt', 'decorated') \
                         or isinstance(element, Flow):
                     elements += scan(element.children)
             return elements
@@ -794,7 +791,7 @@ class Module(Scope):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    __slots__ = ('path', 'global_names', 'used_names', '_name')
+    __slots__ = ('path', 'used_names', '_name')
     type = 'file_input'
 
     def __init__(self, children):
@@ -810,7 +807,6 @@ class Module(Scope):
         self.path = None  # Set later.
 
     @property
-    @underscore_memoization
     def name(self):
         """ This is used for the goto functions. """
         if self.path is None:
@@ -822,7 +818,7 @@ class Module(Scope):
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
         # Positions are not real, but a module starts at (1, 0)
         p = (1, 0)
-        name = Name(zero_position_modifier, string, p)
+        name = Name(string, p)
         name.parent = self
         return name
 
@@ -872,8 +868,8 @@ class ClassOrFunc(Scope):
 
     def get_decorators(self):
         decorated = self.parent
-        if is_node(decorated, 'decorated'):
-            if is_node(decorated.children[0], 'decorators'):
+        if decorated.type == 'decorated':
+            if decorated.children[0].type == 'decorators':
                 return decorated.children[0].children
             else:
                 return decorated.children[:1]
@@ -1011,12 +1007,10 @@ class Function(ClassOrFunc):
       5) ??
       6) annotation (if present)
     """
-    __slots__ = ('listeners',)
     type = 'funcdef'
 
     def __init__(self, children):
         super(Function, self).__init__(children)
-        self.listeners = set()  # not used here, but in evaluation.
         parameters = self.children[2]  # After `def foo`
         parameters.children[1:-1] = _create_params(parameters, parameters.children[1:-1])
 
@@ -1101,14 +1095,13 @@ class Lambda(Function):
     def __init__(self, children):
         # We don't want to call the Function constructor, call its parent.
         super(Function, self).__init__(children)
-        self.listeners = set()  # not used here, but in evaluation.
         lst = self.children[1:-2]  # Everything between `lambda` and the `:` operator is a parameter.
         self.children[1:-2] = _create_params(self, lst)
 
     @property
     def name(self):
         # Borrow the position of the <Keyword: lambda> AST node.
-        return Name(self.children[0].position_modifier, '<lambda>', self.children[0].start_pos)
+        return Name('<lambda>', self.children[0].start_pos)
 
     def _get_paramlist_code(self):
         return '(' + ''.join(param.get_code() for param in self.params).strip() + ')'
@@ -1142,11 +1135,28 @@ class Lambda(Function):
 
 class Flow(BaseNode):
     __slots__ = ()
+    FLOW_KEYWORDS = (
+        'try', 'except', 'finally', 'else', 'if', 'elif', 'with', 'for', 'while'
+    )
 
     def nodes_to_execute(self, last_added=False):
         for child in self.children:
             for node_to_execute in child.nodes_to_execute():
                 yield node_to_execute
+
+    def get_branch_keyword(self, node):
+        start_pos = node.start_pos
+        if not (self.start_pos < start_pos <= self.end_pos):
+            raise ValueError('The node is not part of the flow.')
+
+        keyword = None
+        for i, child in enumerate(self.children):
+            if start_pos < child.start_pos:
+                return keyword
+            first_leaf = child.first_leaf()
+            if first_leaf in self.FLOW_KEYWORDS:
+                keyword = first_leaf
+        return 0
 
 
 class IfStmt(Flow):
@@ -1253,7 +1263,7 @@ class WithStmt(Flow):
         names = []
         for with_item in self.children[1:-2:2]:
             # Check with items for 'as' names.
-            if is_node(with_item, 'with_item'):
+            if with_item.type == 'with_item':
                 names += _defined_names(with_item.children[2])
         return names
 
@@ -1261,7 +1271,7 @@ class WithStmt(Flow):
         node = name
         while True:
             node = node.parent
-            if is_node(node, 'with_item'):
+            if node.type == 'with_item':
                 return node.children[0]
 
     def nodes_to_execute(self, last_added=False):
@@ -1321,7 +1331,7 @@ class ImportFrom(Import):
         for n in self.children[1:]:
             if n not in ('.', '...'):
                 break
-        if is_node(n, 'dotted_name'):  # from x.y import
+        if n.type == 'dotted_name':  # from x.y import
             return n.children[::2]
         elif n == 'import':  # from . import
             return []
@@ -1346,7 +1356,7 @@ class ImportFrom(Import):
         elif last == '*':
             return  # No names defined directly.
 
-        if is_node(last, 'import_as_names'):
+        if last.type == 'import_as_names':
             as_names = last.children[::2]
         else:
             as_names = [last]
@@ -1393,13 +1403,13 @@ class ImportName(Import):
     def _dotted_as_names(self):
         """Generator of (list(path), alias) where alias may be None."""
         dotted_as_names = self.children[1]
-        if is_node(dotted_as_names, 'dotted_as_names'):
+        if dotted_as_names.type == 'dotted_as_names':
             as_names = dotted_as_names.children[::2]
         else:
             as_names = [dotted_as_names]
 
         for as_name in as_names:
-            if is_node(as_name, 'dotted_as_name'):
+            if as_name.type == 'dotted_as_name':
                 alias = as_name.children[2]
                 as_name = as_name.children[0]
             else:
@@ -1502,12 +1512,12 @@ def _defined_names(current):
     list comprehensions.
     """
     names = []
-    if is_node(current, 'testlist_star_expr', 'testlist_comp', 'exprlist'):
+    if current.type in ('testlist_star_expr', 'testlist_comp', 'exprlist'):
         for child in current.children[::2]:
             names += _defined_names(child)
-    elif is_node(current, 'atom', 'star_expr'):
+    elif current.type in ('atom', 'star_expr'):
         names += _defined_names(current.children[1])
-    elif is_node(current, 'power', 'atom_expr'):
+    elif current.type in ('power', 'atom_expr'):
         if current.children[-2] != '**':  # Just if there's no operation
             trailer = current.children[-1]
             if trailer.children[0] == '.':
@@ -1522,9 +1532,14 @@ class ExprStmt(BaseNode, DocstringMixin):
     __slots__ = ()
 
     def get_defined_names(self):
-        return list(chain.from_iterable(_defined_names(self.children[i])
-                                        for i in range(0, len(self.children) - 2, 2)
-                                        if '=' in self.children[i + 1].value))
+        names = []
+        if self.children[1].type == 'annassign':
+            names = _defined_names(self.children[0])
+        return list(chain.from_iterable(
+            _defined_names(self.children[i])
+            for i in range(0, len(self.children) - 2, 2)
+            if '=' in self.children[i + 1].value)
+        ) + names
 
     def get_rhs(self):
         """Returns the right-hand-side of the equals."""
@@ -1578,7 +1593,7 @@ class Param(BaseNode):
 
     def annotation(self):
         tfpdef = self._tfpdef()
-        if is_node(tfpdef, 'tfpdef'):
+        if tfpdef.type == 'tfpdef':
             assert tfpdef.children[1] == ":"
             assert len(tfpdef.children) == 3
             annotation = tfpdef.children[2]
@@ -1595,7 +1610,7 @@ class Param(BaseNode):
 
     @property
     def name(self):
-        if is_node(self._tfpdef(), 'tfpdef'):
+        if self._tfpdef().type == 'tfpdef':
             return self._tfpdef().children[0]
         else:
             return self._tfpdef()
@@ -1604,13 +1619,18 @@ class Param(BaseNode):
     def position_nr(self):
         return self.parent.children.index(self) - 1
 
-    @property
-    def parent_function(self):
-        return self.get_parent_until(IsScope)
+    def get_parent_function(self):
+        return search_ancestor(self, ('funcdef', 'lambda'))
 
     def __repr__(self):
-        default = '' if self.default is None else '=%s' % self.default
+        default = '' if self.default is None else '=%s' % self.default.get_code()
         return '<%s: %s>' % (type(self).__name__, str(self._tfpdef()) + default)
+
+    def get_description(self):
+        children = self.children
+        if children[-1] == ',':
+            children = children[:-1]
+        return self._get_code_for_children(children, False, False)
 
 
 class CompFor(BaseNode):
@@ -1623,23 +1643,12 @@ class CompFor(BaseNode):
         while True:
             if isinstance(last, CompFor):
                 yield last
-            elif not is_node(last, 'comp_if'):
+            elif not last.type == 'comp_if':
                 break
             last = last.children[-1]
 
     def is_scope(self):
         return True
-
-    @property
-    def names_dict(self):
-        dct = {}
-        for name in self.get_defined_names():
-            arr = dct.setdefault(name.value, [])
-            arr.append(name)
-        return dct
-
-    def names_dicts(self, search_global):
-        yield self.names_dict
 
     def get_defined_names(self):
         return _defined_names(self.children[1])
