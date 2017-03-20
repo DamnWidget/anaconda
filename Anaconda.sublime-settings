@@ -477,79 +477,12 @@
     "mypy_mypypath": "",
 
     /*
-    	MyPy Silent Imports
-
-    	If true, mypy will not follow imports to .py files.
-    */
-    "mypy_silent_imports": false,
-
-    /*
-    	MyPy Almost Silent
-
-		Same as Silent Imports, but report the imports as errors.
-    */
-    "mypy_almost_silent": false,
-
-    /*
-        MyPy suppress stub warnings
-
-        Suppress stub warnings when silent_imports is not used.
-     */
-    "mypy_suppress_stub_warnings": true,
-
-    /*
-    	MyPy py2
-
-    	Use Python 2 mode.
-    */
-    "mypy_py2": false,
-
-    /*
-    	MyPy Disallow Untyped Calls
-
-    	Disallow calling functions without type annotations from
-    	functions with type annotations.
-    */
-    "mypy_disallow_untyped_calls": false,
-
-    /*
-    	MyPy Disallow Untyped Defs
-
-    	Disallow defining functions without type annotations or
-    	with incomplete type annotations.
-    */
-    "mypy_disallow_untyped_defs": false,
-
-	/*
-		MyPy Check Untyped Defs
-
-		Type check the interior of functions without type annotations.
-	*/
-	"mypy_check_untyped_defs": false,
-
-    /*
-        MyPy Fast Parser
-
-        Enable the experimental fast parser module of MyPy. In practice
-        this seems to be slower, however is required for support of some
-        recent syntax changes in Python.
-    */
-    "mypy_fast_parser": false,
-
-    /*
         MyPy Extra Arguments
 
         An array of arbitrary arguments to pass to MyPy. For example,
         ['--strict-optional', '--platform', 'linux']
     */
     "mypy_extra_arguments": [],
-
-    /*
-        MyPy Incremental
-
-        Use the incremental type checker. Fast, but sometimes causes crashes.
-    */
-    "mypy_incremental": true,
 
 	/*
 		MyPy Custom Typing

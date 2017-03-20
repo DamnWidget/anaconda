@@ -117,7 +117,7 @@ def f2(a: int) -> int:
         self._settings = {
             'use_pyflakes': False, 'use_pylint': False, 'use_pep257': False,
             'pep8': False, 'vapidate_imports': False,
-            'use_mypy': False, 'mypypath': '', 'mypy_settings': ['']
+            'use_mypy': False, 'mypypath': '', 'mypy_settings': []
         }
 
     def test_pyflakes_lint(self):
@@ -184,7 +184,7 @@ def f2(a: int) -> int:
             raise SkipTest('MyPy not installed')
         with real_temp_file(self._type_checkable_async_code) as temp_file_name:
             self._settings['use_mypy'] = True
-            self._settings['mypy_settings'] = ['--fast-parser', '']
+            self._settings['mypy_settings'] = ['--fast-parser']
             handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_async)  # noqa
             handler.lint(self._settings, self._type_checkable_code, temp_file_name)  # noqa
 
@@ -193,7 +193,7 @@ def f2(a: int) -> int:
             raise SkipTest()
         with real_temp_file(self._type_checkable_extra_args) as temp_file_name:
             self._settings['use_mypy'] = True
-            self._settings['mypy_settings'] = ['--strict-optional', False]
+            self._settings['mypy_settings'] = ['--strict-optional']
             handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_extra_args)
             handler.lint(self._settings, self._type_checkable_extra_args, temp_file_name)
     
@@ -202,7 +202,7 @@ def f2(a: int) -> int:
             raise SkipTest()
         with real_temp_file(self._type_checkable_extra_args) as temp_file_name:
             self._settings['use_mypy'] = True
-            self._settings['mypy_settings'] = ['--strict-optional', False]
+            self._settings['mypy_settings'] = ['--strict-optional']
             handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_extra_args)
             handler.lint(self._settings, self._type_checkable_extra_args, temp_file_name)
     
@@ -224,7 +224,7 @@ def f2(a: int) -> int:
             )
 
             self._settings['use_mypy'] = True
-            self._settings['mypy_settings'] = ['--strict-optional', False]
+            self._settings['mypy_settings'] = ['--strict-optional']
             handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_file_isolation)
             handler.lint(self._settings, self._mypy_file_overlap_ok, ok_name)
 
@@ -249,7 +249,7 @@ def f2(a: int) -> int:
             )
 
             self._settings['use_mypy'] = True
-            self._settings['mypy_settings'] = ['--strict-optional', False]
+            self._settings['mypy_settings'] = ['--strict-optional']
             handler = PythonLintHandler('lint', None, 0, 0, self._check_mypy_file_isolation)
             handler.lint(self._settings, self._mypy_file_overlap_ok, ok_file)
             os.chdir(old_dir)

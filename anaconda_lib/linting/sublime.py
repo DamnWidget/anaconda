@@ -387,35 +387,10 @@ def get_mypy_settings(view):
     """
 
     mypy_settings = []
-    if get_settings(view, 'mypy_silent_imports', False):
-        mypy_settings.append('--silent-imports')
-    if get_settings(view, 'mypy_almost_silent', False):
-        mypy_settings.append('--almost-silent')
-    if get_settings(view, 'mypy_py2', False):
-        mypy_settings.append('--py2')
-    if get_settings(view, 'mypy_disallow_untyped_calls', False):
-        mypy_settings.append('--disallow-untyped-calls')
-    if get_settings(view, 'mypy_disallow_untyped_defs', False):
-        mypy_settings.append('--disallow-untyped-defs')
-    if get_settings(view, 'mypy_check_untyped_defs', False):
-        mypy_settings.append('--check-untyped-defs')
-    if get_settings(view, 'mypy_fast_parser', False):
-        mypy_settings.append('--fast-parser')
-    custom_typing = get_settings(view, 'mypy_custom_typing', None)
-    if custom_typing is not None:
-        mypy_settings.append('--custom-typing')
-        mypy_settings.append(custom_typing)
-
-    if get_settings(view, 'mypy_incremental', True):
-        mypy_settings.append('--incremental')  # use cache always
 
     extra_args = get_settings(view, 'mypy_extra_arguments', [])
     if extra_args:
         mypy_settings.extend(extra_args)
-
-    mypy_settings.append(
-        get_settings(view, 'mypy_suppress_stub_warnings', False)
-    )
 
     return mypy_settings
 

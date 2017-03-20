@@ -23,8 +23,6 @@ except ImportError:
     pass
 
 
-
-
 class MyPy(object):
     """MyPy class for Anaconda
     """
@@ -34,13 +32,6 @@ class MyPy(object):
         self.filename = filename
         self.mypypath = mypypath
         self.settings = settings
-
-    @property
-    def silent(self):
-        """Returns True if --silent-imports settig is present
-        """
-
-        return '--silent-imports' in self.settings
 
     def execute(self):
         """Check the code with MyPy check types
@@ -61,7 +52,7 @@ class MyPy(object):
     def check_source(self):
 
         err_ctx = '--hide-error-context'
-        args = [err_ctx, *self.settings[:-1], '--show-traceback', self.filename]
+        args = [err_ctx, *self.settings, '--show-traceback', self.filename]
 
         if self.mypypath is not None and self.mypypath != "":
             os.environ['MYPYPATH'] = self.mypypath
@@ -75,9 +66,6 @@ class MyPy(object):
 
         errors = []
         for line in out.splitlines():
-            if (self.settings[-1] and not
-                    self.silent and 'stub' in line.lower()):
-                continue
 
             data = line.split(':') if os.name != 'nt' else line[2:].split(':')
 
