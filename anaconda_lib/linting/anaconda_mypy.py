@@ -12,20 +12,17 @@ import shlex
 import logging
 import subprocess
 from subprocess import PIPE, Popen
-import traceback
 
 MYPY_SUPPORTED = False
 try:
-    from mypy import main as mypy
+    from mypy import api as mypyApi
     MYPY_SUPPORTED = True
-    del mypy
 except ImportError:
     print('MyPy is enabled but we could not import it')
     logging.info('MyPy is enabled but we could not import it')
     pass
 
 
-from mypy import api as mypyApi
 
 
 class MyPy(object):
@@ -84,67 +81,12 @@ class MyPy(object):
 
             data = line.split(':') if os.name != 'nt' else line[2:].split(':')
 
+            # mypy has paths relative to project, anaconda has paths absolute paths.
+            # mypy returns errors that are not necessarily just for the current file.
             filename = data[0]
             if not self.filename.endswith(filename):
                 continue
-            errors.append({
-                'level': 'W',
-                'lineno': int(data[1]),
-                'offset': 0,
-                'code': ' ',
-                'raw_error': '[W] MyPy {0}: {1}'.format(
-                    data[2], data[3]
-                ),
-                'message': '[W] MyPy%s: %s',
-                'underline_range': True
-            })
 
-        return errors
-
-
-    def check_source_old(self):
-        """Wrap calls to MyPy as a library
-        """
-
-        err_ctx = '--hide-error-context'
-
-        args = shlex.split('\'{0}\' -O -m mypy {1} {2} \'{3}\''.format(
-            sys.executable, err_ctx,
-            ' '.join(self.settings[:-1]), self.filename)
-        )
-        env = os.environ.copy()
-        if self.mypypath is not None and self.mypypath != "":
-            env['MYPYPATH'] = ['.']
-
-        kwargs = {
-            'cwd': os.path.dirname(os.path.abspath(__file__)),
-            'bufsize': -1,
-            'env': env
-        }
-        if os.name == 'nt':
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            kwargs['startupinfo'] = startupinfo
-
-        proc = Popen(args, stdout=PIPE, stderr=PIPE, **kwargs)
-        out, err = proc.communicate()
-        if err is not None and len(err) > 0:
-            if sys.version_info >= (3,):
-                err = err.decode('utf8')
-            print(out)
-            print(err)
-            raise RuntimeError(err)
-
-        if sys.version_info >= (3,):
-            out = out.decode('utf8')
-
-        errors = []
-        for line in out.splitlines():
-            if (self.settings[-1] and not
-                    self.silent and 'stub' in line.lower()):
-                continue
-
-            data = line.split(':') if os.name != 'nt' else line[2:].split(':')
             errors.append({
                 'level': 'W',
                 'lineno': int(data[1]),
