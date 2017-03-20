@@ -482,7 +482,7 @@
         An array of arbitrary arguments to pass to MyPy. For example,
         ['--strict-optional', '--platform', 'linux']
     */
-    "mypy_extra_arguments": [],
+    "mypy_extra_arguments": ["--strict-optional", "--incremental"],
 
 	/*
 		MyPy Custom Typing
