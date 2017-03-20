@@ -51,15 +51,15 @@ class MyPy(object):
 
     def check_source(self):
 
-        err_ctx = '--hide-error-context'
-        args = [err_ctx, *self.settings, '--show-traceback', self.filename]
+        forced_args = ['--hide-error-context', '--show-traceback']
+        all_args = self.settings + forced_args + [self.filename]
 
         if self.mypypath is not None and self.mypypath != "":
             os.environ['MYPYPATH'] = self.mypypath
 
-        logging.info('calling mypy with %s' % str(args))
+        logging.info('calling mypy with %s' % str(all_args))
 
-        (out, err, status) = mypyApi.run(args)
+        (out, err, status) = mypyApi.run(all_args)
 		
         if err is not None and len(err) > 0:
             raise RuntimeError(err)
