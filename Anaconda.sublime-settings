@@ -666,7 +666,7 @@
 
     /*
         If this is set to true, anaconda will unload plugins that
-        make it malfunction intefering with it
+        make it malfunction interfering with it
     */
     "auto_unload_conflictive_plugins": true
 }
