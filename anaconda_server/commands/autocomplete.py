@@ -24,6 +24,43 @@ class AutoComplete(Command):
 
         try:
             completions = self.script.completions()
+            if DEBUG_MODE:
+                logging.info(completions)
+
+            data = self._format_completions(self, completions)
+            self.callback({
+                'sucess': True, 'completions': data, 'uid': self.uid
+            })
+        except Exception as error:
+            msg = 'The underlying Jedi library as raised an exception'
+            logging.error(msg)
+            logging.error(error)
+            print(traceback.format_exc())
+            if DEBUG_MODE:
+                logging.debug(traceback.format_exc())
+
+            self.callback({
+                'success': False, 'error': str(error), 'uid': self.uid
+            })
+
+    def _format_completions(self, cpls):
+        """Format the completions from jedi
+        """
+
+        return [
+            ('{0}{1} {2}'.format(
+                cpl.name, ' ' * (lguide - len(cpl.name)),
+                cpl.type
+            ), self._snippet(cpl))
+        ]
+
+
+    def run_old(self):
+        """Run the command
+        """
+
+        try:
+            completions = self.script.completions()
             if DEBUG_MODE is True:
                 logging.info(completions)
             data = [
