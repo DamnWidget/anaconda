@@ -62,11 +62,11 @@ class JediHandler(AnacondaHandler):
             directories, new_word, jedi_refactor
         )
 
-    def autocomplete(self):
+    def autocomplete(self, settings):
         """Call autocomplete
         """
 
-        AutoComplete(self.callback, self.uid, self.script)
+        AutoComplete(self.callback, self.uid, self.script, settings)
 
     def parameters(self, settings):
         """Call complete parameter

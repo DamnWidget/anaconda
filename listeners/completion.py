@@ -57,7 +57,14 @@ class AnacondaCompletionEventListener(sublime_plugin.EventListener):
 
         location = view.rowcol(locations[0])
         data = prepare_send_data(location, 'autocomplete', 'jedi')
-
+        data['settings'] = {
+            'complete_parameters': get_settings(
+                self.view, 'complete_parameters', False
+            ),
+            'complete_all_parameters': get_settings(
+                self.view, 'complete_all_parameters', False
+            )
+        }
         Worker().execute(self._complete, **data)
 
     def on_modified(self, view: sublime.View) -> None:
