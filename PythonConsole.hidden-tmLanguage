@@ -2,175 +2,308 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>name</key>
-	<string>PythonTestOutput</string>
-	<key>patterns</key>
-	<array>
-		<dict>
-			<key>begin</key>
-			<string>^[=-]+$</string>
-			<key>comment</key>
-			<string>error details</string>
-			<key>end</key>
-			<string>\[Finished in [\d+\.]+s\]</string>
-			<key>name</key>
-			<string>raw</string>
-			<key>patterns</key>
-			<array>
-				<dict>
-					<key>begin</key>
-					<string>^\=+$</string>
-					<key>comment</key>
-					<string>test fail</string>
-					<key>end</key>
-					<string>^\-+$</string>
-					<key>match</key>
-					<string>.*FAIL: (.*)</string>
-					<key>name</key>
-					<string>test.fail</string>
-				</dict>
-				<dict>
-					<key>begin</key>
-					<string>^\=+$</string>
-					<key>comment</key>
-					<string>test error</string>
-					<key>end</key>
-					<string>^\-+$</string>
-					<key>match</key>
-					<string>.*ERROR: (.*)</string>
-					<key>name</key>
-					<string>test.error</string>
-				</dict>
-				<dict>
-					<key>begin</key>
-					<string>File </string>
-					<key>captures</key>
-					<dict>
-						<key>1</key>
-						<dict>
-							<key>name</key>
-							<string>test.filename</string>
-						</dict>
-					</dict>
-					<key>comment</key>
-					<string>file in traceback</string>
-					<key>end</key>
-					<string>,</string>
-					<key>match</key>
-					<string>"(...*?)"</string>
-				</dict>
-				<dict>
-					<key>begin</key>
-					<string>Ran \d+ tests</string>
-					<key>comment</key>
-					<string>all test pass</string>
-					<key>match</key>
-					<string>OK</string>
-					<key>name</key>
-					<string>test.pass</string>
-				</dict>
-				<dict>
-					<key>begin</key>
-					<string>Ran \d+ tests</string>
-					<key>comment</key>
-					<string>tests broken</string>
-					<key>match</key>
-					<string>FAILED (.*)</string>
-					<key>name</key>
-					<string>test.fail</string>
-				</dict>
-			</array>
-		</dict>
-		<dict>
-			<key>comment</key>
-			<string>inline failures</string>
-			<key>name</key>
-			<string>verbosity2</string>
-			<key>patterns</key>
-			<array>
-				<dict>
-					<key>comment</key>
-					<string>test error</string>
-					<key>match</key>
-					<string>ERROR$</string>
-					<key>name</key>
-					<string>test.error</string>
-				</dict>
-				<dict>
-					<key>comment</key>
-					<string>test fail</string>
-					<key>match</key>
-					<string>FAIL$</string>
-					<key>name</key>
-					<string>test.fail</string>
-				</dict>
-				<dict>
-					<key>comment</key>
-					<string>test pass</string>
-					<key>match</key>
-					<string>ok$</string>
-					<key>name</key>
-					<string>test.pass</string>
-				</dict>
-			</array>
-		</dict>
-		<dict>
-			<key>begin</key>
-			<string>^(?:(E)|(F)|(s)|\.)</string>
-			<key>beginCaptures</key>
-			<dict>
-				<key>1</key>
-				<dict>
-					<key>name</key>
-					<string>test.error</string>
-				</dict>
-				<key>2</key>
-				<dict>
-					<key>name</key>
-					<string>test.fail</string>
-				</dict>
-				<key>3</key>
-				<dict>
-					<key>name</key>
-					<string>test.skip</string>
-				</dict>
-			</dict>
-			<key>comment</key>
-			<string>dots line</string>
-			<key>end</key>
-			<string>\n</string>
-			<key>patterns</key>
-			<array>
-				<dict>
-					<key>comment</key>
-					<string>test dot error</string>
-					<key>match</key>
-					<string>E</string>
-					<key>name</key>
-					<string>test.error</string>
-				</dict>
-				<dict>
-					<key>comment</key>
-					<string>test dot fail</string>
-					<key>match</key>
-					<string>F</string>
-					<key>name</key>
-					<string>test.fail</string>
-				</dict>
-				<dict>
-					<key>comment</key>
-					<string>test dot skip</string>
-					<key>match</key>
-					<string>s</string>
-					<key>name</key>
-					<string>test.skip</string>
-				</dict>
-			</array>
-		</dict>
-	</array>
-	<key>scopeName</key>
-	<string>tests.python</string>
-	<key>uuid</key>
-	<string>461be01e-d282-4798-b5e1-c718d682ab5e</string>
+    <key>name</key>
+    <string>PythonTestOutput</string>
+    <key>scopeName</key>
+    <string>tests.python</string>
+    <key>uuid</key>
+    <string>461be01e-d282-4798-b5e1-c718d682ab5e</string>
+    <key>patterns</key>
+    <array>
+        <dict>
+            <key>comment</key>
+            <string>error details</string>
+            <key>begin</key>
+            <string>^[=-]+$</string>
+            <key>end</key>
+            <string>\[Finished in [\d+\.]+s\]</string>
+            <key>name</key>
+            <string>raw</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>comment</key>
+                    <string>test fail</string>
+                    <key>name</key>
+                    <string>test.fail</string>
+                    <key>begin</key>
+                    <string>^\=+$</string>
+                    <key>end</key>
+                    <string>^\-+$</string>
+                    <key>match</key>
+                    <string>.*FAIL: (.*)</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>test error</string>
+                    <key>name</key>
+                    <string>test.error</string>
+                    <key>begin</key>
+                    <string>^\=+$</string>
+                    <key>end</key>
+                    <string>^\-+$</string>
+                    <key>match</key>
+                    <string>.*ERROR: (.*)</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>file in traceback</string>
+                    <key>begin</key>
+                    <string>File </string>
+                    <key>end</key>
+                    <string>,</string>
+                    <key>match</key>
+                    <string>"(...*?)"</string>
+                    <key>captures</key>
+                    <dict>
+                        <key>1</key>
+                        <dict>
+                            <key>name</key>
+                            <string>test.filename</string>
+                        </dict>
+                    </dict>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>all test pass</string>
+                    <key>name</key>
+                    <string>test.pass</string>
+                    <key>begin</key>
+                    <string>Ran \d+ tests</string>
+                    <key>match</key>
+                    <string>OK</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>tests broken</string>
+                    <key>name</key>
+                    <string>test.fail</string>
+                    <key>begin</key>
+                    <string>Ran \d+ tests</string>
+                    <key>match</key>
+                    <string>FAILED (.*)</string>
+                </dict>
+            </array>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>inline failures</string>
+            <key>name</key>
+            <string>verbosity2</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>comment</key>
+                    <string>test error</string>
+                    <key>name</key>
+                    <string>test.error</string>
+                    <key>match</key>
+                    <string>ERROR$</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>test fail</string>
+                    <key>name</key>
+                    <string>test.fail</string>
+                    <key>match</key>
+                    <string>FAIL$</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>test pass</string>
+                    <key>name</key>
+                    <string>test.pass</string>
+                    <key>match</key>
+                    <string>ok$</string>
+                </dict>
+            </array>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Specter inline failures</string>
+            <key>name</key>
+            <string>specter</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>comment</key>
+                    <string>test fail</string>
+                    <key>name</key>
+                    <string>test.fail</string>
+                    <key>match</key>
+                    <string> x .+$</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>test error</string>
+                    <key>name</key>
+                    <string>test.error</string>
+                    <key>begin</key>
+                    <string>Error Traceback:</string>
+                    <key>end</key>
+                    <string> - Error.+</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>test module</string>
+                    <key>name</key>
+                    <string>test.module</string>
+                    <key>match</key>
+                    <string>.+?Spec$</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>test pass</string>
+                    <key>name</key>
+                    <string>test.pass</string>
+                    <key>match</key>
+                    <string> - [^\-]+</string>
+                </dict>
+            </array>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Specter summary</string>
+            <key>name</key>
+            <string>specter.summary</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>comment</key>
+                    <string>tests passed</string>
+                    <key>name</key>
+                    <string>test.pass</string>
+                    <key>match</key>
+                    <string>^Pass.+$</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>tests skiped</string>
+                    <key>name</key>
+                    <string>test.skip</string>
+                    <key>match</key>
+                    <string>^Skip.+$</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>tests failed</string>
+                    <key>name</key>
+                    <string>test.fail</string>
+                    <key>match</key>
+                    <string>^Fail.+$</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>tests error</string>
+                    <key>name</key>
+                    <string>test.error</string>
+                    <key>end</key>
+                    <string>^Error.+$</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>tests incompleteed</string>
+                    <key>name</key>
+                    <string>test.incomplete</string>
+                    <key>end</key>
+                    <string>^Incomplete.+$</string>
+                </dict>
+            </array>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>dots line</string>
+            <key>begin</key>
+            <string>^(?:(E)|(F)|(s)|\.)</string>
+            <key>end</key>
+            <string>\n</string>
+            <key>beginCaptures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>test.error</string>
+                </dict>
+                <key>2</key>
+                <dict>
+                    <key>name</key>
+                    <string>test.fail</string>
+                </dict>
+                <key>3</key>
+                <dict>
+                    <key>name</key>
+                    <string>test.skip</string>
+                </dict>
+            </dict>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>comment</key>
+                    <string>test dot error</string>
+                    <key>match</key>
+                    <string>E</string>
+                    <key>name</key>
+                    <string>test.error</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>test dot fail</string>
+                    <key>match</key>
+                    <string>F</string>
+                    <key>name</key>
+                    <string>test.fail</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>test dot skip</string>
+                    <key>match</key>
+                    <string>s</string>
+                    <key>name</key>
+                    <string>test.skip</string>
+                </dict>
+            </array>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>traceback</string>
+            <key>name</key>
+            <string>traceback</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>comment</key>
+                    <string>lineno</string>
+                    <key>name</key>
+                    <string>traceback.lineno</string>
+                    <key>match</key>
+                    <string>(?&lt;=line\s)[0-9]+</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>file</string>
+                    <key>name</key>
+                    <string>traceback.file</string>
+                    <key>match</key>
+                    <string>(?&lt;=File\s)"[^"]+"</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>line</string>
+                    <key>name</key>
+                    <string>traceback.line</string>
+                    <key>match</key>
+                    <string>(?&lt;=    )[^\s-].*</string>
+                </dict>
+                <dict>
+                    <key>comment</key>
+                    <string>function</string>
+                    <key>name</key>
+                    <string>traceback.function</string>
+                    <key>match</key>
+                    <string>(?&lt;=in\s)\S+</string>
+                </dict>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>

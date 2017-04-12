@@ -1,0 +1,34 @@
+@name "PythonTestOutputTheme";
+
+@hidden true;
+
+@uuid 76063104-cbee-402a-b396-dc23a2d05139;
+
+* {
+    background: #000000;
+    caret: #DDDDDD;
+    foreground: #AAAAAA;
+    invisibles: #666666;
+    lineHighlight: #8070D8;
+    selection: #DDF0FF33;
+}
+
+test.pass {
+    foreground: #46A229;
+}
+
+test.error {
+    foreground: #B62E40;
+}
+
+test.fail {
+    foreground: #A68400;
+}
+
+test.skip {
+    foreground: #A684FF;
+}
+
+test.filename {
+    foreground: #3B2E84;
+}

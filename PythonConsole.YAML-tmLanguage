@@ -55,6 +55,50 @@ patterns:
     name: test.pass
     match: 'ok$'
 
+- comment: Specter inline failures
+  name: specter
+
+  patterns:
+  - comment: test fail
+    name: test.fail
+    match: ' x .+$'
+
+  - comment: test error
+    name: test.error
+    begin: 'Error Traceback:'
+    end: ' - Error.+'
+
+  - comment: test module
+    name: test.module
+    match: '.+?Spec$'
+
+  - comment: test pass
+    name: test.pass
+    match: ' - [^\-]+'
+
+- comment: Specter summary
+  name: specter.summary
+  patterns:
+  - comment: tests passed
+    name: test.pass
+    match: '^Pass.+$'
+
+  - comment: tests skiped
+    name: test.skip
+    match: '^Skip.+$'
+
+  - comment: tests failed
+    name: test.fail
+    match: '^Fail.+$'
+
+  - comment: tests error
+    name: test.error
+    end: '^Error.+$'
+
+  - comment: tests incompleteed
+    name: test.incomplete
+    end: '^Incomplete.+$'
+
 - comment: dots line
   begin: ^(?:(E)|(F)|(s)|\.)
   end: \n
@@ -74,3 +118,22 @@ patterns:
     - comment: test dot skip
       match: s
       name: test.skip
+
+- comment: traceback
+  name: traceback
+  patterns:
+  - comment: lineno
+    name: traceback.lineno
+    match: '(?<=line\s)[0-9]+'
+
+  - comment: file
+    name: traceback.file
+    match: '(?<=File\s)"[^"]+"'
+
+  - comment: line
+    name: traceback.line
+    match: '(?<=    )[^\s-].*'
+
+  - comment: function
+    name: traceback.function
+    match: '(?<=in\s)\S+'
