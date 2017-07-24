@@ -1,7 +1,7 @@
 """
 Handles operator precedence.
 """
-import operator
+import operator as op
 
 from jedi._compatibility import unicode
 from jedi.parser import tree
@@ -11,14 +11,14 @@ from jedi.evaluate import analysis
 
 # Maps Python syntax to the operator module.
 COMPARISON_OPERATORS = {
-    '==': operator.eq,
-    '!=': operator.ne,
-    'is': operator.is_,
-    'is not': operator.is_not,
-    '<': operator.lt,
-    '<=': operator.le,
-    '>': operator.gt,
-    '>=': operator.ge,
+    '==': op.eq,
+    '!=': op.ne,
+    'is': op.is_,
+    'is not': op.is_not,
+    '<': op.lt,
+    '<=': op.le,
+    '>': op.gt,
+    '>=': op.ge,
 }
 
 
@@ -30,22 +30,22 @@ def literals_to_types(evaluator, result):
         if is_literal(typ):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
-            cls = builtin_from_name(evaluator, typ.name.value)
-            new_result |= evaluator.execute(cls)
+            cls = builtin_from_name(evaluator, typ.name.string_name)
+            new_result |= cls.execute_evaluated()
         else:
             new_result.add(typ)
     return new_result
 
 
-def calculate_children(evaluator, children):
+def calculate_children(evaluator, context, children):
     """
     Calculate a list of children with operators.
     """
     iterator = iter(children)
-    types = evaluator.eval_element(next(iterator))
+    types = context.eval_node(next(iterator))
     for operator in iterator:
         right = next(iterator)
-        if tree.is_node(operator, 'comp_op'):  # not in / is not
+        if operator.type == 'comp_op':  # not in / is not
             operator = ' '.join(str(c.value) for c in operator.children)
 
         # handle lazy evaluation of and/or here.
@@ -53,19 +53,19 @@ def calculate_children(evaluator, children):
             left_bools = set([left.py__bool__() for left in types])
             if left_bools == set([True]):
                 if operator == 'and':
-                    types = evaluator.eval_element(right)
+                    types = context.eval_node(right)
             elif left_bools == set([False]):
                 if operator != 'and':
-                    types = evaluator.eval_element(right)
+                    types = context.eval_node(right)
             # Otherwise continue, because of uncertainty.
         else:
-            types = calculate(evaluator, types, operator,
-                              evaluator.eval_element(right))
+            types = calculate(evaluator, context, types, operator,
+                              context.eval_node(right))
     debug.dbg('calculate_children types %s', types)
     return types
 
 
-def calculate(evaluator, left_result, operator, right_result):
+def calculate(evaluator, context, left_result, operator, right_result):
     result = set()
     if not left_result or not right_result:
         # illegal slices e.g. cause left/right_result to be None
@@ -80,7 +80,7 @@ def calculate(evaluator, left_result, operator, right_result):
         else:
             for left in left_result:
                 for right in right_result:
-                    result |= _element_calculate(evaluator, left, operator, right)
+                    result |= _element_calculate(evaluator, context, left, operator, right)
     return result
 
 
@@ -117,23 +117,23 @@ def is_literal(obj):
 
 def _is_tuple(obj):
     from jedi.evaluate import iterable
-    return isinstance(obj, iterable.Array) and obj.type == 'tuple'
+    return isinstance(obj, iterable.AbstractSequence) and obj.array_type == 'tuple'
 
 
 def _is_list(obj):
     from jedi.evaluate import iterable
-    return isinstance(obj, iterable.Array) and obj.type == 'list'
+    return isinstance(obj, iterable.AbstractSequence) and obj.array_type == 'list'
 
 
-def _element_calculate(evaluator, left, operator, right):
-    from jedi.evaluate import iterable, representation as er
+def _element_calculate(evaluator, context, left, operator, right):
+    from jedi.evaluate import iterable, instance
     l_is_num = _is_number(left)
     r_is_num = _is_number(right)
     if operator == '*':
         # for iterables, ignore * operations
-        if isinstance(left, iterable.Array) or is_string(left):
+        if isinstance(left, iterable.AbstractSequence) or is_string(left):
             return set([left])
-        elif isinstance(right, iterable.Array) or is_string(right):
+        elif isinstance(right, iterable.AbstractSequence) or is_string(right):
             return set([right])
     elif operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):
@@ -166,13 +166,14 @@ def _element_calculate(evaluator, left, operator, right):
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
-        return isinstance(obj, er.Instance) and obj.name.get_code() in ('int', 'float')
+        return isinstance(obj, instance.CompiledInstance) and \
+            obj.name.string_name in ('int', 'float')
 
     # Static analysis, one is a number, the other one is not.
     if operator in ('+', '-') and l_is_num != r_is_num \
             and not (check(left) or check(right)):
         message = "TypeError: unsupported operand type(s) for +: %s and %s"
-        analysis.add(evaluator, 'type-error-operation', operator,
+        analysis.add(context, 'type-error-operation', operator,
                      message % (left, right))
 
     return set([left, right])

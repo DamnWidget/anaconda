@@ -12,11 +12,14 @@ try:
 except ImportError:
     pass
 
+# Cannot use sys.version.major and minor names, because in Python 2.6 it's not
+# a namedtuple.
 is_py3 = sys.version_info[0] >= 3
-is_py33 = is_py3 and sys.version_info.minor >= 3
-is_py34 = is_py3 and sys.version_info.minor >= 4
-is_py35 = is_py3 and sys.version_info.minor >= 5
+is_py33 = is_py3 and sys.version_info[1] >= 3
+is_py34 = is_py3 and sys.version_info[1] >= 4
+is_py35 = is_py3 and sys.version_info[1] >= 5
 is_py26 = not is_py3 and sys.version_info[1] < 7
+py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
 
 
 class DummyFile(object):
@@ -205,7 +208,8 @@ def u(string):
     """
     if is_py3:
         return str(string)
-    elif not isinstance(string, unicode):
+
+    if not isinstance(string, unicode):
         return unicode(str(string), 'UTF-8')
     return string
 
@@ -231,6 +235,11 @@ try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest  # Python 2
+
+try:
+    FileNotFoundError = FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 
 def no_unicode_pprint(dct):
