@@ -665,8 +665,8 @@
 	"swallow_startup_errors": false,
 
     /*
-        If this is set to true, anaconda will uload plugins that
-        make it malfunction intefering with it
+        If this is set to true, anaconda will unload plugins that
+        make it malfunction interfering with it
     */
     "auto_unload_conflictive_plugins": true
 }
