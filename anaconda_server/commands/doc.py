@@ -36,7 +36,10 @@ class Doc(Command):
         """Run the command
         """
 
-        if self._check_nonsense():
+        try:
+            if self._check_nonsense():
+                return
+        except IndexError:
             return
 
         processed = []
