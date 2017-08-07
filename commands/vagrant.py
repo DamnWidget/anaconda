@@ -8,7 +8,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib import worker, vagrant
-from ..anaconda_lib.typing import Dict, Any
+from ..anaconda_lib._typing import Dict, Any
 
 
 class AnacondaVagrantEnable(sublime_plugin.WindowCommand):

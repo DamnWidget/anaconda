@@ -8,7 +8,7 @@
 import sublime
 from functools import partial
 
-from .typing import Union, Dict
+from ._typing import Union, Dict
 
 
 class JediUsages(object):

@@ -7,7 +7,7 @@ import time
 import sublime
 import sublime_plugin
 
-from ..anaconda_lib.typing import Callable, Dict, Any
+from ..anaconda_lib._typing import Callable, Dict, Any
 from ..anaconda_lib.helpers import (
     check_linting, get_settings, check_linting_behaviour,
     ONLY_CODE, NOT_SCRATCH, LINTING_ENABLED, is_code

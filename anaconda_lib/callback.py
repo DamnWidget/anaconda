@@ -15,7 +15,7 @@ from functools import partial
 import sublime
 
 from ..anaconda_lib import aenum as enum
-from .typing import Callable, Any, Union
+from ._typing import Callable, Any, Union
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))

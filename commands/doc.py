@@ -8,7 +8,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
-from ..anaconda_lib.typing import Dict, Any
+from ..anaconda_lib._typing import Dict, Any
 from ..anaconda_lib.tooltips import Tooltip
 from ..anaconda_lib.callback import Callback
 from ..anaconda_lib.helpers import prepare_send_data, is_python, get_settings

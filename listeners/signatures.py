@@ -11,7 +11,7 @@ import sublime_plugin
 from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.tooltips import Tooltip
 from ..anaconda_lib.kite import Integration
-from ..anaconda_lib.typing import Dict, Tuple, Any
+from ..anaconda_lib._typing import Dict, Tuple, Any
 from ..anaconda_lib.helpers import prepare_send_data, is_python, get_settings
 
 

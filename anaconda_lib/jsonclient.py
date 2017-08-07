@@ -24,7 +24,7 @@ except ImportError:
 
 from .callback import Callback
 from .ioloop import EventHandler
-from .typing import Callable, Any
+from ._typing import Callable, Any
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))

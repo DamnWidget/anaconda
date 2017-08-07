@@ -8,7 +8,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.helpers import is_python
-from ..anaconda_lib.typing import Tuple, Any  # noqa
+from ..anaconda_lib._typing import Tuple, Any  # noqa
 from ..anaconda_lib.linting.sublime import ANACONDA
 
 

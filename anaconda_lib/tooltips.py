@@ -10,7 +10,7 @@ from string import Template
 import sublime
 
 from .helpers import get_settings
-from .typing import Callable, Union, Dict
+from ._typing import Callable, Union, Dict
 
 
 class Tooltip(object):

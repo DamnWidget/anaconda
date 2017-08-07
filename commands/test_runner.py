@@ -9,7 +9,7 @@ import functools
 
 import sublime
 import sublime_plugin
-from ..anaconda_lib.typing import List, Tuple
+from ..anaconda_lib._typing import List, Tuple
 from ..anaconda_lib.helpers import get_settings, git_installation, is_python
 
 DEFAULT_TEST_COMMAND = "nosetests"

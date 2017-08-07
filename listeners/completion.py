@@ -11,7 +11,7 @@ from ..anaconda_lib.helpers import (
     completion_is_disabled, dot_completion, enable_dot_completion
 )
 from ..anaconda_lib.decorators import profile
-from ..anaconda_lib.typing import Dict, List, Tuple, Any
+from ..anaconda_lib._typing import Dict, List, Tuple, Any
 
 JUST_COMPLETED = False
 
@@ -69,8 +69,8 @@ class AnacondaCompletionEventListener(sublime_plugin.EventListener):
 
         global JUST_COMPLETED
 
-        if (view.substr(view.sel()[0].begin() - 1) == '('
-                and view.substr(view.sel()[0].begin()) == ')'):
+        if (view.substr(view.sel()[0].begin() - 1) == '(' and
+                view.substr(view.sel()[0].begin()) == ')'):
             if JUST_COMPLETED:
                 view.run_command('anaconda_complete_funcargs')
 

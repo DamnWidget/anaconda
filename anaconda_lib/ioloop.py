@@ -41,7 +41,7 @@ import logging
 import traceback
 import threading
 
-from .typing import List, Tuple, Any  # noqa
+from ._typing import List, Tuple, Any  # noqa
 
 NOT_TERMINATE = True
 

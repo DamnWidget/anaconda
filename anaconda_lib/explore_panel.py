@@ -4,7 +4,7 @@
 
 import sublime
 
-from .typing import List
+from ._typing import List
 from Default.history_list import get_jump_history_for_view
 
 

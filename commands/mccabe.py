@@ -6,7 +6,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
-from ..anaconda_lib.typing import Dict, Any
+from ..anaconda_lib._typing import Dict, Any
 from ..anaconda_lib.callback import Callback
 from ..anaconda_lib.helpers import get_settings
 

@@ -9,7 +9,7 @@ import sublime
 import sublime_plugin
 
 from ..anaconda_lib.worker import Worker
-from ..anaconda_lib.typing import Dict, Any
+from ..anaconda_lib._typing import Dict, Any
 from ..anaconda_lib.callback import Callback
 from ..anaconda_lib.helpers import prepare_send_data, is_python
 
@@ -29,7 +29,7 @@ class AnacondaRename(sublime_plugin.TextCommand):
                     "Replace with:", old_name, self.input_replacement,
                     None, None
                 )
-            except:
+            except Exception:
                 logging.error(traceback.format_exc())
         else:
             self.rename(edit)
