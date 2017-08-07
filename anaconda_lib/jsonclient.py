@@ -14,7 +14,7 @@ import traceback
 
 try:
     import sublime
-except:
+except ImportError:
     pass
 
 try:
