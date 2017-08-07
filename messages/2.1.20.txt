@@ -1,0 +1,22 @@
+|
+              _` |  __     _` |   __|   _    __     _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            __,_| _|  _| __,_| ___| ___/  _|  _| __,_| __,_|
+                                     The Sublime Text 3 Python IDE
+
+
+Anaconda v2.1.20
+================
+
+Welcome to new anaconda v2.1.20, what do you can find in this minor release?
+
+## Additions
+    - Added support to PyDocStyle PEP257 and Numpy support, related #678
+
+## Updates
+    - Updated vendored PyDocStyle version, related #678
+
+## Fixes
+    - Fixed typing issue on python 2 interpreters
+    - Fixed resource exhaustion in Jedi, related #680
+    - Disabled faulty feature in AutoPEP8, relates to #681 and #533
