@@ -10,7 +10,7 @@ from nose.plugins.skip import SkipTest
 from handlers.python_lint_handler import PythonLintHandler
 
 PYTHON3 = sys.version_info >= (3, 0)
-PYTHON26 = sys.version_info <= (2, 6)
+PYTHON26 = sys.version_info < (2, 7)
 
 
 class real_temp_file(object):
