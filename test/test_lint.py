@@ -10,6 +10,7 @@ from nose.plugins.skip import SkipTest
 from handlers.python_lint_handler import PythonLintHandler
 
 PYTHON3 = sys.version_info >= (3, 0)
+PYTHON26 = sys.version_info <= (2, 6)
 
 
 class real_temp_file(object):
@@ -100,11 +101,15 @@ async def f(a: int) -> int:
         handler.lint(self._settings, 'a = \'this is a very long string: {0}\'\n'.format('a' * 80))  # noqa
 
     def test_pep257_lint(self):
+        if PYTHON26:
+            raise SkipTest('PyDocStyle dropped support to Python2.6')
         self._settings['use_pep257'] = True
         handler = PythonLintHandler('lint', None, 0, 0, self._check_pep257)
         handler.lint(self._settings, self._lintable_docstring, '')
 
     def test_pep257_ignores(self):
+        if PYTHON26:
+            raise SkipTest('PyDocStyle dropped support to Python2.6')
         self._settings['use_pep257'] = True
         self._settings['pep257_ignore'] = ['D100', 'D400', 'D209', 'D205', 'D401', 'D404', 'D213']  # noqa
         handler = PythonLintHandler('lint', None, 0, 0, self._check_pep257_ignores)  # noqa
