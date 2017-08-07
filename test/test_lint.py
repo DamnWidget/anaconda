@@ -106,7 +106,7 @@ async def f(a: int) -> int:
 
     def test_pep257_ignores(self):
         self._settings['use_pep257'] = True
-        self._settings['pep257_ignore'] = ['D100', 'D400', 'D209', 'D205', 'D401']  # noqa
+        self._settings['pep257_ignore'] = ['D100', 'D400', 'D209', 'D205', 'D401', 'D404', 'D213']  # noqa
         handler = PythonLintHandler('lint', None, 0, 0, self._check_pep257_ignores)  # noqa
         handler.lint(self._settings, self._lintable_docstring, '')
 
@@ -189,15 +189,15 @@ async def f(a: int) -> int:
 
     def _check_pep257(self, result):
         assert result['success'] is True
-        assert len(result['errors']) == 5
+        assert len(result['errors']) == 7
         raw_errors = [r['raw_error'] for r in result['errors']]
         assert '[V] PEP 257 (D100): Missing docstring in public module' in raw_errors  # noqa
         assert '[V] PEP 257 (D209): Multi-line docstring closing quotes should be on a separate line' in raw_errors  # noqa
         assert '[V] PEP 257 (D205): 1 blank line required between summary line and description (found 0)' in raw_errors  # noqa
         assert '[V] PEP 257 (D400): First line should end with a period (not \'t\')' in raw_errors  # noqa
-        assert '[V] PEP 257 (D401): First line should be in imperative mood (\'Thi\', not \'This\')' in raw_errors  # noqa
+        assert "[V] PEP 257 (D401): First line should be in imperative mood; try rephrasing (found 'This')" in raw_errors  # noqa
 
-        error1, error2, error3, error4, error5 = result['errors']
+        error1, error2, error3, error4, error5, _, _ = result['errors']
         assert (error1['level'], error2['level'], error3['level'], error4['level'], error5['level']) == ('V', 'V', 'V', 'V', 'V')  # noqa
         assert result['uid'] == 0
         assert result['vid'] == 0
