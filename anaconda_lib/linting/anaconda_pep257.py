@@ -4,10 +4,10 @@
 # This program is Free Software see LICENSE file for details
 
 """
-Anaconda pep257 wrapper
+Anaconda PyDocStyle wrapper
 """
 
-import pep257
+import pydocstyle
 
 
 class PEP257(object):
@@ -26,7 +26,7 @@ class PEP257(object):
 
         errors = []
         try:
-            for error in pep257.PEP257Checker().check_source(
+            for error in pydocstyle.ConventionChecker().check_source(
                 self.code, self.filename
             ):
                 error_code = getattr(error, 'code', None)
