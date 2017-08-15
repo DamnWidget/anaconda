@@ -8,16 +8,21 @@ from jedi.evaluate.compiled import mixed
 from jedi.evaluate.context import Context
 
 
+class NamespaceObject(object):
+    def __init__(self, dct):
+        self.__dict__ = dct
+
+
 class MixedModuleContext(Context):
     resets_positions = True
     type = 'mixed_module'
 
-    def __init__(self, evaluator, tree_module, namespaces):
+    def __init__(self, evaluator, tree_module, namespaces, path):
         self.evaluator = evaluator
         self._namespaces = namespaces
 
-        self._namespace_objects = [type('jedi_namespace', (), n) for n in namespaces]
-        self._module_context = ModuleContext(evaluator, tree_module)
+        self._namespace_objects = [NamespaceObject(n) for n in namespaces]
+        self._module_context = ModuleContext(evaluator, tree_module, path=path)
         self.tree_node = tree_module
 
     def get_node(self):
@@ -33,7 +38,7 @@ class MixedModuleContext(Context):
                 self.evaluator,
                 parent_context=self,
                 compiled_object=compiled_object,
-                tree_name=self.tree_node.name
+                tree_context=self._module_context
             )
             for filter in mixed_object.get_filters(*args, **kwargs):
                 yield filter

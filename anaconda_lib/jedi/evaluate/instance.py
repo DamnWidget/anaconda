@@ -11,6 +11,7 @@ from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import iterable
+from jedi.parser_utils import get_parent_scope
 
 
 class AbstractInstanceContext(Context):
@@ -151,7 +152,7 @@ class AbstractInstanceContext(Context):
     def create_instance_context(self, class_context, node):
         if node.parent.type in ('funcdef', 'classdef'):
             node = node.parent
-        scope = node.get_parent_scope()
+        scope = get_parent_scope(node)
         if scope == class_context.tree_node:
             return class_context
         else:
@@ -189,13 +190,18 @@ class CompiledInstance(AbstractInstanceContext):
         return compiled.CompiledContextName(self, self.class_context.name.string_name)
 
     def create_instance_context(self, class_context, node):
-        if node.get_parent_scope().type == 'classdef':
+        if get_parent_scope(node).type == 'classdef':
             return class_context
         else:
             return super(CompiledInstance, self).create_instance_context(class_context, node)
 
 
 class TreeInstance(AbstractInstanceContext):
+    def __init__(self, evaluator, parent_context, class_context, var_args):
+        super(TreeInstance, self).__init__(evaluator, parent_context,
+                                           class_context, var_args)
+        self.tree_node = class_context.tree_node
+
     @property
     def name(self):
         return filters.ContextName(self, self.class_context.name.tree_name)
@@ -332,7 +338,7 @@ class InstanceClassFilter(filters.ParserTreeFilter):
         while node is not None:
             if node == self._parser_scope or node == self.context:
                 return True
-            node = node.get_parent_scope()
+            node = get_parent_scope(node)
         return False
 
     def _access_possible(self, name):
@@ -383,14 +389,14 @@ class ParamArguments(object):
         def infer(self):
             return self._param.infer()
 
-    def __init__(self, class_context, funcdef):
-        self._class_context = class_context
+    def __init__(self, execution_context, funcdef):
+        self._execution_context = execution_context
         self._funcdef = funcdef
 
     def unpack(self, func=None):
         params = search_params(
-            self._class_context.evaluator,
-            self._class_context,
+            self._execution_context.evaluator,
+            self._execution_context,
             self._funcdef
         )
         is_first = True
@@ -403,8 +409,8 @@ class ParamArguments(object):
 
 
 class InstanceVarArgs(object):
-    def __init__(self, instance, funcdef, var_args):
-        self._instance = instance
+    def __init__(self, execution_context, funcdef, var_args):
+        self._execution_context = execution_context
         self._funcdef = funcdef
         self._var_args = var_args
 
@@ -412,12 +418,12 @@ class InstanceVarArgs(object):
     def _get_var_args(self):
         if self._var_args is None:
             # TODO this parent_context might be wrong. test?!
-            return ParamArguments(self._instance.class_context, self._funcdef)
+            return ParamArguments(self._execution_context, self._funcdef)
 
         return self._var_args
 
     def unpack(self, func=None):
-        yield None, LazyKnownContext(self._instance)
+        yield None, LazyKnownContext(self._execution_context.instance)
         for values in self._get_var_args().unpack(func):
             yield values
 
@@ -431,7 +437,7 @@ class InstanceVarArgs(object):
 class InstanceFunctionExecution(er.FunctionExecutionContext):
     def __init__(self, instance, parent_context, function_context, var_args):
         self.instance = instance
-        var_args = InstanceVarArgs(instance, function_context.tree_node, var_args)
+        var_args = InstanceVarArgs(self, function_context.tree_node, var_args)
 
         super(InstanceFunctionExecution, self).__init__(
             instance.evaluator, parent_context, function_context, var_args)

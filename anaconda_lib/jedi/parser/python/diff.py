@@ -9,42 +9,16 @@ import re
 import difflib
 from collections import namedtuple
 
-from jedi._compatibility import use_metaclass
-from jedi import settings
 from jedi.common import splitlines
-from jedi.parser import ParserWithRecovery
-from jedi.parser.tree import EndMarker
-from jedi.parser.utils import parser_cache
+from jedi.parser.python.parser import Parser, _remove_last_newline
+from jedi.parser.python.tree import EndMarker
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
                                   ENDMARKER, INDENT, DEDENT)
 
 
-class CachedFastParser(type):
-    """ This is a metaclass for caching `FastParser`. """
-    def __call__(self, grammar, source, module_path=None):
-        pi = parser_cache.get(module_path, None)
-        if pi is None or not settings.fast_parser:
-            return ParserWithRecovery(grammar, source, module_path)
-
-        parser = pi.parser
-        d = DiffParser(parser)
-        new_lines = splitlines(source, keepends=True)
-        parser.module = parser._parsed = d.update(new_lines)
-        return parser
-
-
-class FastParser(use_metaclass(CachedFastParser)):
-    pass
-
-
-def _merge_used_names(base_dict, other_dict):
-    for key, names in other_dict.items():
-        base_dict.setdefault(key, []).extend(names)
-
-
 def _get_last_line(node_or_leaf):
-    last_leaf = node_or_leaf.last_leaf()
+    last_leaf = node_or_leaf.get_last_leaf()
     if _ends_with_newline(last_leaf):
         return last_leaf.start_pos[0]
     else:
@@ -111,20 +85,21 @@ def _update_positions(nodes, line_offset, last_leaf):
 
 
 class DiffParser(object):
-    def __init__(self, parser):
-        self._parser = parser
-        self._grammar = self._parser._grammar
-        self._module = parser.get_root_node()
+    """
+    An advanced form of parsing a file faster. Unfortunately comes with huge
+    side effects. It changes the given module.
+    """
+    def __init__(self, grammar, module):
+        self._grammar = grammar
+        self._module = module
 
     def _reset(self):
         self._copy_count = 0
         self._parser_count = 0
 
-        self._copied_ranges = []
-        self._new_used_names = {}
         self._nodes_stack = _NodesStack(self._module)
 
-    def update(self, lines_new):
+    def update(self, old_lines, new_lines):
         '''
         The algorithm works as follows:
 
@@ -141,27 +116,26 @@ class DiffParser(object):
         Returns the new module node.
         '''
         debug.speed('diff parser start')
-        self._parser_lines_new = lines_new
+        # Reset the used names cache so they get regenerated.
+        self._module._used_names = None
+
+        self._parser_lines_new = new_lines
         self._added_newline = False
-        if lines_new[-1] != '':
+        if new_lines[-1] != '':
             # The Python grammar needs a newline at the end of a file, but for
-            # everything else we keep working with lines_new here.
-            self._parser_lines_new = list(lines_new)
+            # everything else we keep working with new_lines here.
+            self._parser_lines_new = list(new_lines)
             self._parser_lines_new[-1] += '\n'
+            self._parser_lines_new.append('')
             self._added_newline = True
 
         self._reset()
 
-        line_length = len(lines_new)
-        lines_old = splitlines(self._parser.source, keepends=True)
-        sm = difflib.SequenceMatcher(None, lines_old, self._parser_lines_new)
+        line_length = len(new_lines)
+        sm = difflib.SequenceMatcher(None, old_lines, self._parser_lines_new)
         opcodes = sm.get_opcodes()
         debug.speed('diff parser calculated')
-        debug.dbg('diff: line_lengths old: %s, new: %s' % (len(lines_old), line_length))
-
-        if len(opcodes) == 1 and opcodes[0][0] == 'equal':
-            self._copy_count = 1
-            return self._module
+        debug.dbg('diff: line_lengths old: %s, new: %s' % (len(old_lines), line_length))
 
         for operation, i1, i2, j1, j2 in opcodes:
             debug.dbg('diff %s old[%s:%s] new[%s:%s]',
@@ -185,19 +159,16 @@ class DiffParser(object):
         # changed module.
         self._nodes_stack.close()
 
-        self._cleanup()
         if self._added_newline:
-            self._parser.remove_last_newline()
-
-        self._parser.source = ''.join(lines_new)
+            _remove_last_newline(self._module)
 
         # Good for debugging.
         if debug.debug_function:
-            self._enable_debugging(lines_old, lines_new)
+            self._enabled_debugging(old_lines, new_lines)
         last_pos = self._module.end_pos[0]
         if last_pos != line_length:
             current_lines = splitlines(self._module.get_code(), keepends=True)
-            diff = difflib.unified_diff(current_lines, lines_new)
+            diff = difflib.unified_diff(current_lines, new_lines)
             raise Exception(
                 "There's an issue (%s != %s) with the diff parser. Please report:\n%s"
                 % (last_pos, line_length, ''.join(diff))
@@ -206,14 +177,15 @@ class DiffParser(object):
         debug.speed('diff parser end')
         return self._module
 
-    def _enable_debugging(self, lines_old, lines_new):
+    def _enabled_debugging(self, old_lines, lines_new):
         if self._module.get_code() != ''.join(lines_new):
-            debug.warning('parser issue:\n%s\n%s', repr(''.join(lines_old)),
-                          repr(''.join(lines_new)))
+            debug.warning('parser issue:\n%s\n%s', ''.join(old_lines),
+                          ''.join(lines_new))
 
     def _copy_from_old_parser(self, line_offset, until_line_old, until_line_new):
         copied_nodes = [None]
 
+        last_until_line = -1
         while until_line_new > self._nodes_stack.parsed_until_line:
             parsed_until_line_old = self._nodes_stack.parsed_until_line - line_offset
             line_stmt = self._get_old_line_stmt(parsed_until_line_old + 1)
@@ -243,9 +215,13 @@ class DiffParser(object):
 
                     from_ = copied_nodes[0].get_start_pos_of_prefix()[0] + line_offset
                     to = self._nodes_stack.parsed_until_line
-                    self._copied_ranges.append((from_, to))
 
                     debug.dbg('diff actually copy %s to %s', from_, to)
+            # Since there are potential bugs that might loop here endlessly, we
+            # just stop here.
+            assert last_until_line != self._nodes_stack.parsed_until_line \
+                or not copied_nodes, last_until_line
+            last_until_line = self._nodes_stack.parsed_until_line
 
     def _get_old_line_stmt(self, old_line):
         leaf = self._module.get_leaf_for_position((old_line, 0), include_prefixes=True)
@@ -254,8 +230,6 @@ class DiffParser(object):
             leaf = leaf.get_next_leaf()
         if leaf.get_start_pos_of_prefix()[0] == old_line:
             node = leaf
-            # TODO use leaf.get_definition one day when that one is working
-            # well.
             while node.parent.type not in ('file_input', 'suite'):
                 node = node.parent
             return node
@@ -267,7 +241,7 @@ class DiffParser(object):
             return None
 
         line = self._nodes_stack.parsed_until_line + 1
-        node = self._new_module.last_leaf()
+        node = self._new_module.get_last_leaf()
         while True:
             parent = node.parent
             if parent.type in ('suite', 'file_input'):
@@ -281,6 +255,7 @@ class DiffParser(object):
         Parses at least until the given line, but might just parse more until a
         valid state is reached.
         """
+        last_until_line = 0
         while until_line > self._nodes_stack.parsed_until_line:
             node = self._try_parse_part(until_line)
             nodes = self._get_children_nodes(node)
@@ -293,10 +268,11 @@ class DiffParser(object):
                 self._nodes_stack.parsed_until_line,
                 node.end_pos[0] - 1
             )
-            _merge_used_names(
-                self._new_used_names,
-                node.used_names
-            )
+            # Since the tokenizer sometimes has bugs, we cannot be sure that
+            # this loop terminates. Therefore assert that there's always a
+            # change.
+            assert last_until_line != self._nodes_stack.parsed_until_line, last_until_line
+            last_until_line = self._nodes_stack.parsed_until_line
 
     def _get_children_nodes(self, node):
         nodes = node.children
@@ -320,37 +296,22 @@ class DiffParser(object):
         parsed_until_line = self._nodes_stack.parsed_until_line
         lines_after = self._parser_lines_new[parsed_until_line:]
         #print('parse_content', parsed_until_line, lines_after, until_line)
-        tokenizer = self._diff_tokenize(
+        tokens = self._diff_tokenize(
             lines_after,
             until_line,
             line_offset=parsed_until_line
         )
-        self._active_parser = ParserWithRecovery(
+        self._active_parser = Parser(
             self._grammar,
-            source='\n',
-            start_parsing=False
+            error_recovery=True
         )
-        return self._active_parser.parse(tokenizer=tokenizer)
-
-    def _cleanup(self):
-        """Add the used names from the old parser to the new one."""
-        copied_line_numbers = set()
-        for l1, l2 in self._copied_ranges:
-            copied_line_numbers.update(range(l1, l2 + 1))
-
-        new_used_names = self._new_used_names
-        for key, names in self._module.used_names.items():
-            for name in names:
-                if name.line in copied_line_numbers:
-                    new_used_names.setdefault(key, []).append(name)
-        self._module.used_names = new_used_names
+        return self._active_parser.parse(tokens=tokens)
 
     def _diff_tokenize(self, lines, until_line, line_offset=0):
         is_first_token = True
         omitted_first_indent = False
         indents = []
-        l = iter(lines)
-        tokens = generate_tokens(lambda: next(l, ''), use_exact_op_types=True)
+        tokens = generate_tokens(lines, use_exact_op_types=True)
         stack = self._active_parser.pgen_parser.stack
         for typ, string, start_pos, prefix in tokens:
             start_pos = start_pos[0] + line_offset, start_pos[1]
@@ -422,20 +383,24 @@ class _NodesStackNode(object):
         self.children_groups.append(group)
 
     def get_last_line(self, suffix):
-        if not self.children_groups:
-            assert not self.parent
-            return 0
+        line = 0
+        if self.children_groups:
+            children_group = self.children_groups[-1]
+            last_leaf = children_group.children[-1].get_last_leaf()
+            line = last_leaf.end_pos[0]
 
-        last_leaf = self.children_groups[-1].children[-1].last_leaf()
-        line = last_leaf.end_pos[0]
+            # Calculate the line offsets
+            offset = children_group.line_offset
+            if offset:
+                # In case the line_offset is not applied to this specific leaf,
+                # just ignore it.
+                if last_leaf.line <= children_group.last_line_offset_leaf.line:
+                    line += children_group.line_offset
 
-        # Calculate the line offsets
-        line += self.children_groups[-1].line_offset
-
-        # Newlines end on the next line, which means that they would cover
-        # the next line. That line is not fully parsed at this point.
-        if _ends_with_newline(last_leaf, suffix):
-            line -= 1
+            # Newlines end on the next line, which means that they would cover
+            # the next line. That line is not fully parsed at this point.
+            if _ends_with_newline(last_leaf, suffix):
+                line -= 1
         line += suffix.count('\n')
         return line
 
@@ -454,7 +419,7 @@ class _NodesStack(object):
         return not self._base_node.children
 
     @property
-    def parsed_until_line(self, ):
+    def parsed_until_line(self):
         return self._tos.get_last_line(self.prefix)
 
     def _get_insertion_node(self, indentation_node):
@@ -500,7 +465,7 @@ class _NodesStack(object):
         """
         Helps cleaning up the tree nodes that get inserted.
         """
-        last_leaf = tree_nodes[-1].last_leaf()
+        last_leaf = tree_nodes[-1].get_last_leaf()
         is_endmarker = last_leaf.type == self.endmarker_type
         self._last_prefix = ''
         if is_endmarker:
@@ -515,7 +480,7 @@ class _NodesStack(object):
                 last_leaf.prefix, self._last_prefix = \
                     last_leaf.prefix[:separation + 1], last_leaf.prefix[separation + 1:]
 
-        first_leaf = tree_nodes[0].first_leaf()
+        first_leaf = tree_nodes[0].get_first_leaf()
         first_leaf.prefix = self.prefix + first_leaf.prefix
         self.prefix = ''
 
@@ -592,13 +557,13 @@ class _NodesStack(object):
             new_nodes.pop()
             while new_nodes:
                 last_node = new_nodes[-1]
-                if last_node.last_leaf().type == 'newline':
+                if last_node.get_last_leaf().type == 'newline':
                     break
                 new_nodes.pop()
 
         if new_nodes:
             try:
-                last_line_offset_leaf = new_nodes[line_offset_index].last_leaf()
+                last_line_offset_leaf = new_nodes[line_offset_index].get_last_leaf()
             except IndexError:
                 line_offset = 0
                 # In this case we don't have to calculate an offset, because
@@ -621,7 +586,7 @@ class _NodesStack(object):
 
         # Add an endmarker.
         try:
-            last_leaf = self._module.last_leaf()
+            last_leaf = self._module.get_last_leaf()
             end_pos = list(last_leaf.end_pos)
         except IndexError:
             end_pos = [1, 0]

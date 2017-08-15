@@ -1,5 +1,5 @@
 """
-Like described in the :mod:`jedi.parser.tree` module,
+Like described in the :mod:`jedi.parser.python.tree` module,
 there's a need for an ast like module to represent the states of parsed
 modules.
 
@@ -32,6 +32,8 @@ py__package__()                        Only on modules. For the import system.
 py__path__()                           Only on modules. For the import system.
 py__get__(call_object)                 Only on instances. Simulates
                                        descriptors.
+py__doc__(include_call_signature:      Returns the docstring for a context.
+          bool)
 ====================================== ========================================
 
 """
@@ -39,9 +41,10 @@ import os
 import pkgutil
 import imp
 import re
+from itertools import chain
 
 from jedi._compatibility import use_metaclass
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi import debug
 from jedi import common
 from jedi.evaluate.cache import memoize_default, CachedMetaClass, NO_DEFAULT
@@ -56,9 +59,12 @@ from jedi.evaluate import imports
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter, ContextName, AbstractNameDefinition, \
-    ParamName, AnonymousInstanceParamName, TreeNameDefinition
+    ParamName, AnonymousInstanceParamName, TreeNameDefinition, \
+    ContextNameMixin
 from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
+from jedi.evaluate.context import ContextualizedNode
+from jedi import parser_utils
 
 
 def apply_py__get__(context, base_context):
@@ -72,14 +78,29 @@ def apply_py__get__(context, base_context):
 
 
 class ClassName(TreeNameDefinition):
+    def __init__(self, parent_context, tree_name, name_context):
+        super(ClassName, self).__init__(parent_context, tree_name)
+        self._name_context = name_context
+
     def infer(self):
-        for result_context in super(ClassName, self).infer():
+        # TODO this _name_to_types might get refactored and be a part of the
+        # parent class. Once it is, we can probably just overwrite method to
+        # achieve this.
+        from jedi.evaluate.finder import _name_to_types
+        inferred = _name_to_types(
+            self.parent_context.evaluator, self._name_context, self.tree_name)
+
+        for result_context in inferred:
             for c in apply_py__get__(result_context, self.parent_context):
                 yield c
 
 
 class ClassFilter(ParserTreeFilter):
     name_class = ClassName
+
+    def _convert_names(self, names):
+        return [self.name_class(self.context, name, self._node_context)
+                for name in names]
 
 
 class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
@@ -159,25 +180,17 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
                 origin_scope=origin_scope
             )
         else:
-            for scope in self.py__mro__():
-                if isinstance(scope, compiled.CompiledObject):
-                    for filter in scope.get_filters(is_instance=is_instance):
+            for cls in self.py__mro__():
+                if isinstance(cls, compiled.CompiledObject):
+                    for filter in cls.get_filters(is_instance=is_instance):
                         yield filter
                 else:
                     yield ClassFilter(
-                        self.evaluator, self, node_context=scope,
+                        self.evaluator, self, node_context=cls,
                         origin_scope=origin_scope)
 
     def is_class(self):
         return True
-
-    def get_subscope_by_name(self, name):
-        raise DeprecationWarning
-        for s in self.py__mro__():
-            for sub in reversed(s.subscopes):
-                if sub.name.value == name:
-                    return sub
-        raise KeyError("Couldn't find subscope.")
 
     def get_function_slot_names(self, name):
         for filter in self.get_filters(search_global=False):
@@ -200,6 +213,20 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     @property
     def name(self):
         return ContextName(self, self.tree_node.name)
+
+
+class LambdaName(AbstractNameDefinition):
+    string_name = '<lambda>'
+
+    def __init__(self, lambda_context):
+        self._lambda_context = lambda_context
+        self.parent_context = lambda_context.parent_context
+
+    def start_pos(self):
+        return self._lambda_context.tree_node.start_pos
+
+    def infer(self):
+        return set([self._lambda_context])
 
 
 class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
@@ -249,7 +276,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     def py__class__(self):
         # This differentiation is only necessary for Python2. Python3 does not
         # use a different method class.
-        if isinstance(self.tree_node.get_parent_scope(), tree.Class):
+        if isinstance(parser_utils.get_parent_scope(self.tree_node), tree.Class):
             name = 'METHOD_CLASS'
         else:
             name = 'FUNCTION_CLASS'
@@ -257,6 +284,8 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     @property
     def name(self):
+        if self.tree_node.type == 'lambdef':
+            return LambdaName(self)
         return ContextName(self, self.tree_node.name)
 
     def get_param_names(self):
@@ -285,16 +314,16 @@ class FunctionExecutionContext(context.TreeContext):
     @recursion.execution_recursion_decorator()
     def get_return_values(self, check_yields=False):
         funcdef = self.tree_node
-        if funcdef.type == 'lambda':
+        if funcdef.type == 'lambdef':
             return self.evaluator.eval_element(self, funcdef.children[-1])
 
         if check_yields:
             types = set()
-            returns = funcdef.yields
+            returns = funcdef.iter_yield_exprs()
         else:
-            returns = funcdef.returns
-            types = set(docstrings.find_return_types(self.get_root_context(), funcdef))
-            types |= set(pep0484.find_return_types(self.get_root_context(), funcdef))
+            returns = funcdef.iter_return_stmts()
+            types = set(docstrings.infer_return_types(self.function_context))
+            types |= set(pep0484.infer_return_types(self.function_context))
 
         for r in returns:
             check = flow_analysis.reachability_check(self, funcdef, r)
@@ -313,17 +342,17 @@ class FunctionExecutionContext(context.TreeContext):
     def _eval_yield(self, yield_expr):
         node = yield_expr.children[1]
         if node.type == 'yield_arg':  # It must be a yield from.
-            yield_from_types = self.eval_node(node.children[1])
-            for lazy_context in iterable.py__iter__(self.evaluator, yield_from_types, node):
+            cn = ContextualizedNode(self, node.children[1])
+            for lazy_context in iterable.py__iter__(self.evaluator, cn.infer(), cn):
                 yield lazy_context
         else:
             yield context.LazyTreeContext(self, node)
 
     @recursion.execution_recursion_decorator(default=iter([]))
     def get_yield_values(self):
-        for_parents = [(y, tree.search_ancestor(y, ('for_stmt', 'funcdef',
-                                                    'while_stmt', 'if_stmt')))
-                       for y in self.tree_node.yields]
+        for_parents = [(y, tree.search_ancestor(y, 'for_stmt', 'funcdef',
+                                                'while_stmt', 'if_stmt'))
+                       for y in self.tree_node.iter_yield_exprs()]
 
         # Calculate if the yields are placed within the same for loop.
         yields_order = []
@@ -335,7 +364,7 @@ class FunctionExecutionContext(context.TreeContext):
             if parent.type == 'suite':
                 parent = parent.parent
             if for_stmt.type == 'for_stmt' and parent == self.tree_node \
-                    and for_stmt.defines_one_name():  # Simplicity for now.
+                    and parser_utils.for_stmt_defines_one_name(for_stmt):  # Simplicity for now.
                 if for_stmt == last_for_stmt:
                     yields_order[-1][1].append(yield_)
                 else:
@@ -357,12 +386,12 @@ class FunctionExecutionContext(context.TreeContext):
                     for result in self._eval_yield(yield_):
                         yield result
             else:
-                input_node = for_stmt.get_input_node()
-                for_types = self.eval_node(input_node)
-                ordered = iterable.py__iter__(evaluator, for_types, input_node)
+                input_node = for_stmt.get_testlist()
+                cn = ContextualizedNode(self, input_node)
+                ordered = iterable.py__iter__(evaluator, cn.infer(), cn)
                 ordered = list(ordered)
                 for lazy_context in ordered:
-                    dct = {str(for_stmt.children[1]): lazy_context.infer()}
+                    dct = {str(for_stmt.children[1].value): lazy_context.infer()}
                     with helpers.predefine_names(self, for_stmt, dct):
                         for yield_in_same_for_stmt in yields:
                             for result in self._eval_yield(yield_in_same_for_stmt):
@@ -375,7 +404,7 @@ class FunctionExecutionContext(context.TreeContext):
 
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
-        return param.get_params(self.evaluator, self.parent_context, self.tree_node, self.var_args)
+        return param.get_params(self, self.var_args)
 
 
 class AnonymousFunctionExecution(FunctionExecutionContext):
@@ -386,7 +415,7 @@ class AnonymousFunctionExecution(FunctionExecutionContext):
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
         # We need to do a dynamic search here.
-        return search_params(self.evaluator, self.parent_context, self.tree_node)
+        return search_params(self.evaluator, self, self.tree_node)
 
 
 class ModuleAttributeName(AbstractNameDefinition):
@@ -405,13 +434,26 @@ class ModuleAttributeName(AbstractNameDefinition):
         )
 
 
+class ModuleName(ContextNameMixin, AbstractNameDefinition):
+    start_pos = 1, 0
+
+    def __init__(self, context, name):
+        self._context = context
+        self._name = name
+
+    @property
+    def string_name(self):
+        return self._name
+
+
 class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     api_type = 'module'
     parent_context = None
 
-    def __init__(self, evaluator, module_node):
+    def __init__(self, evaluator, module_node, path):
         super(ModuleContext, self).__init__(evaluator, parent_context=None)
         self.tree_node = module_node
+        self._path = path
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         yield ParserTreeFilter(
@@ -432,9 +474,9 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     @memoize_default([])
     def star_imports(self):
         modules = []
-        for i in self.tree_node.imports:
+        for i in self.tree_node.iter_imports():
             if i.is_star_import():
-                name = i.star_import_name()
+                name = i.get_paths()[-1][-1]
                 new = imports.infer_import(self, name)
                 for module in new:
                     if isinstance(module, ModuleContext):
@@ -449,9 +491,20 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         return dict((n, ModuleAttributeName(self, n)) for n in names)
 
     @property
+    def _string_name(self):
+        """ This is used for the goto functions. """
+        if self._path is None:
+            return ''  # no path -> empty name
+        else:
+            sep = (re.escape(os.path.sep),) * 2
+            r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep, self._path)
+            # Remove PEP 3149 names
+            return re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+
+    @property
     @memoize_default()
     def name(self):
-        return ContextName(self, self.tree_node.name)
+        return ModuleName(self, self._string_name)
 
     def _get_init_directory(self):
         """
@@ -477,10 +530,10 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         """
         In contrast to Python's __file__ can be None.
         """
-        if self.tree_node.path is None:
+        if self._path is None:
             return None
 
-        return os.path.abspath(self.tree_node.path)
+        return os.path.abspath(self._path)
 
     def py__package__(self):
         if self._get_init_directory() is None:
@@ -538,7 +591,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         Lists modules in the directory of this module (if this module is a
         package).
         """
-        path = self.tree_node.path
+        path = self._path
         names = {}
         if path is not None and path.endswith(os.path.sep + '__init__.py'):
             mods = pkgutil.iter_modules([os.path.dirname(path)])
@@ -557,3 +610,74 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def py__class__(self):
         return compiled.get_special_object(self.evaluator, 'MODULE_CLASS')
+
+    def __repr__(self):
+        return "<%s: %s@%s-%s>" % (
+            self.__class__.__name__, self._string_name,
+            self.tree_node.start_pos[0], self.tree_node.end_pos[0])
+
+
+class ImplicitNSName(AbstractNameDefinition):
+    """
+    Accessing names for implicit namespace packages should infer to nothing.
+    This object will prevent Jedi from raising exceptions
+    """
+    def __init__(self, implicit_ns_context, string_name):
+        self.implicit_ns_context = implicit_ns_context
+        self.string_name = string_name
+
+    def infer(self):
+        return []
+
+    def get_root_context(self):
+        return self.implicit_ns_context
+
+
+class ImplicitNamespaceContext(use_metaclass(CachedMetaClass, context.TreeContext)):
+    """
+    Provides support for implicit namespace packages
+    """
+    api_type = 'module'
+    parent_context = None
+
+    def __init__(self, evaluator, fullname):
+        super(ImplicitNamespaceContext, self).__init__(evaluator, parent_context=None)
+        self.evaluator = evaluator
+        self.fullname = fullname
+
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
+        yield DictFilter(self._sub_modules_dict())
+
+    @property
+    @memoize_default()
+    def name(self):
+        string_name = self.py__package__().rpartition('.')[-1]
+        return ImplicitNSName(self, string_name)
+
+    def py__file__(self):
+        return None
+
+    def py__package__(self):
+        """Return the fullname
+        """
+        return self.fullname
+
+    @property
+    def py__path__(self):
+        return lambda: [self.paths]
+
+    @memoize_default()
+    def _sub_modules_dict(self):
+        names = {}
+
+        paths = self.paths
+        file_names = chain.from_iterable(os.listdir(path) for path in paths)
+        mods = [
+            file_name.rpartition('.')[0] if '.' in file_name else file_name
+            for file_name in file_names
+            if file_name != '__pycache__'
+        ]
+
+        for name in mods:
+            names[name] = imports.SubModuleName(self, name)
+        return names

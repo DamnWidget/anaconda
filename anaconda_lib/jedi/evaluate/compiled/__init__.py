@@ -5,16 +5,16 @@ import inspect
 import re
 import sys
 import os
+import types
 from functools import partial
 
 from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
-from jedi.parser.tree import Param, Operator
-from jedi.evaluate.helpers import FakeName
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
 from jedi.evaluate.context import Context, LazyKnownContext
+from jedi.evaluate.compiled.getattr_static import  getattr_static
 from . import fake
 
 
@@ -24,6 +24,23 @@ if os.path.altsep is not None:
 _path_re = re.compile('(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
 del _sep
 
+# Those types don't exist in typing.
+MethodDescriptorType = type(str.replace)
+WrapperDescriptorType = type(set.__iter__)
+# `object.__subclasshook__` is an already executed descriptor.
+object_class_dict = type.__dict__["__dict__"].__get__(object)
+ClassMethodDescriptorType = type(object_class_dict['__subclasshook__'])
+
+ALLOWED_DESCRIPTOR_ACCESS = (
+    types.FunctionType,
+    types.GetSetDescriptorType,
+    types.MemberDescriptorType,
+    MethodDescriptorType,
+    WrapperDescriptorType,
+    ClassMethodDescriptorType,
+    staticmethod,
+    classmethod,
+)
 
 class CheckAttribute(object):
     """Raises an AttributeError if the attribute X isn't available."""
@@ -50,7 +67,7 @@ class CheckAttribute(object):
 
 class CompiledObject(Context):
     path = None  # modules have this attribute - set it to None.
-    used_names = {}  # To be consistent with modules.
+    used_names = lambda self: {}  # To be consistent with modules.
 
     def __init__(self, evaluator, obj, parent_context=None, faked_class=None):
         super(CompiledObject, self).__init__(evaluator, parent_context)
@@ -94,24 +111,8 @@ class CompiledObject(Context):
     def is_class(self):
         return inspect.isclass(self.obj)
 
-    @property
-    def doc(self):
+    def py__doc__(self, include_call_signature=False):
         return inspect.getdoc(self.obj) or ''
-
-    @property
-    def get_params(self):
-        return []  # TODO Fix me.
-        params_str, ret = self._parse_function_doc()
-        tokens = params_str.split(',')
-        if inspect.ismethoddescriptor(self.obj):
-            tokens.insert(0, 'self')
-        params = []
-        for p in tokens:
-            parts = [FakeName(part) for part in p.strip().split('=')]
-            if len(parts) > 1:
-                parts.insert(1, Operator('=', (0, 0)))
-            params.append(Param(parts, self))
-        return params
 
     def get_param_names(self):
         params_str, ret = self._parse_function_doc()
@@ -120,8 +121,6 @@ class CompiledObject(Context):
             tokens.insert(0, 'self')
         for p in tokens:
             parts = p.strip().split('=')
-            if len(parts) > 1:
-                parts.insert(1, Operator('=', (0, 0)))
             yield UnresolvableParamName(self, parts[0])
 
     def __repr__(self):
@@ -129,10 +128,11 @@ class CompiledObject(Context):
 
     @underscore_memoization
     def _parse_function_doc(self):
-        if self.doc is None:
+        doc = self.py__doc__()
+        if doc is None:
             return '', ''
 
-        return _parse_function_doc(self.doc)
+        return _parse_function_doc(doc)
 
     @property
     def api_type(self):
@@ -192,12 +192,6 @@ class CompiledObject(Context):
         """
         return CompiledObjectFilter(self.evaluator, self, is_instance)
 
-    def get_subscope_by_name(self, name):
-        if name in dir(self.obj):
-            return CompiledName(self.evaluator, self, name).parent
-        else:
-            raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
-
     @CheckAttribute
     def py__getitem__(self, index):
         if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
@@ -246,9 +240,6 @@ class CompiledObject(Context):
                 bltn_obj = create(self.evaluator, bltn_obj)
                 for result in self.evaluator.execute(bltn_obj, params):
                     yield result
-
-    def is_scope(self):
-        return True
 
     def get_self_attributes(self):
         return []  # Instance compatibility
@@ -325,16 +316,17 @@ class CompiledObjectFilter(AbstractFilter):
         name = str(name)
         obj = self._compiled_object.obj
         try:
-            getattr(obj, name)
-            if self._is_instance and name not in dir(obj):
-                return []
+            attr, is_get_descriptor = getattr_static(obj, name)
         except AttributeError:
             return []
-        except Exception:
-            # This is a bit ugly. We're basically returning this to make
-            # lookups possible without having the actual attribute. However
-            # this makes proper completion possible.
-            return [EmptyCompiledName(self._evaluator, name)]
+        else:
+            if is_get_descriptor \
+                    and not type(attr) in ALLOWED_DESCRIPTOR_ACCESS:
+                # In case of descriptors that have get methods we cannot return
+                # it's value, because that would mean code execution.
+                return [EmptyCompiledName(self._evaluator, name)]
+            if self._is_instance and name not in dir(obj):
+                return []
         return [self._create_name(name)]
 
     def values(self):
@@ -413,7 +405,7 @@ def load_module(evaluator, path=None, name=None):
         raise
     except ImportError:
         # If a module is "corrupt" or not really a Python module or whatever.
-        debug.warning('Module %s not importable.', path)
+        debug.warning('Module %s not importable in path %s.', dotted_path, path)
         return None
     finally:
         sys.path = temp
@@ -575,7 +567,7 @@ def create(evaluator, obj, parent_context=None, module=None, faked=None):
             # Modules don't have parents, be careful with caching: recurse.
             return create(evaluator, obj)
     else:
-        if parent_context is None and obj != _builtins:
+        if parent_context is None and obj is not _builtins:
             return create(evaluator, obj, create(evaluator, _builtins))
 
         try:

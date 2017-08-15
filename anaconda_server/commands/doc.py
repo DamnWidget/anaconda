@@ -36,15 +36,11 @@ class Doc(Command):
         """Run the command
         """
 
-        try:
-            if self._check_nonsense():
-                return
-        except IndexError:
-            return
-
         processed = []
         try:
             print(self.script)
+            print(self.script._source)
+            print(self.script._pos)
             definitions = self.script.goto_definitions()
         except Exception as error:
             logging.debug(error)
@@ -71,15 +67,6 @@ class Doc(Command):
                     else '\n' + '-' * 79 + '\n').join(docs),
             'uid': self.uid
         })
-
-    def _check_nonsense(self):
-        """Check for cursor siting in empty or special characters
-        """
-
-        lines = self.script._source.splitlines()
-        line, column = self.script._pos
-        cursor = lines[line-1][column-1]
-        return cursor in ('', ' ', '\n')
 
     def _plain(sef, definition):
         """Generate a documentation string for use as plain text

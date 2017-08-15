@@ -7,10 +7,11 @@ mixing in Python code, the autocompletion should work much better for builtins.
 import os
 import inspect
 import types
+from itertools import chain
 
 from jedi._compatibility import is_py3, builtins, unicode, is_py34
-from jedi.parser import ParserWithRecovery, load_grammar
-from jedi.parser import tree as pt
+from jedi.parser.python import parse
+from jedi.parser.python import tree
 
 modules = {}
 
@@ -61,22 +62,20 @@ def _load_faked_module(module):
         except IOError:
             modules[module_name] = None
             return
-        grammar = load_grammar(version='3.4')
-        module = ParserWithRecovery(grammar, unicode(source), module_name).module
-        modules[module_name] = module
+        modules[module_name] = m = parse(unicode(source))
 
         if module_name == 'builtins' and not is_py3:
             # There are two implementations of `open` for either python 2/3.
             # -> Rename the python2 version (`look at fake/builtins.pym`).
-            open_func = _search_scope(module, 'open')
+            open_func = _search_scope(m, 'open')
             open_func.children[1].value = 'open_python3'
-            open_func = _search_scope(module, 'open_python2')
+            open_func = _search_scope(m, 'open_python2')
             open_func.children[1].value = 'open'
-        return module
+        return m
 
 
 def _search_scope(scope, obj_name):
-    for s in scope.subscopes:
+    for s in chain(scope.iter_classdefs(), scope.iter_funcdefs()):
         if s.name.value == obj_name:
             return s
 
@@ -115,7 +114,7 @@ def _faked(module, obj, name):
     if faked_mod is None:
         return None, None
 
-    # Having the module as a `parser.tree.Module`, we need to scan
+    # Having the module as a `parser.python.tree.Module`, we need to scan
     # for methods.
     if name is None:
         if inspect.isbuiltin(obj) or inspect.isclass(obj):
@@ -182,9 +181,9 @@ def _get_faked(module, obj, name=None):
         assert result.type == 'funcdef'
         doc = '"""%s"""' % obj.__doc__  # TODO need escapes.
         suite = result.children[-1]
-        string = pt.String(doc, (0, 0), '')
-        new_line = pt.Newline('\n', (0, 0))
-        docstr_node = pt.Node('simple_stmt', [string, new_line])
+        string = tree.String(doc, (0, 0), '')
+        new_line = tree.Newline('\n', (0, 0))
+        docstr_node = tree.PythonNode('simple_stmt', [string, new_line])
         suite.children.insert(1, docstr_node)
         return result, fake_module
 
@@ -200,7 +199,7 @@ def get_faked(evaluator, module, obj, name=None, parent_context=None):
 
     faked, fake_module = _get_faked(module and module.obj, obj, name)
     if module is not None:
-        module.used_names = fake_module.used_names
+        module.get_used_names = fake_module.get_used_names
     return faked
 
 

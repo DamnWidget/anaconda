@@ -22,15 +22,14 @@ from jedi._compatibility import u
 from jedi.common import unite
 from jedi.evaluate import context
 from jedi.evaluate.cache import memoize_default
-from jedi.parser import ParserWithRecovery, load_grammar
-from jedi.parser.tree import search_ancestor
+from jedi.parser.python import parse
 from jedi.common import indent_block
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
 
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
-    r'\s*:param\s+(\w+)\s+%s:[^\n]+',  # Sphinx param with type
+    r'\s*:param\s+(\w+)\s+%s:[^\n]*',  # Sphinx param with type
     r'\s*@type\s+%s:\s*([^\n]+)',  # Epydoc
 ]
 
@@ -133,9 +132,9 @@ def _evaluate_for_statement_string(module_context, string):
     # Take the default grammar here, if we load the Python 2.7 grammar here, it
     # will be impossible to use `...` (Ellipsis) as a token. Docstring types
     # don't need to conform with the current grammar.
-    p = ParserWithRecovery(load_grammar(), code.format(indent_block(string)))
+    module = parse(code.format(indent_block(string)))
     try:
-        funcdef = p.module.subscopes[0]
+        funcdef = next(module.iter_funcdefs())
         # First pick suite, then simple_stmt and then the node,
         # which is also not the last item, because there's a newline.
         stmt = funcdef.children[-1].children[-1].children[-2]
@@ -185,29 +184,36 @@ def _execute_array_values(evaluator, array):
 
 
 @memoize_default()
-def follow_param(module_context, param):
+def infer_param(execution_context, param):
+    from jedi.evaluate.instance import InstanceFunctionExecution
+
     def eval_docstring(docstring):
         return set(
-            [p for param_str in _search_param_in_docstr(docstring, str(param.name))
-                for p in _evaluate_for_statement_string(module_context, param_str)]
+            p
+            for param_str in _search_param_in_docstr(docstring, param.name.value)
+            for p in _evaluate_for_statement_string(module_context, param_str)
         )
+    module_context = execution_context.get_root_context()
     func = param.get_parent_function()
-    types = eval_docstring(func.raw_doc)
-    if func.name.value == '__init__':
-        cls = search_ancestor(func, 'classdef')
-        if cls is not None:
-            types |= eval_docstring(cls.raw_doc)
+    if func.type == 'lambdef':
+        return set()
+
+    types = eval_docstring(execution_context.py__doc__())
+    if isinstance(execution_context, InstanceFunctionExecution) and \
+            execution_context.function_context.name.string_name == '__init__':
+        class_context = execution_context.instance.class_context
+        types |= eval_docstring(class_context.py__doc__())
 
     return types
 
 
 @memoize_default()
-def find_return_types(module_context, func):
+def infer_return_types(function_context):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:
             match = p.search(code)
             if match:
                 return _strip_rst_role(match.group(1))
 
-    type_str = search_return_in_docstr(func.raw_doc)
-    return _evaluate_for_statement_string(module_context, type_str)
+    type_str = search_return_in_docstr(function_context.py__doc__())
+    return _evaluate_for_statement_string(function_context.get_root_context(), type_str)

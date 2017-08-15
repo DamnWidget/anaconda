@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.join(
     os.path.split(os.path.split(__file__)[0])[0], 'anaconda_lib'))
 
 from lib.path import log_directory
+from jedi import set_debug_function
 from lib.contexts import json_decode
 from unix_socket import UnixSocketPath
 from handlers import ANACONDA_HANDLERS
@@ -34,7 +35,7 @@ from jedi import settings as jedi_settings
 from lib.anaconda_handler import AnacondaHandler
 
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 logger = logging.getLogger('')
 PY3 = True if sys.version_info >= (3,) else False
 
@@ -371,6 +372,7 @@ if __name__ == "__main__":
         logger.info('Anaconda Server started in DEBUG mode...')
         print('DEBUG MODE')
         DEBUG_MODE = True
+        set_debug_function(notices=True)
 
     # start the server
     server.serve_forever()

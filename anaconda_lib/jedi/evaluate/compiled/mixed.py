@@ -5,19 +5,19 @@ Used only for REPL Completion.
 import inspect
 import os
 
-from jedi import common
-from jedi.parser.diff import FastParser
+from jedi.parser.python import parse
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
 from jedi.evaluate.context import Context
+from jedi.evaluate.cache import memoize_default
 
 
 class MixedObject(object):
     """
     A ``MixedObject`` is used in two ways:
 
-    1. It uses the default logic of ``parser.tree`` objects,
+    1. It uses the default logic of ``parser.python.tree`` objects,
     2. except for getattr calls. The names dicts are generated in a fashion
        like ``CompiledObject``.
 
@@ -30,25 +30,12 @@ class MixedObject(object):
     fewer special cases, because we in Python you don't have the same freedoms
     to modify the runtime.
     """
-    def __init__(self, evaluator, parent_context, compiled_object, tree_name):
+    def __init__(self, evaluator, parent_context, compiled_object, tree_context):
         self.evaluator = evaluator
+        self.parent_context = parent_context
         self.compiled_object = compiled_object
+        self._context = tree_context
         self.obj = compiled_object.obj
-        self._tree_name = tree_name
-        name_module = tree_name.get_root_node()
-        if parent_context.tree_node.get_root_node() != name_module:
-            from jedi.evaluate.representation import ModuleContext
-            module_context = ModuleContext(evaluator, name_module)
-            name = compiled_object.get_root_context().py__name__()
-            imports.add_module(evaluator, name, module_context)
-        else:
-            module_context = parent_context.get_root_context()
-
-        self._context = module_context.create_context(
-            tree_name.parent,
-            node_is_context=True,
-            node_is_object=True
-        )
 
     # We have to overwrite everything that has to do with trailers, name
     # lookups and filters to make it possible to route name lookups towards
@@ -115,30 +102,42 @@ class MixedObjectFilter(compiled.CompiledObjectFilter):
         #return MixedName(self._evaluator, self._compiled_object, name)
 
 
-def parse(grammar, path):
-    with open(path) as f:
-        source = f.read()
-    source = common.source_to_unicode(source)
-    return FastParser(grammar, source, path)
-
-
+@memoize_default(evaluator_is_first_arg=True)
 def _load_module(evaluator, path, python_object):
-    module = parse(evaluator.grammar, path).module
+    module = parse(
+        grammar=evaluator.grammar,
+        path=path,
+        cache=True,
+        diff_cache=True
+    ).get_root_node()
     python_module = inspect.getmodule(python_object)
 
     evaluator.modules[python_module.__name__] = module
     return module
 
 
+def source_findable(python_object):
+    """Check if inspect.getfile has a chance to find the source."""
+    return (inspect.ismodule(python_object) or
+            inspect.isclass(python_object) or
+            inspect.ismethod(python_object) or
+            inspect.isfunction(python_object) or
+            inspect.istraceback(python_object) or
+            inspect.isframe(python_object) or
+            inspect.iscode(python_object))
+
+
 def find_syntax_node_name(evaluator, python_object):
     try:
+        if not source_findable(python_object):
+            raise TypeError  # Prevents computation of `repr` within inspect.
         path = inspect.getsourcefile(python_object)
     except TypeError:
         # The type might not be known (e.g. class_with_dict.__weakref__)
-        return None
+        return None, None
     if path is None or not os.path.exists(path):
         # The path might not exist or be e.g. <stdin>.
-        return None
+        return None, None
 
     module = _load_module(evaluator, path, python_object)
 
@@ -146,17 +145,22 @@ def find_syntax_node_name(evaluator, python_object):
         # We don't need to check names for modules, because there's not really
         # a way to write a module in a module in Python (and also __name__ can
         # be something like ``email.utils``).
-        return module.name
+        return module, path
 
-    name_str = python_object.__name__
+    try:
+        name_str = python_object.__name__
+    except AttributeError:
+        # Stuff like python_function.__code__.
+        return None, None
+
     if name_str == '<lambda>':
-        return None  # It's too hard to find lambdas.
+        return None, None  # It's too hard to find lambdas.
 
     # Doesn't always work (e.g. os.stat_result)
     try:
-        names = module.used_names[name_str]
+        names = module.get_used_names()[name_str]
     except KeyError:
-        return None
+        return None, None
     names = [n for n in names if n.is_definition()]
 
     try:
@@ -173,22 +177,44 @@ def find_syntax_node_name(evaluator, python_object):
         # There's a chance that the object is not available anymore, because
         # the code has changed in the background.
         if line_names:
-            return line_names[-1]
+            return line_names[-1].parent, path
 
     # It's really hard to actually get the right definition, here as a last
     # resort we just return the last one. This chance might lead to odd
     # completions at some points but will lead to mostly correct type
     # inference, because people tend to define a public name in a module only
     # once.
-    return names[-1]
+    return names[-1].parent, path
 
 
 @compiled.compiled_objects_cache('mixed_cache')
 def create(evaluator, obj, parent_context=None, *args):
-    tree_name = find_syntax_node_name(evaluator, obj)
+    tree_node, path = find_syntax_node_name(evaluator, obj)
 
     compiled_object = compiled.create(
         evaluator, obj, parent_context=parent_context.compiled_object)
-    if tree_name is None:
+    if tree_node is None:
         return compiled_object
-    return MixedObject(evaluator, parent_context, compiled_object, tree_name)
+
+    module_node = tree_node.get_root_node()
+    if parent_context.tree_node.get_root_node() == module_node:
+        module_context = parent_context.get_root_context()
+    else:
+        from jedi.evaluate.representation import ModuleContext
+        module_context = ModuleContext(evaluator, module_node, path=path)
+        name = compiled_object.get_root_context().py__name__()
+        imports.add_module(evaluator, name, module_context)
+
+    tree_context = module_context.create_context(
+        tree_node,
+        node_is_context=True,
+        node_is_object=True
+    )
+
+    return MixedObject(
+        evaluator,
+        parent_context,
+        compiled_object,
+        tree_context=tree_context
+    )
+

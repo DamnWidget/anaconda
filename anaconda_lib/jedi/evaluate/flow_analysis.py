@@ -1,3 +1,6 @@
+from jedi.parser_utils import get_flow_branch_keyword, is_scope, get_parent_scope
+
+
 class Status(object):
     lookup_table = {}
 
@@ -31,14 +34,14 @@ UNSURE = Status(None, 'unsure')
 
 def _get_flow_scopes(node):
     while True:
-        node = node.get_parent_scope(include_flows=True)
-        if node is None or node.is_scope():
+        node = get_parent_scope(node, include_flows=True)
+        if node is None or is_scope(node):
             return
         yield node
 
 
 def reachability_check(context, context_scope, node, origin_scope=None):
-    first_flow_scope = node.get_parent_scope(include_flows=True)
+    first_flow_scope = get_parent_scope(node, include_flows=True)
     if origin_scope is not None:
         origin_flow_scopes = list(_get_flow_scopes(origin_scope))
         node_flow_scopes = list(_get_flow_scopes(node))
@@ -46,8 +49,8 @@ def reachability_check(context, context_scope, node, origin_scope=None):
         branch_matches = True
         for flow_scope in origin_flow_scopes:
             if flow_scope in node_flow_scopes:
-                node_keyword = flow_scope.get_branch_keyword(node)
-                origin_keyword = flow_scope.get_branch_keyword(origin_scope)
+                node_keyword = get_flow_branch_keyword(flow_scope, node)
+                origin_keyword = get_flow_branch_keyword(flow_scope, origin_scope)
                 branch_matches = node_keyword == origin_keyword
                 if flow_scope.type == 'if_stmt':
                     if not branch_matches:
@@ -76,14 +79,14 @@ def reachability_check(context, context_scope, node, origin_scope=None):
 def _break_check(context, context_scope, flow_scope, node):
     reachable = REACHABLE
     if flow_scope.type == 'if_stmt':
-        if flow_scope.node_after_else(node):
-            for check_node in flow_scope.check_nodes():
+        if flow_scope.is_node_after_else(node):
+            for check_node in flow_scope.get_test_nodes():
                 reachable = _check_if(context, check_node)
                 if reachable in (REACHABLE, UNSURE):
                     break
             reachable = reachable.invert()
         else:
-            flow_node = flow_scope.node_in_which_check_node(node)
+            flow_node = flow_scope.get_corresponding_test_node(node)
             if flow_node is not None:
                 reachable = _check_if(context, flow_node)
     elif flow_scope.type in ('try_stmt', 'while_stmt'):
@@ -94,7 +97,7 @@ def _break_check(context, context_scope, flow_scope, node):
         return reachable
 
     if context_scope != flow_scope and context_scope != flow_scope.parent:
-        flow_scope = flow_scope.get_parent_scope(include_flows=True)
+        flow_scope = get_parent_scope(flow_scope, include_flows=True)
         return reachable & _break_check(context, context_scope, flow_scope, node)
     else:
         return reachable

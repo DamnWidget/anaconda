@@ -3,8 +3,6 @@ This caching is very important for speed and memory optimizations. There's
 nothing really spectacular, just some decorators. The following cache types are
 available:
 
-- module caching (`load_parser` and `save_parser`), which uses pickle and is
-  really important to assure low load times of modules like ``numpy``.
 - ``time_cache`` can be used to cache something for just a limited time span,
   which can be useful if there's user interaction and the user cannot react
   faster than a certain time.
@@ -14,12 +12,46 @@ there are global variables, which are holding the cache information. Some of
 these variables are being cleaned after every API usage.
 """
 import time
+import inspect
 
 from jedi import settings
-from jedi.parser.utils import parser_cache
-from jedi.parser.utils import underscore_memoization
+from jedi.parser.cache import parser_cache
 
 _time_caches = {}
+
+
+def underscore_memoization(func):
+    """
+    Decorator for methods::
+
+        class A(object):
+            def x(self):
+                if self._x:
+                    self._x = 10
+                return self._x
+
+    Becomes::
+
+        class A(object):
+            @underscore_memoization
+            def x(self):
+                return 10
+
+    A now has an attribute ``_x`` written by this decorator.
+    """
+    name = '_' + func.__name__
+
+    def wrapper(self):
+        try:
+            return getattr(self, name)
+        except AttributeError:
+            result = func(self)
+            if inspect.isgenerator(result):
+                result = list(result)
+            setattr(self, name, result)
+            return result
+
+    return wrapper
 
 
 def clear_time_caches(delete_all=False):
@@ -90,31 +122,3 @@ def memoize_method(method):
             dct[key] = result
             return result
     return wrapper
-
-
-def _invalidate_star_import_cache_module(module, only_main=False):
-    """ Important if some new modules are being reparsed """
-    try:
-        t, modules = _time_caches['star_import_cache_validity'][module]
-    except KeyError:
-        pass
-    else:
-        del _time_caches['star_import_cache_validity'][module]
-
-        # This stuff was part of load_parser. However since we're most likely
-        # not going to use star import caching anymore, just ignore it.
-        #else:
-            # In case there is already a module cached and this module
-            # has to be reparsed, we also need to invalidate the import
-            # caches.
-        #    _invalidate_star_import_cache_module(parser_cache_item.parser.module)
-
-
-def invalidate_star_import_cache(path):
-    """On success returns True."""
-    try:
-        parser_cache_item = parser_cache[path]
-    except KeyError:
-        pass
-    else:
-        _invalidate_star_import_cache_module(parser_cache_item.parser.module)

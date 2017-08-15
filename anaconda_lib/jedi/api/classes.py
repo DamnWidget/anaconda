@@ -9,13 +9,14 @@ import re
 from jedi._compatibility import u
 from jedi import settings
 from jedi import common
-from jedi.parser.utils import load_parser
+from jedi.parser.cache import parser_cache
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate import instance
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.filters import ParamName
+from jedi.evaluate.imports import ImportName
 from jedi.api.keywords import KeywordName
 
 
@@ -244,10 +245,7 @@ class BaseDefinition(object):
             the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
-        if raw:
-            return _Help(self._name).raw(fast=fast)
-        else:
-            return _Help(self._name).full(fast=fast)
+        return _Help(self._name).docstring(fast=fast, raw=raw)
 
     @property
     def doc(self):
@@ -256,8 +254,8 @@ class BaseDefinition(object):
            Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use docstring() instead.", DeprecationWarning)
-        return self.docstring()
+        warnings.warn("Deprecated since Jedi 0.8. Use docstring() instead.", DeprecationWarning, stacklevel=2)
+        return self.docstring(raw=False)
 
     @property
     def raw_doc(self):
@@ -266,7 +264,7 @@ class BaseDefinition(object):
            Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use docstring() instead.", DeprecationWarning)
+        warnings.warn("Deprecated since Jedi 0.8. Use docstring() instead.", DeprecationWarning, stacklevel=2)
         return self.docstring(raw=True)
 
     @property
@@ -391,12 +389,11 @@ class BaseDefinition(object):
             return ''
 
         path = self._name.get_root_context().py__file__()
-        parser = load_parser(path)
-        lines = common.splitlines(parser.source)
+        lines = parser_cache[path].lines
 
         line_nr = self._name.start_pos[0]
         start_line_nr = line_nr - before
-        return '\n'.join(lines[start_line_nr:line_nr + after + 1])
+        return ''.join(lines[start_line_nr:line_nr + after + 1])
 
 
 class Completion(BaseDefinition):
@@ -472,7 +469,7 @@ class Completion(BaseDefinition):
             # In this case we can just resolve the like name, because we
             # wouldn't load like > 100 Python modules anymore.
             fast = False
-        return super(Completion, self,).docstring(raw, fast)
+        return super(Completion, self).docstring(raw=raw, fast=fast)
 
     @property
     def description(self):
@@ -541,7 +538,12 @@ class Definition(BaseDefinition):
                 typ = 'def'
             return typ + ' ' + u(self._name.string_name)
         elif typ == 'param':
-            return typ + ' ' + tree_name.get_definition().get_description()
+            code = tree_name.get_definition().get_code(
+                include_prefix=False,
+                include_comma=False
+            )
+            return typ + ' ' + code
+
 
         definition = tree_name.get_definition()
         # Remove the prefix, because that's not what we want for get_code
@@ -628,7 +630,7 @@ class CallSignature(Definition):
             if self.params:
                 param_name = self.params[-1]._name
                 if param_name.tree_name is not None:
-                    if param_name.tree_name.get_definition().stars == 2:
+                    if param_name.tree_name.get_definition().star_count == 2:
                         return i
             return None
 
@@ -637,7 +639,7 @@ class CallSignature(Definition):
                 tree_name = param._name.tree_name
                 if tree_name is not None:
                     # *args case
-                    if tree_name.get_definition().stars == 1:
+                    if tree_name.get_definition().star_count == 1:
                         return i
             return None
         return self._index
@@ -659,7 +661,7 @@ class CallSignature(Definition):
 
         The name (e.g. 'isinstance') as a string.
         """
-        warnings.warn("Use name instead.", DeprecationWarning)
+        warnings.warn("Deprecated since Jedi 0.8. Use name instead.", DeprecationWarning, stacklevel=2)
         return self.name
 
     @property
@@ -669,7 +671,7 @@ class CallSignature(Definition):
            Use :attr:`.module_name` for the module name.
         .. todo:: Remove!
         """
-        return self._executable.get_parent_until()
+        return self._executable.get_root_node()
 
     def __repr__(self):
         return '<%s: %s index %s>' % \
@@ -688,7 +690,7 @@ class _Param(Definition):
 
         A function to get the whole code of the param.
         """
-        warnings.warn("Use description instead.", DeprecationWarning)
+        warnings.warn("Deprecated since version 0.8. Use description instead.", DeprecationWarning, stacklevel=2)
         return self.description
 
 
@@ -701,35 +703,24 @@ class _Help(object):
         self._name = definition
 
     @memoize_method
-    def _get_node(self, fast):
-        if self._name.api_type == 'module' and not fast:
-            followed = self._name.infer()
-            if followed:
-                # TODO: Use all of the followed objects as input to Documentation.
-                context = next(iter(followed))
-                return context.tree_node
-        if self._name.tree_name is None:
-            return None
-        return self._name.tree_name.get_definition()
+    def _get_contexts(self, fast):
+        if isinstance(self._name, ImportName) and fast:
+            return {}
 
-    def full(self, fast=True):
-        node = self._get_node(fast)
-        try:
-            return node.doc
-        except AttributeError:
-            return self.raw(fast)
+        if self._name.api_type == 'statement':
+            return {}
 
-    def raw(self, fast=True):
+        return self._name.infer()
+
+    def docstring(self, fast=True, raw=True):
         """
-        The raw docstring ``__doc__`` for any object.
+        The docstring ``__doc__`` for any object.
 
         See :attr:`doc` for example.
         """
-        node = self._get_node(fast)
-        if node is None:
-            return ''
+        # TODO: Use all of the followed objects as output. Possibly divinding
+        # them by a few dashes.
+        for context in self._get_contexts(fast=fast):
+            return context.py__doc__(include_call_signature=not raw)
 
-        try:
-            return node.raw_doc
-        except AttributeError:
-            return ''
+        return ''

@@ -118,8 +118,8 @@ class PgenParser(object):
         self.rootnode = None
         self.error_recovery = error_recovery
 
-    def parse(self, tokenizer):
-        for type_, value, start_pos, prefix in tokenizer:
+    def parse(self, tokens):
+        for type_, value, start_pos, prefix in tokens:
             if self.addtoken(type_, value, start_pos, prefix):
                 break
         else:
@@ -135,22 +135,27 @@ class PgenParser(object):
         ilabel = token_to_ilabel(self.grammar, type_, value)
 
         # Loop until the token is shifted; may raise exceptions
+        _gram = self.grammar
+        _labels = _gram.labels
+        _push = self._push
+        _pop = self._pop
+        _shift = self._shift
         while True:
             dfa, state, node = self.stack[-1]
             states, first = dfa
             arcs = states[state]
             # Look for a state with this label
             for i, newstate in arcs:
-                t, v = self.grammar.labels[i]
+                t, v = _labels[i]
                 if ilabel == i:
                     # Look it up in the list of labels
                     assert t < 256
                     # Shift a token; we're done with it
-                    self.shift(type_, value, newstate, prefix, start_pos)
+                    _shift(type_, value, newstate, prefix, start_pos)
                     # Pop while we are in an accept-only state
                     state = newstate
                     while states[state] == [(0, state)]:
-                        self.pop()
+                        _pop()
                         if not self.stack:
                             # Done parsing!
                             return True
@@ -160,16 +165,16 @@ class PgenParser(object):
                     return False
                 elif t >= 256:
                     # See if it's a symbol and if we're in its first set
-                    itsdfa = self.grammar.dfas[t]
+                    itsdfa = _gram.dfas[t]
                     itsstates, itsfirst = itsdfa
                     if ilabel in itsfirst:
                         # Push a symbol
-                        self.push(t, itsdfa, newstate)
+                        _push(t, itsdfa, newstate)
                         break  # To continue the outer while loop
             else:
                 if (0, state) in arcs:
                     # An accepting state, pop it and try something else
-                    self.pop()
+                    _pop()
                     if not self.stack:
                         # Done parsing, but another token is input
                         raise InternalParseError("too much input", type_, value, start_pos)
@@ -178,21 +183,21 @@ class PgenParser(object):
                                         value, start_pos, prefix, self.addtoken)
                     break
 
-    def shift(self, type_, value, newstate, prefix, start_pos):
+    def _shift(self, type_, value, newstate, prefix, start_pos):
         """Shift a token.  (Internal)"""
         dfa, state, node = self.stack[-1]
         newnode = self.convert_leaf(self.grammar, type_, value, prefix, start_pos)
         node[-1].append(newnode)
         self.stack[-1] = (dfa, newstate, node)
 
-    def push(self, type_, newdfa, newstate):
+    def _push(self, type_, newdfa, newstate):
         """Push a nonterminal.  (Internal)"""
         dfa, state, node = self.stack[-1]
         newnode = (type_, [])
         self.stack[-1] = (dfa, newstate, node)
         self.stack.append((newdfa, 0, newnode))
 
-    def pop(self):
+    def _pop(self):
         """Pop a nonterminal.  (Internal)"""
         popdfa, popstate, (type_, children) = self.stack.pop()
         # If there's exactly one child, return that child instead of creating a

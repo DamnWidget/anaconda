@@ -2,10 +2,8 @@
 Module for statical analysis.
 """
 from jedi import debug
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi.evaluate.compiled import CompiledObject
-
-from jedi.common import unite
 
 
 CODES = {
@@ -82,7 +80,9 @@ def add(node_context, error_name, node, message=None, typ=Error, payload=None):
     if _check_for_exception_catch(node_context, node, exception, payload):
         return
 
-    module_path = node.get_root_node().path
+    # TODO this path is probably not right
+    module_context = node_context.get_root_context()
+    module_path = module_context.py__file__()
     instance = typ(error_name, module_path, node.start_pos, message)
     debug.warning(str(instance), format=False)
     node_context.evaluator.analysis.append(instance)
@@ -99,7 +99,7 @@ def _check_for_setattr(instance):
 
     node = module.tree_node
     try:
-        stmts = node.used_names['setattr']
+        stmts = node.get_used_names()['setattr']
     except KeyError:
         return False
 
@@ -153,7 +153,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
                     and not (branch_type.start_pos < jedi_name.start_pos <= suite.end_pos):
                 return False
 
-        for node in obj.except_clauses():
+        for node in obj.get_except_clause_tests():
             if node is None:
                 return True  # An exception block that catches everything.
             else:
@@ -190,7 +190,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
             key, lazy_context = args[1]
             names = list(lazy_context.infer())
             assert len(names) == 1 and isinstance(names[0], CompiledObject)
-            assert names[0].obj == str(payload[1])
+            assert names[0].obj == payload[1].value
 
             # Check objects
             key, lazy_context = args[0]
@@ -203,10 +203,10 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
     while obj is not None and not isinstance(obj, (tree.Function, tree.Class)):
         if isinstance(obj, tree.Flow):
             # try/except catch check
-            if obj.isinstance(tree.TryStmt) and check_try_for_except(obj, exception):
+            if obj.type == 'try_stmt' and check_try_for_except(obj, exception):
                 return True
             # hasattr check
-            if exception == AttributeError and obj.isinstance(tree.IfStmt, tree.WhileStmt):
+            if exception == AttributeError and obj.type in ('if_stmt', 'while_stmt'):
                 if check_hasattr(obj.children[1], obj.children[3]):
                     return True
         obj = obj.parent

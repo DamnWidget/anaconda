@@ -4,7 +4,8 @@ import keyword
 from jedi._compatibility import is_py3, is_py35
 from jedi import common
 from jedi.evaluate.filters import AbstractNameDefinition
-from jedi.parser.tree import Leaf
+from jedi.parser.python.tree import Leaf
+
 try:
     from pydoc_data import topics as pydoc_topics
 except ImportError:
@@ -75,11 +76,15 @@ class KeywordName(AbstractNameDefinition):
     api_type = 'keyword'
 
     def __init__(self, evaluator, name):
+        self.evaluator = evaluator
         self.string_name = name
         self.parent_context = evaluator.BUILTINS
 
     def eval(self):
         return set()
+
+    def infer(self):
+        return [Keyword(self.evaluator, self.string_name, (0, 0))]
 
 
 class Keyword(object):
@@ -90,9 +95,6 @@ class Keyword(object):
         self.start_pos = pos
         self.parent = evaluator.BUILTINS
 
-    def get_parent_until(self):
-        return self.parent
-
     @property
     def only_valid_as_leaf(self):
         return self.name.value in keywords_only_valid_as_leaf
@@ -102,9 +104,8 @@ class Keyword(object):
         """ For a `parsing.Name` like comparision """
         return [self.name]
 
-    @property
-    def docstr(self):
-        return imitate_pydoc(self.name)
+    def py__doc__(self, include_call_signature=False):
+        return imitate_pydoc(self.name.string_name)
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.name)
@@ -138,6 +139,6 @@ def imitate_pydoc(string):
         return ''
 
     try:
-        return pydoc_topics.topics[label] if pydoc_topics else ''
+        return pydoc_topics.topics[label].strip() if pydoc_topics else ''
     except KeyError:
         return ''

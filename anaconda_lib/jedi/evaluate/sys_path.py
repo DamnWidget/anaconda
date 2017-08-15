@@ -4,13 +4,13 @@ import sys
 from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
-from jedi.parser import tree
-from jedi.parser import ParserWithRecovery
+from jedi.parser.python import tree
+from jedi.parser.python import parse
 from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
 from jedi.evaluate.compiled import CompiledObject
-from jedi.parser.utils import load_parser, save_parser
+from jedi.evaluate.context import ContextualizedNode
 
 
 def get_venv_path(venv):
@@ -122,8 +122,8 @@ def _paths_from_assignment(module_context, expr_stmt):
 
         from jedi.evaluate.iterable import py__iter__
         from jedi.evaluate.precedence import is_string
-        types = module_context.create_context(expr_stmt).eval_node(expr_stmt)
-        for lazy_context in py__iter__(module_context.evaluator, types, expr_stmt):
+        cn = ContextualizedNode(module_context.create_context(expr_stmt), expr_stmt)
+        for lazy_context in py__iter__(module_context.evaluator, cn.infer(), cn):
             for context in lazy_context.infer():
                 if is_string(context):
                     yield context.obj
@@ -167,10 +167,8 @@ def _check_module(module_context):
         return sys_path
 
     try:
-        possible_names = module_context.tree_node.used_names['path']
+        possible_names = module_context.tree_node.get_used_names()['path']
     except KeyError:
-        # module.used_names is MergedNamesDict whose getitem never throws
-        # keyerror, this is superfluous.
         pass
     else:
         for name, power in get_sys_path_powers(possible_names):
@@ -203,34 +201,27 @@ def sys_path_with_modifications(evaluator, module_context):
 
     result = _check_module(module_context)
     result += _detect_django_path(path)
-    for buildout_script in _get_buildout_scripts(path):
-        for path in _get_paths_from_buildout_script(evaluator, buildout_script):
+    for buildout_script_path in _get_buildout_script_paths(path):
+        for path in _get_paths_from_buildout_script(evaluator, buildout_script_path):
             buildout_script_paths.add(path)
     # cleanup, back to old directory
     os.chdir(curdir)
     return list(result) + list(buildout_script_paths)
 
 
-def _get_paths_from_buildout_script(evaluator, buildout_script):
-    def load(buildout_script):
-        try:
-            with open(buildout_script, 'rb') as f:
-                source = common.source_to_unicode(f.read())
-        except IOError:
-            debug.dbg('Error trying to read buildout_script: %s', buildout_script)
-            return
-
-        p = ParserWithRecovery(evaluator.grammar, source, buildout_script)
-        save_parser(buildout_script, p)
-        return p.module
-
-    cached = load_parser(buildout_script)
-    module_node = cached and cached.module or load(buildout_script)
-    if module_node is None:
+def _get_paths_from_buildout_script(evaluator, buildout_script_path):
+    try:
+        module_node = parse(
+            path=buildout_script_path,
+            grammar=evaluator.grammar,
+            cache=True
+        )
+    except IOError:
+        debug.warning('Error trying to read buildout_script: %s', buildout_script_path)
         return
 
     from jedi.evaluate.representation import ModuleContext
-    for path in _check_module(ModuleContext(evaluator, module_node)):
+    for path in _check_module(ModuleContext(evaluator, module_node, buildout_script_path)):
         yield path
 
 
@@ -262,7 +253,7 @@ def _detect_django_path(module_path):
     return result
 
 
-def _get_buildout_scripts(module_path):
+def _get_buildout_script_paths(module_path):
     """
     if there is a 'buildout.cfg' file in one of the parent directories of the
     given module it will return a list of all files in the buildout bin

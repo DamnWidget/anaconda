@@ -22,14 +22,15 @@ x support for type hint comments for functions, `# type: (int, str) -> int`.
 import itertools
 
 import os
-from jedi.parser import \
-    Parser, load_grammar, ParseError, ParserWithRecovery, tree
+from jedi.parser import ParserSyntaxError
+from jedi.parser.python import parse, tree
 from jedi.common import unite
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import compiled
 from jedi.evaluate.context import LazyTreeContext
 from jedi import debug
 from jedi import _compatibility
+from jedi import parser_utils
 import re
 
 
@@ -62,15 +63,17 @@ def _fix_forward_reference(context, node):
     if isinstance(evaled_node, compiled.CompiledObject) and \
             isinstance(evaled_node.obj, str):
         try:
-            p = Parser(load_grammar(), _compatibility.unicode(evaled_node.obj),
-                       start_symbol='eval_input')
-            new_node = p.get_parsed_node()
-        except ParseError:
+            new_node = parse(
+                _compatibility.unicode(evaled_node.obj),
+                start_symbol='eval_input',
+                error_recovery=False
+            )
+        except ParserSyntaxError:
             debug.warning('Annotation not parsed: %s' % evaled_node.obj)
             return node
         else:
-            module = node.get_parent_until()
-            new_node.move(module.end_pos[0])
+            module = node.get_root_node()
+            parser_utils.move(new_node, module.end_pos[0])
             new_node.parent = context.tree_node
             return new_node
     else:
@@ -78,28 +81,30 @@ def _fix_forward_reference(context, node):
 
 
 @memoize_default()
-def follow_param(context, param):
-    annotation = param.annotation()
-    return _evaluate_for_annotation(context, annotation)
+def infer_param(execution_context, param):
+    annotation = param.annotation
+    module_context = execution_context.get_root_context()
+    return _evaluate_for_annotation(module_context, annotation)
 
 
 def py__annotations__(funcdef):
-    return_annotation = funcdef.annotation()
+    return_annotation = funcdef.annotation
     if return_annotation:
         dct = {'return': return_annotation}
     else:
         dct = {}
     for function_param in funcdef.params:
-        param_annotation = function_param.annotation()
+        param_annotation = function_param.annotation
         if param_annotation is not None:
             dct[function_param.name.value] = param_annotation
     return dct
 
 
 @memoize_default()
-def find_return_types(context, func):
-    annotation = py__annotations__(func).get("return", None)
-    return _evaluate_for_annotation(context, annotation)
+def infer_return_types(function_context):
+    annotation = py__annotations__(function_context.tree_node).get("return", None)
+    module_context = function_context.get_root_context()
+    return _evaluate_for_annotation(module_context, annotation)
 
 
 _typing_module = None
@@ -116,8 +121,7 @@ def _get_typing_replacement_module():
             os.path.abspath(os.path.join(__file__, "../jedi_typing.py"))
         with open(typing_path) as f:
             code = _compatibility.unicode(f.read())
-        p = ParserWithRecovery(load_grammar(), code)
-        _typing_module = p.module
+        _typing_module = parse(code)
     return _typing_module
 
 
@@ -149,7 +153,11 @@ def py__getitem__(context, typ, node):
         return context.eval_node(nodes[0])
 
     from jedi.evaluate.representation import ModuleContext
-    typing = ModuleContext(context.evaluator, _get_typing_replacement_module())
+    typing = ModuleContext(
+        context.evaluator,
+        module_node=_get_typing_replacement_module(),
+        path=None
+    )
     factories = typing.py__getattribute__("factory")
     assert len(factories) == 1
     factory = list(factories)[0]
@@ -202,7 +210,7 @@ def _find_type_from_comment_hint(context, node, varlist, name):
         else:
             return []
 
-    comment = node.get_following_comment_same_line()
+    comment = parser_utils.get_following_comment_same_line(node)
     if comment is None:
         return []
     match = re.match(r"^#\s*type:\s*([^#]*)", comment)

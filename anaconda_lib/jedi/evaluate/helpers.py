@@ -2,7 +2,8 @@ import copy
 from itertools import chain
 from contextlib import contextmanager
 
-from jedi.parser import tree
+from jedi.parser.python import tree
+from jedi.parser_utils import get_parent_scope
 
 
 def deep_ast_copy(obj):
@@ -137,34 +138,14 @@ def get_module_names(module, all_scopes):
     Returns a dictionary with name parts as keys and their call paths as
     values.
     """
-    names = chain.from_iterable(module.used_names.values())
+    names = chain.from_iterable(module.get_used_names().values())
     if not all_scopes:
         # We have to filter all the names that don't have the module as a
         # parent_scope. There's None as a parent, because nodes in the module
         # node have the parent module and not suite as all the others.
         # Therefore it's important to catch that case.
-        names = [n for n in names if n.get_parent_scope().parent in (module, None)]
+        names = [n for n in names if get_parent_scope(n).parent in (module, None)]
     return names
-
-
-class FakeName(tree.Name):
-    def __init__(self, name_str, parent=None, start_pos=(0, 0), is_definition=None):
-        """
-        In case is_definition is defined (not None), that bool value will be
-        returned.
-        """
-        super(FakeName, self).__init__(name_str, start_pos)
-        self.parent = parent
-        self._is_definition = is_definition
-
-    def get_definition(self):
-        return self.parent
-
-    def is_definition(self):
-        if self._is_definition is None:
-            return super(FakeName, self).is_definition()
-        else:
-            return self._is_definition
 
 
 @contextmanager
