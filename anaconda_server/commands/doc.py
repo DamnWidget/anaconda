@@ -38,9 +38,6 @@ class Doc(Command):
 
         processed = []
         try:
-            print(self.script)
-            print(self.script._source)
-            print(self.script._pos)
             definitions = self.script.goto_definitions()
         except Exception as error:
             logging.debug(error)
