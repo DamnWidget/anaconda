@@ -373,12 +373,8 @@ def continued_indentation(logical_line, tokens, indent_level, indent_char,
             yield (pos, 'E125 {0}'.format(desired_indent))
 
 
-# AutoPEP8 breaks pep8 messaging, that is not a problem if you just use it
-# as a command line application but it is when used as a library, I have
-# no time to fix other projects/developers mistakes so I just disable this
-# feature from AutoPEP8
-# del pycodestyle._checks['logical_line'][pycodestyle.continued_indentation]
-# pycodestyle.register_check(continued_indentation)
+del pycodestyle._checks['logical_line'][pycodestyle.continued_indentation]
+pycodestyle.register_check(continued_indentation)
 
 
 class FixPEP8(object):
