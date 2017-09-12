@@ -22,7 +22,7 @@ class AnacondaToggleLinting(sublime_plugin.WindowCommand):
 
             if filename in ANACONDA['DISABLED']:
                 ANACONDA['DISABLED'].remove(filename)
-                run_linter(self.window.active_view())
+                run_linter(view)
             else:
                 ANACONDA['DISABLED'].append(filename)
                 erase_lint_marks(view)
@@ -31,7 +31,7 @@ class AnacondaToggleLinting(sublime_plugin.WindowCommand):
 
             if window_view in ANACONDA['DISABLED_BUFFERS']:
                 ANACONDA['DISABLED_BUFFERS'].remove(window_view)
-                run_linter(self.window.active_view())
+                run_linter(view)
             else:
                 ANACONDA['DISABLED_BUFFERS'].append(window_view)
                 erase_lint_marks(view)
