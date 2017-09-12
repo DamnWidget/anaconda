@@ -35,9 +35,3 @@ class AnacondaToggleLinting(sublime_plugin.WindowCommand):
             else:
                 ANACONDA['DISABLED_BUFFERS'].append(window_view)
                 erase_lint_marks(view)
-
-    def is_enabled(self) -> bool:
-        """Determine if this command is enabled or not
-        """
-
-        return is_python(self.view)
