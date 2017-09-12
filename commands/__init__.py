@@ -12,6 +12,7 @@ from .enable_linting import AnacondaEnableLinting
 from .next_lint_error import AnacondaNextLintError
 from .prev_lint_error import AnacondaPrevLintError
 from .disable_linting import AnacondaDisableLinting
+from .toggle_linting import AnacondaToggleLinting
 from .complete_func_args import AnacondaCompleteFuncargs
 from .set_python_interpreter import AnacondaSetPythonInterpreter
 from .goto import (
@@ -53,4 +54,5 @@ __all__ = [
     'AnacondaCompleteFuncargs',
     'AnacondaSetPythonInterpreter',
     'AnacondaRunCurrentFileTests',
+    'AnacondaToggleLinting',
 ]
