@@ -53,4 +53,5 @@ __all__ = [
     'AnacondaCompleteFuncargs',
     'AnacondaSetPythonInterpreter',
     'AnacondaRunCurrentFileTests',
+    'AnacondaToggleLinting',
 ]
