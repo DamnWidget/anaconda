@@ -36,7 +36,7 @@ class AnacondaGoto(sublime_plugin.TextCommand):
         """Called when a result comes from the query
         """
 
-        if not data['result']:
+        if not data.get('result'):
             # fallback to ST3 builtin Goto Definition
             return self.view.window().run_command('goto_definition')
 
