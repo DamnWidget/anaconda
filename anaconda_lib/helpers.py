@@ -254,6 +254,7 @@ def get_settings(view, name, default=None):
         w = view.window()
         if w is not None:
             r = sublime.expand_variables(r, w.extract_variables())
+            r = os.path.expanduser(os.path.expandvars(r))
 
     return r
 
