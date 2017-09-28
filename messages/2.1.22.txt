@@ -1,0 +1,16 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+Anaconda v2.1.22
+================
+
+Welcome to new anaconda v2.1.22, what do you can find in this minor release?
+
+## Fixes
+    - Fixed `KeyError` exception being raised due missparsing of result for goto
+    - User variables are now expanded again for python_interpreter and extra_paths
