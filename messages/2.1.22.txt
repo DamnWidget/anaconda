@@ -9,7 +9,7 @@
 Anaconda v2.1.22
 ================
 
-Welcome to new anaconda v2.1.22, what do you can find in this minor release?
+Welcome to new anaconda v2.1.22, what can yo find in this minor release?
 
 ## Fixes
     - Fixed `KeyError` exception being raised due missparsing of result for goto
