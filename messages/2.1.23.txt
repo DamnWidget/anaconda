@@ -9,7 +9,7 @@
 Anaconda v2.1.23
 ================
 
-Welcome to new anaconda v2.1.23, what can yo find in this minor release?
+Welcome to new anaconda v2.1.23, what can do you find in this minor release?
 
 ## Fixes
     - Fixed bug introduced in the v2.1.22
