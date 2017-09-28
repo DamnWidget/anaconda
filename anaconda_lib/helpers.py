@@ -250,13 +250,27 @@ def get_settings(view, name, default=None):
                         break  # stop loop
 
     r = view.settings().get(name, plugin_settings.get(name, default))
-    if name == 'python_interpreter' or name == 'extra_paths':
-        w = view.window()
-        if w is not None:
-            r = sublime.expand_variables(r, w.extract_variables())
-            r = os.path.expanduser(os.path.expandvars(r))
+    if name == 'python_interpreter':
+        r = expand(view, r)
+    elif name == 'extra_paths':
+        if isinstance(r, (list, tuple)):
+            r = [expand(view, e) for e in r]
+        else:
+            r = expand(view, r)
 
     return r
+
+
+def expand(view, path):
+    """Expand the given path
+    """
+
+    window = view.window()
+    if window is not None:
+        tmp = sublime.expand_variables(path, window.extract_variables())
+        tmp = os.path.expanduser(os.path.expandvars(tmp))
+
+    return tmp
 
 
 def active_view():
