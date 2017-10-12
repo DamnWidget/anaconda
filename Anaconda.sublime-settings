@@ -344,7 +344,7 @@
     /*
         A list of pep8 error numbers to ignore.
         The list of error codes is in this file:
-            https://github.com/jcrocholl/pep8/blob/master/pep8.py.
+            https://pycodestyle.readthedocs.io/en/latest/intro.html#error-codes.
         Search for "Ennn:", where nnn is a 3-digit number.
         E309 is ignored by default as it conflicts with pep257 E211
     */
@@ -376,7 +376,7 @@
     /*
         A list of pep257 error numbers to ignore.
 
-        The list can be found here: https://github.com/GreenSteam/pep257/#error-codes
+        The list can be found here: http://www.pydocstyle.org/en/2.1.1/error_codes.html
 
         D209: Multi-line docstring should end with 1 blank line is ignored by
         default as this rule has been deprecated.
