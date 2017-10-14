@@ -14,5 +14,15 @@
     {
     	"command": "anaconda_auto_format", "keys": ["ctrl+alt+r"], "context": [
             {"key": "selector", "operator": "equal", "operand": "source.python"}
+        ]},
+    {
+        "command": "anaconda_fill_funcargs", "keys": ["tab"], "context": [
+            {"key": "selector", "operator": "equal", "operand": "source.python"},
+            {"key": "anaconda_insert_funcargs"}
+        ]},
+    {
+        "command": "anaconda_fill_funcargs", "keys": ["ctrl+tab"], "args": {"all": true}, "context": [
+            {"key": "selector", "operator": "equal", "operand": "source.python"},
+            {"key": "anaconda_insert_funcargs"}
         ]}
 ]
