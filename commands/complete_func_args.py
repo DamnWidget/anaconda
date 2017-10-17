@@ -115,6 +115,6 @@ class AnacondaFuncargsKeyListener(sublime_plugin.EventListener):
             sets = sublime.load_settings('Anaconda.sublime-settings')
             allow = sets.get('parameters_completion_on_keypress', True)
 
-            if allow and check and 'meta.function-call' in scope:
+            if allow and check and 'meta.function' in scope:
                 return True
         return None
