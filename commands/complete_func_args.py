@@ -79,27 +79,28 @@ class AnacondaFillFuncargs(sublime_plugin.TextCommand):
 
     def run(self, edit, all=False):
 
-        comp_par, comp_all = 'complete_parameters', 'complete_all_parameters'
-        anaconda_sets = sublime.load_settings('Anaconda.sublime-settings')
+        req_args, all_args = 'complete_parameters', 'complete_all_parameters'
+        compl_par = get_settings(self.view, req_args, False)
+        compl_all = get_settings(self.view, all_args, False)
 
         # no need to do anything, just run the command
-        if anaconda_sets.get(comp_all):
+        if compl_all:
             self.view.run_command("anaconda_complete_funcargs")
             return
 
         # temporarily enable autocompletion
-        if not anaconda_sets.get(comp_par):
-            self.view.settings().set(comp_par, True)
+        if not compl_par:
+            self.view.settings().set(req_args, True)
         if all:
-            self.view.settings().set(comp_all, True)
+            self.view.settings().set(all_args, True)
 
         self.view.run_command("anaconda_complete_funcargs")
 
         # restore value as per settings
-        if not anaconda_sets.get(comp_par):
-            self.view.settings().set(comp_par, False)
+        if not compl_par:
+            self.view.settings().set(req_args, False)
         if all:
-            self.view.settings().set(comp_all, False)
+            self.view.settings().set(all_args, False)
 
 
 class AnacondaFuncargsKeyListener(sublime_plugin.EventListener):
@@ -109,12 +110,19 @@ class AnacondaFuncargsKeyListener(sublime_plugin.EventListener):
 
         if key == 'anaconda_insert_funcargs':
 
-            pos = view.sel()[0].a
-            scope = view.scope_name(pos)
-            check = (view.substr(pos - 1) == '(' and view.substr(pos) == ')')
-            sets = sublime.load_settings('Anaconda.sublime-settings')
-            allow = sets.get('parameters_completion_on_keypress', True)
+            def valid_scope():
+                scope = view.scope_name(pos)
+                if 'meta.function-call' in scope:
+                    return True
+                elif 'meta.function_call' in scope:
+                    return True
+                return False
 
-            if allow and check and 'meta.function' in scope:
+            pos = view.sel()[0].a
+            check = (view.substr(pos - 1) == '(' and view.substr(pos) == ')')
+            allow = get_settings(
+                view, 'parameters_completion_on_keypress', True)
+
+            if allow and check and valid_scope():
                 return True
         return None
