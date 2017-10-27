@@ -219,11 +219,9 @@ def get_settings(view, name, default=None):
             while True:
                 environfile = os.path.join(dirname, '.anaconda')
                 pipfile = os.path.join(dirname, 'Pipfile')
-                print('\n\n\nAnaconda\n\n\n')
-                print(pipfile)
 
                 if os.path.isfile(environfile):
-                    print("Environ found on %s" % environfile)
+                    # print("Environ found on %s" % environfile)
                     with open(environfile, 'r') as jsonfile:
                         try:
                             data = json.loads(jsonfile.read())
@@ -257,7 +255,7 @@ def get_settings(view, name, default=None):
                             return SETTINGS_CACHE[settings_key]
 
                 elif name == 'python_interpreter' and os.path.isfile(pipfile):
-                    print("Pipfile found on %s" % pipfile)
+                    # print("Pipfile found on %s" % pipfile)
                     try:
                         # check if venv has been created
                         sp = create_subprocess(
