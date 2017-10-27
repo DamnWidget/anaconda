@@ -215,7 +215,6 @@ def get_settings(view, name, default=None):
 
         if view.window() is not None and view.window().folders():
             dirname = view.window().folders()[0]
-            print('dirname', dirname)
             while True:
                 environfile = os.path.join(dirname, '.anaconda')
                 pipfile = os.path.join(dirname, 'Pipfile')
@@ -279,7 +278,6 @@ def get_settings(view, name, default=None):
                             pipenv_error = "Pipenv's Python interpreter is not valid: \n{}".format(sp_out)
                             raise Exception(pipenv_error)
 
-                        sublime.error_message(repr(sp_out))
                         SETTINGS_CACHE[settings_key] = sp_out
                         return SETTINGS_CACHE[settings_key]
 
