@@ -206,10 +206,9 @@ def get_settings(view, name, default=None):
     if name in ['python_interpreter', 'extra_paths']:
         settings_key = '{}_{}_{}'.format(view.id(), name, default)
         if settings_key in SETTINGS_CACHE:
-            print('settings found in cache', settings_key, SETTINGS_CACHE)
+            # print('settings found in cache', settings_key, SETTINGS_CACHE)
             return SETTINGS_CACHE[settings_key]
-
-        print('settings not found in cache', settings_key, SETTINGS_CACHE)
+        # print('settings not found in cache', settings_key, SETTINGS_CACHE)
 
         if view.window() is not None and view.window().folders():
             dirname = view.window().folders()[0]
@@ -256,7 +255,7 @@ def get_settings(view, name, default=None):
                         PIPFILE_CACHE.get(pipfile) != 'ERROR':
 
                     if pipfile in PIPFILE_CACHE:
-                        print('pipfile found in cache', pipfile)
+                        # print('pipfile found in cache', pipfile)
                         return PIPFILE_CACHE[pipfile]
                     # print("Pipfile found on %s" % pipfile)
                     # sublime.error_message("Pipfile found on %s" % pipfile)
