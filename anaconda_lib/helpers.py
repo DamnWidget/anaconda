@@ -198,6 +198,10 @@ def get_settings(view, name, default=None):
     """Get settings
     """
 
+    if name not in ['anaconda_linting_behaviour', 'anaconda_linter_delay', 'anaconda_linting']:
+        print('\n\n\nget_settings', name, default)
+
+
     global ENVIRON_HOOK_INVALID
 
     if view is None:
@@ -209,10 +213,15 @@ def get_settings(view, name, default=None):
             ENVIRON_HOOK_INVALID[view.id()]):
         if view.window() is not None and view.window().folders():
             dirname = view.window().folders()[0]
+            print('dirname', dirname)
             while True:
                 environfile = os.path.join(dirname, '.anaconda')
-                if os.path.exists(environfile) and os.path.isfile(environfile):
-                    # print("Environ found on %s" % environfile)
+                pipfile = os.path.join(dirname, 'Pipfile')
+                print('\n\n\nAnaconda\n\n\n')
+                print(pipfile)
+
+                if os.path.isfile(environfile):
+                    print("Environ found on %s" % environfile)
                     with open(environfile, 'r') as jsonfile:
                         try:
                             data = json.loads(jsonfile.read())
@@ -242,6 +251,51 @@ def get_settings(view, name, default=None):
                                 )
 
                             return r
+
+                elif name == 'python_interpreter' and os.path.isfile(pipfile):
+                    try:
+                        # check if venv has been created
+                        sp = create_subprocess(
+                            ['pipenv', '--venv'], cwd=dirname,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        _, sp_err = sp.communicate()
+                        if sp_err or sp.returncode:
+                            pipenv_error = "Pipenv's error was: \n{}".format(sp_err.decode().strip())
+                            raise Exception(pipenv_error)
+
+                        # get Python interpreter
+                        sp = create_subprocess(
+                            ['pipenv', '--py'], cwd=dirname,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        sp_out, sp_err = sp.communicate()
+                        sp_out = sp_out.strip()
+                        if sp_err or sp.returncode:
+                            pipenv_error = "Pipenv's error was: \n{}".format(sp_err.decode().strip())
+                            raise Exception(pipenv_error)
+                        if not os.path.isfile(sp_out.strip()):
+                            pipenv_error = "Pipenv's Python interpreter is not valid: \n{}".format(sp_out)
+                            raise Exception(pipenv_error)
+
+                        sublime.error_message(repr(sp_out))
+                        return sp_out
+
+                    except Exception as error:
+                        sublime.error_message(
+                            "Anaconda Message:\n"
+                            "I found an Pipfile in {pipfile} "
+                            "path but couldn't get the virtual environment "
+                            "using pipenv.\n\n"
+                            "{pipenv_error}\n\n"
+                            "That means that your Pipfile "
+                            "is being ignored.".format(
+                                pipfile=pipfile, pipenv_error=error,
+                            )
+                        )
+                        logging.error(error)
+                        ENVIRON_HOOK_INVALID[view.id()] = True
+                        break  # stop loop
+
+
                 else:
                     parts = os.path.split(dirname)
                     if len(parts[1]) > 0:
