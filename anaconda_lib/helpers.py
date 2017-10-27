@@ -34,6 +34,7 @@ LINTING_ENABLED = 0x04
 
 ENVIRON_HOOK_INVALID = defaultdict(lambda: False)
 AUTO_COMPLETION_DOT_VIEWS = []
+SETTINGS_CACHE = {}
 
 
 def dot_completion(view):
@@ -198,10 +199,6 @@ def get_settings(view, name, default=None):
     """Get settings
     """
 
-    if name not in ['anaconda_linting_behaviour', 'anaconda_linter_delay', 'anaconda_linting']:
-        print('\n\n\nget_settings', name, default)
-
-
     global ENVIRON_HOOK_INVALID
 
     if view is None:
@@ -211,6 +208,11 @@ def get_settings(view, name, default=None):
 
     if (name in ('python_interpreter', 'extra_paths') and not
             ENVIRON_HOOK_INVALID[view.id()]):
+
+        settings_key = '{}_{}_{}'.format(view.id(), name, default)
+        if settings_key in SETTINGS_CACHE:
+            return SETTINGS_CACHE[settings_key]
+
         if view.window() is not None and view.window().folders():
             dirname = view.window().folders()[0]
             print('dirname', dirname)
@@ -246,13 +248,16 @@ def get_settings(view, name, default=None):
                             )
                             w = view.window()
                             if w is not None:
-                                return sublime.expand_variables(
+                                SETTINGS_CACHE[settings_key] = sublime.expand_variables(
                                     r, w.extract_variables()
                                 )
+                                return SETTINGS_CACHE[settings_key]
 
-                            return r
+                            SETTINGS_CACHE[settings_key] = r
+                            return SETTINGS_CACHE[settings_key]
 
                 elif name == 'python_interpreter' and os.path.isfile(pipfile):
+                    print("Pipfile found on %s" % pipfile)
                     try:
                         # check if venv has been created
                         sp = create_subprocess(
@@ -277,7 +282,8 @@ def get_settings(view, name, default=None):
                             raise Exception(pipenv_error)
 
                         sublime.error_message(repr(sp_out))
-                        return sp_out
+                        SETTINGS_CACHE[settings_key] = sp_out
+                        return SETTINGS_CACHE[settings_key]
 
                     except Exception as error:
                         sublime.error_message(
@@ -302,6 +308,9 @@ def get_settings(view, name, default=None):
                         dirname = os.path.dirname(dirname)
                     else:
                         break  # stop loop
+
+            SETTINGS_CACHE[settings_key] = None
+            return SETTINGS_CACHE[settings_key]
 
     r = view.settings().get(name, plugin_settings.get(name, default))
     if name == 'python_interpreter':
