@@ -204,6 +204,8 @@ def get_settings(view, name, default=None):
     if view is None:
         return default
 
+    print('get_settings', view.id(), name, default)
+
     plugin_settings = sublime.load_settings('Anaconda.sublime-settings')
 
     if (name in ('python_interpreter', 'extra_paths') and not
@@ -211,16 +213,21 @@ def get_settings(view, name, default=None):
 
         settings_key = '{}_{}_{}'.format(view.id(), name, default)
         if settings_key in SETTINGS_CACHE:
+            print('settings found in cache', settings_key, SETTINGS_CACHE)
             return SETTINGS_CACHE[settings_key]
+
+        print('settings not found in cache', settings_key, SETTINGS_CACHE)
 
         if view.window() is not None and view.window().folders():
             dirname = view.window().folders()[0]
             while True:
+                print('dirname', dirname)
                 environfile = os.path.join(dirname, '.anaconda')
                 pipfile = os.path.join(dirname, 'Pipfile')
 
                 if os.path.isfile(environfile):
                     # print("Environ found on %s" % environfile)
+                    sublime.error_message("Environ found on %s" % environfile)
                     with open(environfile, 'r') as jsonfile:
                         try:
                             data = json.loads(jsonfile.read())
@@ -251,35 +258,35 @@ def get_settings(view, name, default=None):
                                 return SETTINGS_CACHE[settings_key]
 
                             SETTINGS_CACHE[settings_key] = r
-                            return SETTINGS_CACHE[settings_key]
+                            return r
 
                 elif name == 'python_interpreter' and os.path.isfile(pipfile):
                     # print("Pipfile found on %s" % pipfile)
+                    sublime.error_message("Pipfile found on %s" % pipfile)
                     try:
                         # check if venv has been created
                         sp = create_subprocess(
                             ['pipenv', '--venv'], cwd=dirname,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        _, sp_err = sp.communicate()
+                        _, sp_err = [p.decode().strip() for p in sp.communicate()]
                         if sp_err or sp.returncode:
-                            pipenv_error = "Pipenv's error was: \n{}".format(sp_err.decode().strip())
+                            pipenv_error = "Pipenv's error was: \n{}".format(sp_err)
                             raise Exception(pipenv_error)
 
                         # get Python interpreter
                         sp = create_subprocess(
                             ['pipenv', '--py'], cwd=dirname,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        sp_out, sp_err = sp.communicate()
-                        sp_out = sp_out.strip()
+                        sp_out, sp_err = [p.decode().strip() for p in sp.communicate()]
                         if sp_err or sp.returncode:
-                            pipenv_error = "Pipenv's error was: \n{}".format(sp_err.decode().strip())
+                            pipenv_error = "Pipenv's error was: \n{}".format(sp_err)
                             raise Exception(pipenv_error)
-                        if not os.path.isfile(sp_out.strip()):
+                        if not os.path.isfile(sp_out):
                             pipenv_error = "Pipenv's Python interpreter is not valid: \n{}".format(sp_out)
                             raise Exception(pipenv_error)
 
                         SETTINGS_CACHE[settings_key] = sp_out
-                        return SETTINGS_CACHE[settings_key]
+                        return sp_out
 
                     except Exception as error:
                         sublime.error_message(
@@ -305,8 +312,6 @@ def get_settings(view, name, default=None):
                     else:
                         break  # stop loop
 
-            SETTINGS_CACHE[settings_key] = None
-            return SETTINGS_CACHE[settings_key]
 
     r = view.settings().get(name, plugin_settings.get(name, default))
     if name == 'python_interpreter':
@@ -316,6 +321,9 @@ def get_settings(view, name, default=None):
             r = [expand(view, e) for e in r]
         else:
             r = expand(view, r)
+
+    if name in ['python_interpreter', 'extra_paths']:
+        SETTINGS_CACHE[settings_key] = r
 
     return r
 
@@ -343,6 +351,7 @@ def is_remote_session(view):
     """Returns True if we are in a remote session
     """
 
+    print('is_remote_session', type(get_interpreter(view)), repr(get_interpreter(view)))
     if '://' in get_interpreter(view):
         return True
 
