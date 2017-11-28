@@ -161,7 +161,7 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         """Determine if this command is enabled or not
         """
 
-        return is_python(self.view)
+        return is_python(self.view, ignore_comments=True)
 
     def run(self, edit: sublime.Edit) -> None:
         """Run the test or tests using the configured command
@@ -189,10 +189,10 @@ class AnacondaRunTestsBase(sublime_plugin.TextCommand):
         self.test_command = gs(self.view, 'test_command', DEFAULT_TEST_COMMAND)
         self.test_params_dict = gs(self.view, 'test_params', TEST_PARAMS)
         self.before_test = gs(self.view, 'test_before_command')
-        if type(self.before_test) is list:
+        if isinstance(self.before_test, list):
             self.before_test = sep.join(self.before_test)
         self.after_test = gs(self.view, 'test_after_command')
-        if type(self.after_test) is list:
+        if isinstance(self.after_test, list):
             self.after_test = sep.join(self.after_test)
         self.test_include_full_path = gs(
             self.view, 'test_include_full_path', TEST_INCLUDE_FULL_PATH)
