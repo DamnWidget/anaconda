@@ -72,3 +72,57 @@ class AnacondaCompleteFuncargs(sublime_plugin.TextCommand):
 
         template = data['template']
         active_view().run_command('insert_snippet', {'contents': template})
+
+
+class AnacondaFillFuncargs(sublime_plugin.TextCommand):
+    """Trigger parameters autocompletion with key press."""
+
+    def run(self, edit, all=False):
+
+        req_args, all_args = 'complete_parameters', 'complete_all_parameters'
+        compl_par = get_settings(self.view, req_args, False)
+        compl_all = get_settings(self.view, all_args, False)
+
+        # no need to do anything, just run the command
+        if compl_all:
+            self.view.run_command("anaconda_complete_funcargs")
+            return
+
+        # temporarily enable autocompletion
+        if not compl_par:
+            self.view.settings().set(req_args, True)
+        if all:
+            self.view.settings().set(all_args, True)
+
+        self.view.run_command("anaconda_complete_funcargs")
+
+        # restore value as per settings
+        if not compl_par:
+            self.view.settings().set(req_args, False)
+        if all:
+            self.view.settings().set(all_args, False)
+
+
+class AnacondaFuncargsKeyListener(sublime_plugin.EventListener):
+    """Allow parameters autocompletion with key press."""
+
+    def on_query_context(self, view, key, operator, operand, match_all):
+
+        if key == 'anaconda_insert_funcargs':
+
+            def valid_scope():
+                scope = view.scope_name(pos)
+                if 'meta.function-call' in scope:
+                    return True
+                elif 'meta.function_call' in scope:
+                    return True
+                return False
+
+            pos = view.sel()[0].a
+            check = (view.substr(pos - 1) == '(' and view.substr(pos) == ')')
+            allow = get_settings(
+                view, 'parameters_completion_on_keypress', True)
+
+            if allow and check and valid_scope():
+                return True
+        return None
