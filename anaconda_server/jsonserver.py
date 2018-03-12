@@ -189,18 +189,21 @@ class Checker(threading.Thread):
     """Check that the ST3 PID already exists every delta seconds
     """
 
-    def __init__(self, server, delta=5):
+    MAX_INACTIVITY = 1800  # 30 minutes in seconds
+
+    def __init__(self, server, pid, delta=5):
         threading.Thread.__init__(self)
         self.server = server
         self.delta = delta
         self.daemon = True
         self.die = False
+        self.pid = int(pid)
 
     def run(self):
 
         while not self.die:
-            if time.time() - self.server.last_call > 1800:
-                # is now more than 30 minutes of innactivity
+            if time.time() - self.server.last_call > self.MAX_INACTIVITY:
+                # is now more than 30 minutes of inactivity
                 self.server.logger.info(
                     'detected inactivity for more than 30 minutes... '
                     'shuting down...'
@@ -208,54 +211,46 @@ class Checker(threading.Thread):
                 break
 
             self._check()
-            time.sleep(self.delta)
+            if not self.die:
+                time.sleep(self.delta)
 
         self.server.shutdown()
+
+    if os.name == 'nt':
+        def _isprocessrunning(self, timeout=MAX_INACTIVITY * 1000):
+            """Blocking until process has exited or timeout is reached.
+            """
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            SYNCHRONIZE = 0x00100000
+            WAIT_TIMEOUT = 0x00000102
+            hprocess = kernel32.OpenProcess(SYNCHRONIZE, False, self.pid)
+            if hprocess == 0:
+                return False
+            ret = kernel32.WaitForSingleObject(hprocess, timeout)
+            kernel32.CloseHandle(hprocess)
+            return ret == WAIT_TIMEOUT
+    else:
+        def _isprocessrunning(self):
+            """Returning immediately whether process is running.
+            """
+            try:
+                os.kill(self.pid, 0)
+            except OSError:
+                return False
+            return True
 
     def _check(self):
         """Check for the ST3 pid
         """
 
-        if os.name == 'posix':
-            try:
-                os.kill(int(PID), 0)
-            except OSError:
-                self.server.logger.info(
-                    'process {0} does not exists stopping server...'.format(
-                        PID
-                    )
+        if not self._isprocessrunning():
+            self.server.logger.info(
+                'process {0} does not exists stopping server...'.format(
+                    self.pid
                 )
-                self.die = True
-        elif os.name == 'nt':
-            # win32com is not present in every Python installation on Windows
-            # we need something that always work so we are forced here to use
-            # the Windows tasklist command and check its output
-            startupinfo = subprocess.STARTUPINFO()
-            try:
-                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            except AttributeError:
-                # some versions of Windows define STARTF_USEWHOWWINDOW
-                # in a separate _suprocess module
-                try:
-                    import _subprocess
-                except ImportError:
-                    self.server.logger.info(
-                        'warning: could not import _subprocess')
-                else:
-                    startupinfo.dwFlags != _subprocess.STARTF_USESHOWWINDOW
-
-            output = subprocess.check_output(
-                ['tasklist', '/FI', 'PID eq {0}'.format(PID)],
-                startupinfo=startupinfo
             )
-            pid = PID if not PY3 else bytes(PID, 'utf8')
-            if pid not in output:
-                self.server.logger.info(
-                    'process {0} does not exists stopping server...'.format(
-                        PID
-                    )
-                )
-                self.die = True
+            self.die = True
 
 
 def get_logger(path):
@@ -366,7 +361,7 @@ if __name__ == "__main__":
 
     # start PID checker thread
     if PID != 'DEBUG':
-        checker = Checker(server, delta=1)
+        checker = Checker(server, pid=PID, delta=1)
         checker.start()
     else:
         logger.info('Anaconda Server started in DEBUG mode...')
