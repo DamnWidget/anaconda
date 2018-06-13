@@ -1,5 +1,4 @@
 from jedi._compatibility import encoding, is_py3, u
-import inspect
 import os
 import time
 
@@ -36,7 +35,7 @@ try:
                 # need this.
                 initialise.atexit_done = True
                 try:
-                    init()
+                    init(strip=False)
                 except Exception:
                     # Colorama fails with initializing under vim and is buggy in
                     # version 0.3.6.
@@ -61,7 +60,6 @@ enable_notice = False
 
 # callback, interface: level, str
 debug_function = None
-ignored_modules = ['jedi.parser']
 _debug_indent = 0
 _start_time = time.time()
 
@@ -91,12 +89,9 @@ def dbg(message, *args, **kwargs):
     assert color
 
     if debug_function and enable_notice:
-        frm = inspect.stack()[1]
-        mod = inspect.getmodule(frm[0])
-        if not (mod.__name__ in ignored_modules):
-            i = ' ' * _debug_indent
-            _lazy_colorama_init()
-            debug_function(color, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
+        i = ' ' * _debug_indent
+        _lazy_colorama_init()
+        debug_function(color, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
 
 
 def warning(message, *args, **kwargs):

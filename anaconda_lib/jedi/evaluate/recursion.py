@@ -6,11 +6,48 @@ the right time. You can read more about them :ref:`here <settings-recursion>`.
 Next to :mod:`jedi.evaluate.cache` this module also makes |jedi| not
 thread-safe. Why?  ``execution_recursion_decorator`` uses class variables to
 count the function calls.
+
+.. _settings-recursion:
+
+Settings
+~~~~~~~~~~
+
+Recursion settings are important if you don't want extremly
+recursive python code to go absolutely crazy.
+
+The default values are based on experiments while completing the |jedi| library
+itself (inception!). But I don't think there's any other Python library that
+uses recursion in a similarly extreme way. Completion should also be fast and
+therefore the quality might not always be maximal.
+
+.. autodata:: recursion_limit
+.. autodata:: total_function_execution_limit
+.. autodata:: per_function_execution_limit
+.. autodata:: per_function_recursion_limit
 """
+
 from contextlib import contextmanager
 
 from jedi import debug
-from jedi import settings
+from jedi.evaluate.base_context import NO_CONTEXTS
+
+
+recursion_limit = 15
+"""
+Like ``sys.getrecursionlimit()``, just for |jedi|.
+"""
+total_function_execution_limit = 200
+"""
+This is a hard limit of how many non-builtin functions can be executed.
+"""
+per_function_execution_limit = 6
+"""
+The maximal amount of times a specific function may be executed.
+"""
+per_function_recursion_limit = 2
+"""
+A function may not be executed more than this number of times recursively.
+"""
 
 
 class RecursionDetector(object):
@@ -31,12 +68,14 @@ def execution_allowed(evaluator, node):
                       node.start_pos)
         yield False
     else:
-        pushed_nodes.append(node)
-        yield True
-        pushed_nodes.pop()
+        try:
+            pushed_nodes.append(node)
+            yield True
+        finally:
+            pushed_nodes.pop()
 
 
-def execution_recursion_decorator(default=set()):
+def execution_recursion_decorator(default=NO_CONTEXTS):
     def decorator(func):
         def wrapper(execution, **kwargs):
             detector = execution.evaluator.execution_recursion_detector
@@ -58,47 +97,42 @@ class ExecutionRecursionDetector(object):
     Catches recursions of executions.
     """
     def __init__(self, evaluator):
-        self.recursion_level = 0
-        self.parent_execution_funcs = []
-        self.execution_funcs = set()
-        self.execution_count = 0
         self._evaluator = evaluator
 
-    def __call__(self, execution):
-        debug.dbg('Execution recursions: %s', execution, self.recursion_level,
-                  self.execution_count, len(self.execution_funcs))
-        if self.check_recursion(execution):
-            result = set()
-        else:
-            result = self.func(execution)
-        self.pop_execution()
-        return result
+        self._recursion_level = 0
+        self._parent_execution_funcs = []
+        self._funcdef_execution_counts = {}
+        self._execution_count = 0
 
     def pop_execution(self):
-        self.parent_execution_funcs.pop()
-        self.recursion_level -= 1
+        self._parent_execution_funcs.pop()
+        self._recursion_level -= 1
 
     def push_execution(self, execution):
-        in_par_execution_funcs = execution.tree_node in self.parent_execution_funcs
-        in_execution_funcs = execution.tree_node in self.execution_funcs
-        self.recursion_level += 1
-        self.execution_count += 1
-        self.execution_funcs.add(execution.tree_node)
-        self.parent_execution_funcs.append(execution.tree_node)
+        funcdef = execution.tree_node
 
-        if self.execution_count > settings.max_executions:
-            return True
+        # These two will be undone in pop_execution.
+        self._recursion_level += 1
+        self._parent_execution_funcs.append(funcdef)
 
         module = execution.get_root_context()
-        if module == self._evaluator.BUILTINS:
+        if module == self._evaluator.builtins_module:
+            # We have control over builtins so we know they are not recursing
+            # like crazy. Therefore we just let them execute always, because
+            # they usually just help a lot with getting good results.
             return False
 
-        if in_par_execution_funcs:
-            if self.recursion_level > settings.max_function_recursion_level:
-                return True
-        if in_execution_funcs and \
-                len(self.execution_funcs) > settings.max_until_execution_unique:
+        if self._recursion_level > recursion_limit:
             return True
-        if self.execution_count > settings.max_executions_without_builtins:
+
+        if self._execution_count >= total_function_execution_limit:
+            return True
+        self._execution_count += 1
+
+        if self._funcdef_execution_counts.setdefault(funcdef, 0) >= per_function_execution_limit:
+            return True
+        self._funcdef_execution_counts[funcdef] += 1
+
+        if self._parent_execution_funcs.count(funcdef) > per_function_recursion_limit:
             return True
         return False

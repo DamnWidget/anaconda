@@ -14,31 +14,25 @@ It works as follows:
 
 - |Jedi| sees a param
 - search for function calls named ``foo``
-- execute these calls and check the input. This work with a ``ParamListener``.
+- execute these calls and check the input.
 """
 
-from jedi.parser.python import tree
+from parso.python import tree
 from jedi import settings
 from jedi import debug
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import imports
-from jedi.evaluate.param import TreeArguments, create_default_param
-from jedi.common import to_list, unite
+from jedi.evaluate.arguments import TreeArguments
+from jedi.evaluate.param import create_default_params
+from jedi.evaluate.helpers import is_stdlib_path
+from jedi.evaluate.utils import to_list
 from jedi.parser_utils import get_parent_scope
+from jedi.evaluate.context import ModuleContext, instance
+from jedi.evaluate.base_context import ContextSet
+
 
 
 MAX_PARAM_SEARCHES = 20
-
-
-class ParamListener(object):
-    """
-    This listener is used to get the params for a function.
-    """
-    def __init__(self):
-        self.param_possibilities = []
-
-    def execute(self, params):
-        self.param_possibilities += params
 
 
 class MergedExecutedParams(object):
@@ -49,7 +43,7 @@ class MergedExecutedParams(object):
         self._executed_params = executed_params
 
     def infer(self):
-        return unite(p.infer() for p in self._executed_params)
+        return ContextSet.from_sets(p.infer() for p in self._executed_params)
 
 
 @debug.increase_indent
@@ -67,55 +61,70 @@ def search_params(evaluator, execution_context, funcdef):
     is.
     """
     if not settings.dynamic_params:
-        return set()
+        return create_default_params(execution_context, funcdef)
 
     evaluator.dynamic_params_depth += 1
     try:
-        debug.dbg('Dynamic param search in %s.', funcdef.name.value, color='MAGENTA')
-        module_context = execution_context.get_root_context()
-        function_executions = _search_function_executions(
-            evaluator,
-            module_context,
-            funcdef
-        )
-        if function_executions:
-            zipped_params = zip(*list(
-                function_execution.get_params()
-                for function_execution in function_executions
-            ))
-            params = [MergedExecutedParams(executed_params) for executed_params in zipped_params]
-            # Evaluate the ExecutedParams to types.
+        path = execution_context.get_root_context().py__file__()
+        if path is not None and is_stdlib_path(path):
+            # We don't want to search for usages in the stdlib. Usually people
+            # don't work with it (except if you are a core maintainer, sorry).
+            # This makes everything slower. Just disable it and run the tests,
+            # you will see the slowdown, especially in 3.6.
+            return create_default_params(execution_context, funcdef)
+
+        if funcdef.type == 'lambdef':
+            string_name = _get_lambda_name(funcdef)
+            if string_name is None:
+                return create_default_params(execution_context, funcdef)
         else:
-            params = [create_default_param(execution_context, p) for p in funcdef.params]
-        debug.dbg('Dynamic param result finished', color='MAGENTA')
+            string_name = funcdef.name.value
+        debug.dbg('Dynamic param search in %s.', string_name, color='MAGENTA')
+
+        try:
+            module_context = execution_context.get_root_context()
+            function_executions = _search_function_executions(
+                evaluator,
+                module_context,
+                funcdef,
+                string_name=string_name,
+            )
+            if function_executions:
+                zipped_params = zip(*list(
+                    function_execution.get_params()
+                    for function_execution in function_executions
+                ))
+                params = [MergedExecutedParams(executed_params) for executed_params in zipped_params]
+                # Evaluate the ExecutedParams to types.
+            else:
+                return create_default_params(execution_context, funcdef)
+        finally:
+            debug.dbg('Dynamic param result finished', color='MAGENTA')
         return params
     finally:
         evaluator.dynamic_params_depth -= 1
 
 
-@memoize_default([], evaluator_is_first_arg=True)
+@evaluator_function_cache(default=None)
 @to_list
-def _search_function_executions(evaluator, module_context, funcdef):
+def _search_function_executions(evaluator, module_context, funcdef, string_name):
     """
     Returns a list of param names.
     """
-    from jedi.evaluate import representation as er
-
-    func_string_name = funcdef.name.value
     compare_node = funcdef
-    if func_string_name == '__init__':
+    if string_name == '__init__':
         cls = get_parent_scope(funcdef)
         if isinstance(cls, tree.Class):
-            func_string_name = cls.name.value
+            string_name = cls.name.value
             compare_node = cls
 
     found_executions = False
     i = 0
     for for_mod_context in imports.get_modules_containing_name(
-            evaluator, [module_context], func_string_name):
-        if not isinstance(module_context, er.ModuleContext):
+            evaluator, [module_context], string_name):
+        if not isinstance(module_context, ModuleContext):
             return
-        for name, trailer in _get_possible_nodes(for_mod_context, func_string_name):
+        for name, trailer in _get_possible_nodes(for_mod_context, string_name):
             i += 1
 
             # This is a simple way to stop Jedi's dynamic param recursion
@@ -136,6 +145,18 @@ def _search_function_executions(evaluator, module_context, funcdef):
             return
 
 
+def _get_lambda_name(node):
+    stmt = node.parent
+    if stmt.type == 'expr_stmt':
+        first_operator = next(stmt.yield_operators(), None)
+        if first_operator == '=':
+            first = stmt.children[0]
+            if first.type == 'name':
+                return first.value
+
+    return None
+
+
 def _get_possible_nodes(module_context, func_string_name):
     try:
         names = module_context.tree_node.get_used_names()[func_string_name]
@@ -150,16 +171,14 @@ def _get_possible_nodes(module_context, func_string_name):
 
 
 def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
-    from jedi.evaluate import representation as er, instance
+    from jedi.evaluate.context.function import FunctionExecutionContext
 
     def create_func_excs():
         arglist = trailer.children[1]
         if arglist == ')':
-            arglist = ()
+            arglist = None
         args = TreeArguments(evaluator, context, arglist, trailer)
-        if value_node.type == 'funcdef':
-            yield value.get_function_execution(args)
-        else:
+        if value_node.type == 'classdef':
             created_instance = instance.TreeInstance(
                 evaluator,
                 value.parent_context,
@@ -168,13 +187,15 @@ def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
             )
             for execution in created_instance.create_init_executions():
                 yield execution
+        else:
+            yield value.get_function_execution(args)
 
     for value in evaluator.goto_definitions(context, name):
         value_node = value.tree_node
         if compare_node == value_node:
             for func_execution in create_func_excs():
                 yield func_execution
-        elif isinstance(value.parent_context, er.FunctionExecutionContext) and \
+        elif isinstance(value.parent_context, FunctionExecutionContext) and \
                 compare_node.type == 'funcdef':
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better

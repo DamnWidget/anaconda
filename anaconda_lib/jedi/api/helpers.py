@@ -3,14 +3,17 @@ Helpers for the API
 """
 import re
 from collections import namedtuple
+from textwrap import dedent
+
+from parso.python.parser import Parser
+from parso.python import tree
 
 from jedi._compatibility import u
+from jedi.evaluate.syntax_tree import eval_atom
 from jedi.evaluate.helpers import evaluate_call_of_leaf
-from jedi.parser.python.parser import Parser
-from jedi.parser.python import tree
-from jedi.parser import tokenize
-from jedi.cache import time_cache
-from jedi import common
+from jedi.evaluate.compiled import get_string_context_set
+from jedi.evaluate.base_context import ContextSet
+from jedi.cache import call_signature_time_cache
 
 
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
@@ -42,7 +45,7 @@ def _get_code(code_lines, start_pos, end_pos):
     lines[-1] = lines[-1][:end_pos[1]]
     # Remove first line indentation.
     lines[0] = lines[0][start_pos[1]:]
-    return '\n'.join(lines)
+    return ''.join(lines)
 
 
 class OnErrorLeaf(Exception):
@@ -51,28 +54,11 @@ class OnErrorLeaf(Exception):
         return self.args[0]
 
 
-def _is_on_comment(leaf, position):
-    comment_lines = common.splitlines(leaf.prefix)
-    difference = leaf.start_pos[0] - position[0]
-    prefix_start_pos = leaf.get_start_pos_of_prefix()
-    if difference == 0:
-        indent = leaf.start_pos[1]
-    elif position[0] == prefix_start_pos[0]:
-        indent = prefix_start_pos[1]
-    else:
-        indent = 0
-    line = comment_lines[-difference - 1][:position[1] - indent]
-    return '#' in line
-
-
 def _get_code_for_stack(code_lines, module_node, position):
     leaf = module_node.get_leaf_for_position(position, include_prefixes=True)
     # It might happen that we're on whitespace or on a comment. This means
     # that we would not get the right leaf.
     if leaf.start_pos >= position:
-        if _is_on_comment(leaf, position):
-            return u('')
-
         # If we're not on a comment simply get the previous leaf and proceed.
         leaf = leaf.get_previous_leaf()
         if leaf is None:
@@ -93,11 +79,10 @@ def _get_code_for_stack(code_lines, module_node, position):
         # impossible.
         raise OnErrorLeaf(leaf)
     else:
-        if leaf == ';':
-            user_stmt = leaf.parent
-        else:
-            user_stmt = leaf.get_definition()
-        if user_stmt.parent.type == 'simple_stmt':
+        user_stmt = leaf
+        while True:
+            if user_stmt.parent.type in ('file_input', 'suite', 'simple_stmt'):
+                break
             user_stmt = user_stmt.parent
 
         if is_after_newline:
@@ -118,21 +103,27 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
         pass
 
     def tokenize_without_endmarker(code):
-        tokens = tokenize.source_tokens(code, use_exact_op_types=True)
+        # TODO This is for now not an official parso API that exists purely
+        #   for Jedi.
+        tokens = grammar._tokenize(code)
         for token_ in tokens:
             if token_.string == safeword:
+                raise EndMarkerReached()
+            elif token_.prefix.endswith(safeword):
+                # This happens with comments.
                 raise EndMarkerReached()
             else:
                 yield token_
 
-    code = _get_code_for_stack(code_lines, module_node, pos)
+    # The code might be indedented, just remove it.
+    code = dedent(_get_code_for_stack(code_lines, module_node, pos))
     # We use a word to tell Jedi when we have reached the start of the
     # completion.
     # Use Z as a prefix because it's not part of a number suffix.
     safeword = 'ZZZ_USER_WANTS_TO_COMPLETE_HERE_WITH_JEDI'
-    code = code + safeword
+    code = code + ' ' + safeword
 
-    p = Parser(grammar, error_recovery=True)
+    p = Parser(grammar._pgen_grammar, error_recovery=True)
     try:
         p.parse(tokens=tokenize_without_endmarker(code))
     except EndMarkerReached:
@@ -151,7 +142,7 @@ class Stack(list):
                 yield node
 
 
-def get_possible_completion_types(grammar, stack):
+def get_possible_completion_types(pgen_grammar, stack):
     def add_results(label_index):
         try:
             grammar_labels.append(inversed_tokens[label_index])
@@ -159,17 +150,17 @@ def get_possible_completion_types(grammar, stack):
             try:
                 keywords.append(inversed_keywords[label_index])
             except KeyError:
-                t, v = grammar.labels[label_index]
+                t, v = pgen_grammar.labels[label_index]
                 assert t >= 256
                 # See if it's a symbol and if we're in its first set
                 inversed_keywords
-                itsdfa = grammar.dfas[t]
+                itsdfa = pgen_grammar.dfas[t]
                 itsstates, itsfirst = itsdfa
                 for first_label_index in itsfirst.keys():
                     add_results(first_label_index)
 
-    inversed_keywords = dict((v, k) for k, v in grammar.keywords.items())
-    inversed_tokens = dict((v, k) for k, v in grammar.tokens.items())
+    inversed_keywords = dict((v, k) for k, v in pgen_grammar.keywords.items())
+    inversed_tokens = dict((v, k) for k, v in pgen_grammar.tokens.items())
 
     keywords = []
     grammar_labels = []
@@ -203,7 +194,9 @@ def evaluate_goto_definition(evaluator, context, leaf):
     elif parent.type == 'trailer':
         return evaluate_call_of_leaf(context, leaf)
     elif isinstance(leaf, tree.Literal):
-        return context.evaluator.eval_atom(context, leaf)
+        return eval_atom(context, leaf)
+    elif leaf.type in ('fstring_string', 'fstring_start', 'fstring_end'):
+        return get_string_context_set(evaluator)
     return []
 
 
@@ -290,14 +283,14 @@ def get_call_signature_details(module, position):
     return None
 
 
-@time_cache("call_signatures_validity")
+@call_signature_time_cache("call_signatures_validity")
 def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos):
     """This function calculates the cache key."""
-    index = user_pos[0] - 1
+    line_index = user_pos[0] - 1
 
-    before_cursor = code_lines[index][:user_pos[1]]
-    other_lines = code_lines[bracket_leaf.start_pos[0]:index]
-    whole = '\n'.join(other_lines + [before_cursor])
+    before_cursor = code_lines[line_index][:user_pos[1]]
+    other_lines = code_lines[bracket_leaf.start_pos[0]:line_index]
+    whole = ''.join(other_lines + [before_cursor])
     before_bracket = re.match(r'.*\(', whole, re.DOTALL)
 
     module_path = context.get_root_context().py__file__()

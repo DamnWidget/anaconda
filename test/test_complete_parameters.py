@@ -18,7 +18,7 @@ class TestCompleteParameters(object):
 
     def setUp(self):
         self.settings = {'complete_all_parameters': False}
-        self.script = jedi.Script('open(')
+        self.script = jedi.Script('import json; json.loads(')
 
     def test_complete_parameters_command(self):
         CompleteParameters(
@@ -31,8 +31,8 @@ class TestCompleteParameters(object):
 
     def test_complete_parameters_handler(self):
         data = {
-            'source': 'open(', 'line': 1,
-            'offset': 5, 'filname': None, 'settings': self.settings
+            'source': 'import json; json.loads(', 'line': 1,
+            'offset': 24, 'filname': None, 'settings': self.settings
         }
         handler = JediHandler(
             'parameters', data, 0, 0, self._check_parameters)
@@ -41,8 +41,8 @@ class TestCompleteParameters(object):
     def test_complete_all_parameters_handler(self):
         self.settings['complete_all_parameters'] = True
         data = {
-            'source': 'open(', 'line': 1,
-            'offset': 5, 'filname': None, 'settings': self.settings
+            'source': 'import json; json.loads(', 'line': 1,
+            'offset': 24, 'filname': None, 'settings': self.settings
         }
         handler = JediHandler(
             'parameters', data, 0, 0, self._check_all_parameters)
@@ -50,10 +50,10 @@ class TestCompleteParameters(object):
 
     def _check_parameters(self, result):
         assert result['success'] is True
-        assert result['template'] == '${1:file}' if PYTHON3 else u'${1:file}'
+        assert result['template'] == '${1:s}' if PYTHON3 else u'${1:s}'
         assert result['uid'] == 0
 
     def _check_all_parameters(self, result):
         assert result['success'] is True
-        assert result['template'] == "${1:file}, mode=${2:'r'}, buffering=${3:-1}, encoding=${4:None}, errors=${5:None}, newline=${6:None}, closefd=${7:True}" if PYTHON3 else u"${1:file}, mode=${2:'r'}, buffering=${3:-1}, encoding=${4:None}, errors=${5:None}, newline=${6:None}, closefd=${7:True}"  # noqa
+        assert result['template'] == "${1:s}, encoding=${2:None}, cls=${3:None}, object_hook=${4:None}, parse_float=${5:None}, parse_int=${6:None}, parse_constant=${7:None}, object_pairs_hook=${8:None}"  # noqa
         assert result['uid'] == 0

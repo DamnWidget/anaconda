@@ -70,7 +70,7 @@ class Doc(Command):
         """
 
         return 'Docstring for {0}\n{1}\n{2}'.format(
-            definition.full_name, '=' * 40, definition.doc
+            definition.full_name, '=' * 40, definition.docstring()
         )
 
     def _html(self, definition):
@@ -79,18 +79,18 @@ class Doc(Command):
 
         if sys.version_info >= (3, 4):
             escaped_doc = html.escape(
-                html.unescape(definition.doc), quote=False)
+                html.unescape(definition.docstring()), quote=False)
         else:
             try:
                 escaped_doc = cgi.escape(
                     HTMLParser.unescape.__func__(
-                        HTMLParser, definition.doc.encode('utf8')
+                        HTMLParser, definition.docstring().encode('utf8')
                     )
                 )
             except AttributeError:
                 # Python 3.x < 3.4
                 escaped_doc = cgi.escape(
-                    HTMLParser.unescape(HTMLParser, definition.doc)
+                    HTMLParser.unescape(HTMLParser, definition.docstring())
                 )
 
         escaped_doc = escaped_doc.replace('\n', '<br>')
