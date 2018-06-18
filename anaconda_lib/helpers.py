@@ -208,7 +208,7 @@ def get_settings(view, name, default=None):
     if (name in ('python_interpreter', 'extra_paths') and not
             ENVIRON_HOOK_INVALID[view.id()]):
         if view.window() is not None and view.window().folders():
-            dirname = view.window().folders()[0]
+            dirname = os.path.dirname(view.file_name())
             while True:
                 environfile = os.path.join(dirname, '.anaconda')
                 if os.path.exists(environfile) and os.path.isfile(environfile):
