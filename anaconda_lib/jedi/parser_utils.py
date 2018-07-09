@@ -1,15 +1,14 @@
 import textwrap
 from inspect import cleandoc
 
-from parso.python import tree
-from parso.cache import parser_cache
+from jedi._compatibility import literal_eval, is_py3
+from jedi.parser.python import tree
 
-from jedi._compatibility import literal_eval, force_unicode
-
-_EXECUTE_NODES = {'funcdef', 'classdef', 'import_from', 'import_name', 'test',
-                  'or_test', 'and_test', 'not_test', 'comparison', 'expr',
-                  'xor_expr', 'and_expr', 'shift_expr', 'arith_expr',
-                  'atom_expr', 'term', 'factor', 'power', 'atom'}
+_EXECUTE_NODES = set([
+    'funcdef', 'classdef', 'import_from', 'import_name', 'test', 'or_test',
+    'and_test', 'not_test', 'comparison', 'expr', 'xor_expr', 'and_expr',
+    'shift_expr', 'arith_expr', 'atom_expr', 'term', 'factor', 'power', 'atom'
+])
 
 _FLOW_KEYWORDS = (
     'try', 'except', 'finally', 'else', 'if', 'elif', 'with', 'for', 'while'
@@ -88,12 +87,10 @@ def get_flow_branch_keyword(flow_node, node):
             keyword = first_leaf
     return 0
 
-
 def get_statement_of_position(node, pos):
     for c in node.children:
         if c.start_pos <= pos <= c.end_pos:
-            if c.type not in ('decorated', 'simple_stmt', 'suite',
-                              'async_stmt', 'async_funcdef') \
+            if c.type not in ('decorated', 'simple_stmt', 'suite') \
                     and not isinstance(c, (tree.Flow, tree.ClassOrFunc)):
                 return c
             else:
@@ -115,7 +112,10 @@ def clean_scope_docstring(scope_node):
         cleaned = cleandoc(safe_literal_eval(node.value))
         # Since we want the docstr output to be always unicode, just
         # force it.
-        return force_unicode(cleaned)
+        if is_py3 or isinstance(cleaned, unicode):
+            return cleaned
+        else:
+            return unicode(cleaned, 'UTF-8', 'replace')
     return ''
 
 
@@ -155,14 +155,10 @@ def get_call_signature(funcdef, width=72, call_string=None):
         else:
             call_string = funcdef.name.value
     if funcdef.type == 'lambdef':
-        p = '(' + ''.join(param.get_code() for param in funcdef.get_params()).strip() + ')'
+        p = '(' + ''.join(param.get_code() for param in funcdef.params).strip() + ')'
     else:
         p = funcdef.children[2].get_code()
-    if funcdef.annotation:
-        rtype = " ->" + funcdef.annotation.get_code()
-    else:
-        rtype = ""
-    code = call_string + p + rtype
+    code = call_string + p
 
     return '\n'.join(textwrap.wrap(code, width))
 
@@ -209,9 +205,6 @@ def get_following_comment_same_line(node):
             whitespace = node.children[5].get_first_leaf().prefix
         elif node.type == 'with_stmt':
             whitespace = node.children[3].get_first_leaf().prefix
-        elif node.type == 'funcdef':
-            # actually on the next line
-            whitespace = node.children[4].get_first_leaf().get_next_leaf().prefix
         else:
             whitespace = node.get_last_leaf().get_next_leaf().prefix
     except AttributeError:
@@ -247,10 +240,3 @@ def get_parent_scope(node, include_flows=False):
         scope = scope.parent
     return scope
 
-
-def get_cached_code_lines(grammar, path):
-    """
-    Basically access the cached code lines in parso. This is not the nicest way
-    to do this, but we avoid splitting all the lines again.
-    """
-    return parser_cache[grammar._hashed][path].lines

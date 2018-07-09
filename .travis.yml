@@ -1,6 +1,6 @@
 language: python
 python:
-    # - "2.6"  not supported anymore by Jedi thus not supported anymore by us
+    - "2.6"
     - "2.7"
     - "3.3"
     - "3.5"

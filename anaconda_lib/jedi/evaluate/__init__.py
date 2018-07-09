@@ -12,32 +12,29 @@ Evaluation of Python code in |jedi| is based on three assumptions:
 * The programmer is not a total dick, e.g. like `this
   <https://github.com/davidhalter/jedi/issues/24>`_ :-)
 
-The actual algorithm is based on a principle called lazy evaluation.  That
-said, the typical entry point for static analysis is calling
-``eval_expr_stmt``. There's separate logic for autocompletion in the API, the
-evaluator is all about evaluating an expression.
+The actual algorithm is based on a principle called lazy evaluation. If you
+don't know about it, google it.  That said, the typical entry point for static
+analysis is calling ``eval_statement``. There's separate logic for
+autocompletion in the API, the evaluator is all about evaluating an expression.
 
-TODO this paragraph is not what jedi does anymore, it's similar, but not the
-same.
-
-Now you need to understand what follows after ``eval_expr_stmt``. Let's
+Now you need to understand what follows after ``eval_statement``. Let's
 make an example::
 
     import datetime
     datetime.date.toda# <-- cursor here
 
 First of all, this module doesn't care about completion. It really just cares
-about ``datetime.date``. At the end of the procedure ``eval_expr_stmt`` will
+about ``datetime.date``. At the end of the procedure ``eval_statement`` will
 return the ``date`` class.
 
 To *visualize* this (simplified):
 
-- ``Evaluator.eval_expr_stmt`` doesn't do much, because there's no assignment.
-- ``Context.eval_node`` cares for resolving the dotted path
+- ``Evaluator.eval_statement`` doesn't do much, because there's no assignment.
+- ``Evaluator.eval_element`` cares for resolving the dotted path
 - ``Evaluator.find_types`` searches for global definitions of datetime, which
   it finds in the definition of an import, by scanning the syntax tree.
 - Using the import logic, the datetime module is found.
-- Now ``find_types`` is called again by ``eval_node`` to find ``date``
+- Now ``find_types`` is called again by ``eval_element`` to find ``date``
   inside the datetime module.
 
 Now what would happen if we wanted ``datetime.date.foo.bar``? Two more
@@ -49,7 +46,7 @@ What if the import would contain another ``ExprStmt`` like this::
     from foo import bar
     Date = bar.baz
 
-Well... You get it. Just another ``eval_expr_stmt`` recursion. It's really
+Well... You get it. Just another ``eval_statement`` recursion. It's really
 easy. Python can obviously get way more complicated then this. To understand
 tuple assignments, list comprehensions and everything else, a lot more code had
 to be written.
@@ -63,68 +60,134 @@ only *evaluates* what needs to be *evaluated*. All the statements and modules
 that are not used are just being ignored.
 """
 
-from parso.python import tree
-import parso
-from parso import python_bytes_to_unicode
+import copy
+import sys
 
+from jedi.parser.python import tree
 from jedi import debug
-from jedi import parser_utils
-from jedi.evaluate.utils import unite
+from jedi.common import unite
+from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
-from jedi.evaluate.cache import evaluator_function_cache
+from jedi.evaluate import iterable
+from jedi.evaluate.cache import memoize_default
+from jedi.evaluate import stdlib
+from jedi.evaluate import finder
 from jedi.evaluate import compiled
+from jedi.evaluate import precedence
+from jedi.evaluate import param
 from jedi.evaluate import helpers
+from jedi.evaluate import pep0484
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
-from jedi.evaluate.base_context import ContextualizedName, ContextualizedNode, \
-    ContextSet, NO_CONTEXTS, iterate_contexts
-from jedi.evaluate.context import ClassContext, FunctionContext, \
-    AnonymousInstance, BoundMethod
-from jedi.evaluate.context.iterable import CompForContext
-from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
-    eval_node, check_tuple_assignments
+from jedi.evaluate.instance import AnonymousInstance, BoundMethod
+from jedi.evaluate.context import ContextualizedName, ContextualizedNode
+from jedi import parser_utils
 
 
 class Evaluator(object):
-    def __init__(self, project, environment=None, script_path=None):
-        if environment is None:
-            environment = project.get_environment()
-        self.environment = environment
-        self.script_path = script_path
-        self.compiled_subprocess = environment.get_evaluator_subprocess(self)
-        self.grammar = environment.get_grammar()
-
-        self.latest_grammar = parso.load_grammar(version='3.6')
+    def __init__(self, grammar, sys_path=None):
+        self.grammar = grammar
         self.memoize_cache = {}  # for memoize decorators
-        self.module_cache = imports.ModuleCache()  # does the job of `sys.modules`.
+        # To memorize modules -> equals `sys.modules`.
+        self.modules = {}  # like `sys.modules`.
         self.compiled_cache = {}  # see `evaluate.compiled.create()`
-        self.inferred_element_counts = {}
-        self.mixed_cache = {}  # see `evaluate.compiled.mixed._create()`
+        self.mixed_cache = {}  # see `evaluate.compiled.mixed.create()`
         self.analysis = []
         self.dynamic_params_depth = 0
         self.is_analysis = False
-        self.project = project
-        self.access_cache = {}
+        self.python_version = sys.version_info[:2]
+
+        if sys_path is None:
+            sys_path = sys.path
+        self.sys_path = copy.copy(sys_path)
+        try:
+            self.sys_path.remove('')
+        except ValueError:
+            pass
 
         self.reset_recursion_limitations()
-        self.allow_different_encoding = True
 
-    @property
-    @evaluator_function_cache()
-    def builtins_module(self):
-        return compiled.get_special_object(self, u'BUILTINS')
+        # Constants
+        self.BUILTINS = compiled.get_special_object(self, 'BUILTINS')
 
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
-    def get_sys_path(self):
-        """Convenience function"""
-        return self.project._get_sys_path(self, environment=self.environment)
+    def find_types(self, context, name_or_str, name_context, position=None,
+                   search_global=False, is_goto=False):
+        """
+        This is the search function. The most important part to debug.
+        `remove_statements` and `filter_statements` really are the core part of
+        this completion.
+
+        :param position: Position of the last statement -> tuple of line, column
+        :return: List of Names. Their parents are the types.
+        """
+        f = finder.NameFinder(self, context, name_context, name_or_str, position)
+        filters = f.get_filters(search_global)
+        if is_goto:
+            return f.filter_name(filters)
+        return f.find(filters, attribute_lookup=not search_global)
+
+    def eval_statement(self, context, stmt, seek_name=None):
+        with recursion.execution_allowed(self, stmt) as allowed:
+            if allowed or context.get_root_context() == self.BUILTINS:
+                return self._eval_stmt(context, stmt, seek_name)
+        return set()
+
+    #@memoize_default(default=[], evaluator_is_first_arg=True)
+    @debug.increase_indent
+    def _eval_stmt(self, context, stmt, seek_name=None):
+        """
+        The starting point of the completion. A statement always owns a call
+        list, which are the calls, that a statement does. In case multiple
+        names are defined in the statement, `seek_name` returns the result for
+        this name.
+
+        :param stmt: A `tree.ExprStmt`.
+        """
+        debug.dbg('eval_statement %s (%s)', stmt, seek_name)
+        rhs = stmt.get_rhs()
+        types = self.eval_element(context, rhs)
+
+        if seek_name:
+            c_node = ContextualizedName(context, seek_name)
+            types = finder.check_tuple_assignments(self, c_node, types)
+
+        first_operator = next(stmt.yield_operators(), None)
+        if first_operator not in ('=', None) and first_operator.type == 'operator':
+            # `=` is always the last character in aug assignments -> -1
+            operator = copy.copy(first_operator)
+            operator.value = operator.value[:-1]
+            name = stmt.get_defined_names()[0].value
+            left = context.py__getattribute__(
+                name, position=stmt.start_pos, search_global=True)
+
+            for_stmt = tree.search_ancestor(stmt, 'for_stmt')
+            if for_stmt is not None and for_stmt.type == 'for_stmt' and types \
+                    and parser_utils.for_stmt_defines_one_name(for_stmt):
+                # Iterate through result and add the values, that's possible
+                # only in for loops without clutter, because they are
+                # predictable. Also only do it, if the variable is not a tuple.
+                node = for_stmt.get_testlist()
+                cn = ContextualizedNode(context, node)
+                ordered = list(iterable.py__iter__(self, cn.infer(), cn))
+
+                for lazy_context in ordered:
+                    dct = {for_stmt.children[1].value: lazy_context.infer()}
+                    with helpers.predefine_names(context, for_stmt, dct):
+                        t = self.eval_element(context, rhs)
+                        left = precedence.calculate(self, context, left, operator, t)
+                types = left
+            else:
+                types = precedence.calculate(self, context, left, operator, types)
+        debug.dbg('eval_statement result %s', types)
+        return types
 
     def eval_element(self, context, element):
-        if isinstance(context, CompForContext):
-            return eval_node(context, element)
+        if isinstance(context, iterable.CompForContext):
+            return self._eval_element_not_cached(context, element)
 
         if_stmt = element
         while if_stmt is not None:
@@ -135,11 +198,7 @@ class Evaluator(object):
                 if_stmt = None
                 break
         predefined_if_name_dict = context.predefined_names.get(if_stmt)
-        # TODO there's a lot of issues with this one. We actually should do
-        # this in a different way. Caching should only be active in certain
-        # cases and this all sucks.
-        if predefined_if_name_dict is None and if_stmt \
-                and if_stmt.type == 'if_stmt' and self.is_analysis:
+        if predefined_if_name_dict is None and if_stmt and if_stmt.type == 'if_stmt':
             if_stmt_test = if_stmt.children[1]
             name_dicts = [{}]
             # If we already did a check, we don't want to do it again -> If
@@ -173,23 +232,23 @@ class Evaluator(object):
                                 new_name_dicts = list(original_name_dicts)
                                 for i, name_dict in enumerate(new_name_dicts):
                                     new_name_dicts[i] = name_dict.copy()
-                                    new_name_dicts[i][if_name.value] = ContextSet(definition)
+                                    new_name_dicts[i][if_name.value] = set([definition])
 
                                 name_dicts += new_name_dicts
                         else:
                             for name_dict in name_dicts:
                                 name_dict[if_name.value] = definitions
             if len(name_dicts) > 1:
-                result = ContextSet()
+                result = set()
                 for name_dict in name_dicts:
                     with helpers.predefine_names(context, if_stmt, name_dict):
-                        result |= eval_node(context, element)
+                        result |= self._eval_element_not_cached(context, element)
                 return result
             else:
                 return self._eval_element_if_evaluated(context, element)
         else:
             if predefined_if_name_dict:
-                return eval_node(context, element)
+                return self._eval_element_not_cached(context, element)
             else:
                 return self._eval_element_if_evaluated(context, element)
 
@@ -202,77 +261,231 @@ class Evaluator(object):
             parent = parent.parent
             predefined_if_name_dict = context.predefined_names.get(parent)
             if predefined_if_name_dict is not None:
-                return eval_node(context, element)
+                return self._eval_element_not_cached(context, element)
         return self._eval_element_cached(context, element)
 
-    @evaluator_function_cache(default=NO_CONTEXTS)
+    @memoize_default(default=set(), evaluator_is_first_arg=True)
     def _eval_element_cached(self, context, element):
-        return eval_node(context, element)
+        return self._eval_element_not_cached(context, element)
+
+    @debug.increase_indent
+    def _eval_element_not_cached(self, context, element):
+        debug.dbg('eval_element %s@%s', element, element.start_pos)
+        types = set()
+        typ = element.type
+        if typ in ('name', 'number', 'string', 'atom'):
+            types = self.eval_atom(context, element)
+        elif typ == 'keyword':
+            # For False/True/None
+            if element.value in ('False', 'True', 'None'):
+                types.add(compiled.builtin_from_name(self, element.value))
+            # else: print e.g. could be evaluated like this in Python 2.7
+        elif typ == 'lambdef':
+            types = set([er.FunctionContext(self, context, element)])
+        elif typ == 'expr_stmt':
+            types = self.eval_statement(context, element)
+        elif typ in ('power', 'atom_expr'):
+            first_child = element.children[0]
+            if not (first_child.type == 'keyword' and first_child.value == 'await'):
+                types = self.eval_atom(context, first_child)
+                for trailer in element.children[1:]:
+                    if trailer == '**':  # has a power operation.
+                        right = self.eval_element(context, element.children[2])
+                        types = set(precedence.calculate(self, context, types, trailer, right))
+                        break
+                    types = self.eval_trailer(context, types, trailer)
+        elif typ in ('testlist_star_expr', 'testlist',):
+            # The implicit tuple in statements.
+            types = set([iterable.SequenceLiteralContext(self, context, element)])
+        elif typ in ('not_test', 'factor'):
+            types = self.eval_element(context, element.children[-1])
+            for operator in element.children[:-1]:
+                types = set(precedence.factor_calculate(self, types, operator))
+        elif typ == 'test':
+            # `x if foo else y` case.
+            types = (self.eval_element(context, element.children[0]) |
+                     self.eval_element(context, element.children[-1]))
+        elif typ == 'operator':
+            # Must be an ellipsis, other operators are not evaluated.
+            assert element.value == '...'
+            types = set([compiled.create(self, Ellipsis)])
+        elif typ == 'dotted_name':
+            types = self.eval_atom(context, element.children[0])
+            for next_name in element.children[2::2]:
+                # TODO add search_global=True?
+                types = unite(
+                    typ.py__getattribute__(next_name, name_context=context)
+                    for typ in types
+                )
+            types = types
+        elif typ == 'eval_input':
+            types = self._eval_element_not_cached(context, element.children[0])
+        elif typ == 'annassign':
+            types = pep0484._evaluate_for_annotation(context, element.children[1])
+        else:
+            types = precedence.calculate_children(self, context, element.children)
+        debug.dbg('eval_element result %s', types)
+        return types
+
+    def eval_atom(self, context, atom):
+        """
+        Basically to process ``atom`` nodes. The parser sometimes doesn't
+        generate the node (because it has just one child). In that case an atom
+        might be a name or a literal as well.
+        """
+        if atom.type == 'name':
+            # This is the first global lookup.
+            stmt = atom.get_definition()
+            if stmt.type == 'comp_for':
+                stmt = tree.search_ancestor(stmt, 'expr_stmt', 'lambdef', 'funcdef', 'classdef')
+            if stmt is None or stmt.type != 'expr_stmt':
+                # We only need to adjust the start_pos for statements, because
+                # there the name cannot be used.
+                stmt = atom
+            return context.py__getattribute__(
+                name_or_str=atom,
+                position=stmt.start_pos,
+                search_global=True
+            )
+        elif isinstance(atom, tree.Literal):
+            string = parser_utils.safe_literal_eval(atom.value)
+            return set([compiled.create(self, string)])
+        else:
+            c = atom.children
+            if c[0].type == 'string':
+                # Will be one string.
+                types = self.eval_atom(context, c[0])
+                for string in c[1:]:
+                    right = self.eval_atom(context, string)
+                    types = precedence.calculate(self, context, types, '+', right)
+                return types
+            # Parentheses without commas are not tuples.
+            elif c[0] == '(' and not len(c) == 2 \
+                    and not(c[1].type == 'testlist_comp' and
+                            len(c[1].children) > 1):
+                return self.eval_element(context, c[1])
+
+            try:
+                comp_for = c[1].children[1]
+            except (IndexError, AttributeError):
+                pass
+            else:
+                if comp_for == ':':
+                    # Dict comprehensions have a colon at the 3rd index.
+                    try:
+                        comp_for = c[1].children[3]
+                    except IndexError:
+                        pass
+
+                if comp_for.type == 'comp_for':
+                    return set([iterable.Comprehension.from_atom(self, context, atom)])
+
+            # It's a dict/list/tuple literal.
+            array_node = c[1]
+            try:
+                array_node_c = array_node.children
+            except AttributeError:
+                array_node_c = []
+            if c[0] == '{' and (array_node == '}' or ':' in array_node_c):
+                context = iterable.DictLiteralContext(self, context, atom)
+            else:
+                context = iterable.SequenceLiteralContext(self, context, atom)
+            return set([context])
+
+    def eval_trailer(self, context, types, trailer):
+        trailer_op, node = trailer.children[:2]
+        if node == ')':  # `arglist` is optional.
+            node = ()
+
+        new_types = set()
+        if trailer_op == '[':
+            new_types |= iterable.py__getitem__(self, context, types, trailer)
+        else:
+            for typ in types:
+                debug.dbg('eval_trailer: %s in scope %s', trailer, typ)
+                if trailer_op == '.':
+                    new_types |= typ.py__getattribute__(
+                        name_context=context,
+                        name_or_str=node
+                    )
+                elif trailer_op == '(':
+                    arguments = param.TreeArguments(self, context, node, trailer)
+                    new_types |= self.execute(typ, arguments)
+        return new_types
+
+    @debug.increase_indent
+    def execute(self, obj, arguments):
+        if not isinstance(arguments, param.AbstractArguments):
+            raise NotImplementedError
+            arguments = param.Arguments(self, arguments)
+
+        if self.is_analysis:
+            arguments.eval_all()
+
+        debug.dbg('execute: %s %s', obj, arguments)
+        try:
+            # Some stdlib functions like super(), namedtuple(), etc. have been
+            # hard-coded in Jedi to support them.
+            return stdlib.execute(self, obj, arguments)
+        except stdlib.NotInStdLib:
+            pass
+
+        try:
+            func = obj.py__call__
+        except AttributeError:
+            debug.warning("no execution possible %s", obj)
+            return set()
+        else:
+            types = func(arguments)
+            debug.dbg('execute result: %s in %s', types, obj)
+            return types
 
     def goto_definitions(self, context, name):
-        def_ = name.get_definition(import_name_always=True)
-        if def_ is not None:
-            type_ = def_.type
-            if type_ == 'classdef':
-                return [ClassContext(self, context, name.parent)]
-            elif type_ == 'funcdef':
-                return [FunctionContext(self, context, name.parent)]
-
-            if type_ == 'expr_stmt':
-                is_simple_name = name.parent.type not in ('power', 'trailer')
-                if is_simple_name:
-                    return eval_expr_stmt(context, def_, name)
-            if type_ == 'for_stmt':
-                container_types = context.eval_node(def_.children[3])
+        def_ = name.get_definition()
+        is_simple_name = name.parent.type not in ('power', 'trailer')
+        if is_simple_name:
+            if name.parent.type == 'classdef' and name.parent.name == name:
+                return [er.ClassContext(self, name.parent, context)]
+            elif name.parent.type == 'funcdef':
+                return [er.FunctionContext(self, context, name.parent)]
+            elif name.parent.type == 'file_input':
+                raise NotImplementedError
+            if def_.type == 'expr_stmt' and name in def_.get_defined_names():
+                return self.eval_statement(context, def_, name)
+            elif def_.type == 'for_stmt' and \
+                    name.start_pos < def_.children[1].end_pos:
+                container_types = self.eval_element(context, def_.children[3])
                 cn = ContextualizedNode(context, def_.children[3])
-                for_types = iterate_contexts(container_types, cn)
+                for_types = iterable.py__iter__types(self, container_types, cn)
                 c_node = ContextualizedName(context, name)
-                return check_tuple_assignments(self, c_node, for_types)
-            if type_ in ('import_from', 'import_name'):
+                return finder.check_tuple_assignments(self, c_node, for_types)
+            elif def_.type in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
 
         return helpers.evaluate_call_of_leaf(context, name)
 
     def goto(self, context, name):
-        definition = name.get_definition(import_name_always=True)
-        if definition is not None:
-            type_ = definition.type
-            if type_ == 'expr_stmt':
-                # Only take the parent, because if it's more complicated than just
-                # a name it's something you can "goto" again.
-                is_simple_name = name.parent.type not in ('power', 'trailer')
-                if is_simple_name:
-                    return [TreeNameDefinition(context, name)]
-            elif type_ == 'param':
-                return [ParamName(context, name)]
-            elif type_ in ('funcdef', 'classdef'):
-                return [TreeNameDefinition(context, name)]
-            elif type_ in ('import_from', 'import_name'):
-                module_names = imports.infer_import(context, name, is_goto=True)
-                return module_names
-
+        stmt = name.get_definition()
         par = name.parent
-        node_type = par.type
-        if node_type == 'argument' and par.children[1] == '=' and par.children[0] == name:
+        typ = par.type
+        if typ == 'argument' and par.children[1] == '=' and par.children[0] == name:
             # Named param goto.
             trailer = par.parent
             if trailer.type == 'arglist':
                 trailer = trailer.parent
             if trailer.type != 'classdef':
                 if trailer.type == 'decorator':
-                    context_set = context.eval_node(trailer.children[1])
+                    types = self.eval_element(context, trailer.children[1])
                 else:
                     i = trailer.parent.children.index(trailer)
                     to_evaluate = trailer.parent.children[:i]
-                    if to_evaluate[0] == 'await':
-                        to_evaluate.pop(0)
-                    context_set = context.eval_node(to_evaluate[0])
+                    types = self.eval_element(context, to_evaluate[0])
                     for trailer in to_evaluate[1:]:
-                        context_set = eval_trailer(context, context_set, trailer)
+                        types = self.eval_trailer(context, types, trailer)
                 param_names = []
-                for context in context_set:
+                for typ in types:
                     try:
-                        get_param_names = context.get_param_names
+                        get_param_names = typ.get_param_names
                     except AttributeError:
                         pass
                     else:
@@ -280,28 +493,38 @@ class Evaluator(object):
                             if param_name.string_name == name.value:
                                 param_names.append(param_name)
                 return param_names
-        elif node_type == 'dotted_name':  # Is a decorator.
+        elif typ == 'expr_stmt' and name in par.get_defined_names():
+            # Only take the parent, because if it's more complicated than just
+            # a name it's something you can "goto" again.
+            return [TreeNameDefinition(context, name)]
+        elif typ == 'param' and par.name:
+            return [ParamName(context, name)]
+        elif typ in ('param', 'funcdef', 'classdef') and par.name is name:
+            return [TreeNameDefinition(context, name)]
+        elif isinstance(stmt, tree.Import):
+            module_names = imports.infer_import(context, name, is_goto=True)
+            return module_names
+        elif typ == 'dotted_name':  # Is a decorator.
             index = par.children.index(name)
             if index > 0:
                 new_dotted = helpers.deep_ast_copy(par)
                 new_dotted.children[index - 1:] = []
-                values = context.eval_node(new_dotted)
+                values = self.eval_element(context, new_dotted)
                 return unite(
                     value.py__getattribute__(name, name_context=context, is_goto=True)
                     for value in values
                 )
 
-        if node_type == 'trailer' and par.children[0] == '.':
+        if typ == 'trailer' and par.children[0] == '.':
             values = helpers.evaluate_call_of_leaf(context, name, cut_own_trailer=True)
             return unite(
                 value.py__getattribute__(name, name_context=context, is_goto=True)
                 for value in values
             )
         else:
-            stmt = tree.search_ancestor(
-                name, 'expr_stmt', 'lambdef'
-            ) or name
-            if stmt.type == 'lambdef':
+            if stmt.type != 'expr_stmt':
+                # We only need to adjust the start_pos for statements, because
+                # there the name cannot be used.
                 stmt = name
             return context.py__getattribute__(
                 name,
@@ -340,7 +563,7 @@ class Evaluator(object):
                         parent_context.parent_context, scope_node
                     )
                 else:
-                    func = FunctionContext(
+                    func = er.FunctionContext(
                         self,
                         parent_context,
                         scope_node
@@ -349,7 +572,7 @@ class Evaluator(object):
                     return func.get_function_execution()
                 return func
             elif scope_node.type == 'classdef':
-                class_context = ClassContext(self, parent_context, scope_node)
+                class_context = er.ClassContext(self, scope_node, parent_context)
                 if child_is_funcdef:
                     # anonymous instance
                     return AnonymousInstance(self, parent_context, class_context)
@@ -358,7 +581,7 @@ class Evaluator(object):
             elif scope_node.type == 'comp_for':
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context
-                return CompForContext.from_comp_for(parent_context, scope_node)
+                return iterable.CompForContext.from_comp_for(parent_context, scope_node)
             raise Exception("There's a scope that was not managed.")
 
         base_node = base_context.tree_node
@@ -366,21 +589,9 @@ class Evaluator(object):
         if node_is_context and parser_utils.is_scope(node):
             scope_node = node
         else:
-            if node.parent.type in ('funcdef', 'classdef') and node.parent.name == node:
+            if node.parent.type in ('funcdef', 'classdef'):
                 # When we're on class/function names/leafs that define the
                 # object itself and not its contents.
                 node = node.parent
             scope_node = parent_scope(node)
         return from_scope_node(scope_node, is_nested=True, node_is_object=node_is_object)
-
-    def parse_and_get_code(self, code=None, path=None, **kwargs):
-        if self.allow_different_encoding:
-            if code is None:
-                with open(path, 'rb') as f:
-                    code = f.read()
-            code = python_bytes_to_unicode(code, errors='replace')
-
-        return self.grammar.parse(code=code, path=path, **kwargs), code
-
-    def parse(self, *args, **kwargs):
-        return self.parse_and_get_code(*args, **kwargs)[0]

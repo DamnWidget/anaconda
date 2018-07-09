@@ -12,10 +12,10 @@ there are global variables, which are holding the cache information. Some of
 these variables are being cleaned after every API usage.
 """
 import time
-from functools import wraps
+import inspect
 
 from jedi import settings
-from parso.cache import parser_cache
+from jedi.parser.cache import parser_cache
 
 _time_caches = {}
 
@@ -46,6 +46,8 @@ def underscore_memoization(func):
             return getattr(self, name)
         except AttributeError:
             result = func(self)
+            if inspect.isgenerator(result):
+                result = list(result)
             setattr(self, name, result)
             return result
 
@@ -75,7 +77,7 @@ def clear_time_caches(delete_all=False):
                     del tc[key]
 
 
-def call_signature_time_cache(time_add_setting):
+def time_cache(time_add_setting):
     """
     This decorator works as follows: Call it with a setting and after that
     use the function with a callable that returns the key.
@@ -107,31 +109,8 @@ def call_signature_time_cache(time_add_setting):
     return _temp
 
 
-def time_cache(seconds):
-    def decorator(func):
-        cache = {}
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            key = (args, frozenset(kwargs.items()))
-            try:
-                created, result = cache[key]
-                if time.time() < created + seconds:
-                    return result
-            except KeyError:
-                pass
-            result = func(*args, **kwargs)
-            cache[key] = time.time(), result
-            return result
-
-        wrapper.clear_cache = lambda: cache.clear()
-        return wrapper
-    return decorator
-
-
 def memoize_method(method):
     """A normal memoize function."""
-    @wraps(method)
     def wrapper(self, *args, **kwargs):
         cache_dict = self.__dict__.setdefault('_memoize_method_dct', {})
         dct = cache_dict.setdefault(method, {})

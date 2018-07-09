@@ -1,35 +1,96 @@
+import glob
 import os
+import sys
+from jedi.evaluate.site import addsitedir
 
-from jedi._compatibility import unicode, force_unicode, all_suffixes
-from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.base_context import ContextualizedNode
-from jedi.evaluate.helpers import is_string
-from jedi.common.utils import traverse_parents
-from jedi.parser_utils import get_cached_code_lines
-from jedi import settings
+from jedi._compatibility import exec_function, unicode
+from jedi.parser.python import tree
+from jedi.parser.python import parse
+from jedi.evaluate.cache import memoize_default
 from jedi import debug
+from jedi import common
+from jedi.evaluate.compiled import CompiledObject
+from jedi.evaluate.context import ContextualizedNode
 
 
-def _abs_path(module_context, path):
-    if os.path.isabs(path):
-        return path
+def get_venv_path(venv):
+    """Get sys.path for specified virtual environment."""
+    sys_path = _get_venv_path_dirs(venv)
+    with common.ignored(ValueError):
+        sys_path.remove('')
+    sys_path = _get_sys_path_with_egglinks(sys_path)
+    # As of now, get_venv_path_dirs does not scan built-in pythonpath and
+    # user-local site-packages, let's approximate them using path from Jedi
+    # interpreter.
+    return sys_path + sys.path
 
-    module_path = module_context.py__file__()
-    if module_path is None:
-        # In this case we have no idea where we actually are in the file
-        # system.
-        return None
 
-    base_dir = os.path.dirname(module_path)
-    path = force_unicode(path)
-    return os.path.abspath(os.path.join(base_dir, path))
+def _get_sys_path_with_egglinks(sys_path):
+    """Find all paths including those referenced by egg-links.
+
+    Egg-link-referenced directories are inserted into path immediately before
+    the directory on which their links were found.  Such directories are not
+    taken into consideration by normal import mechanism, but they are traversed
+    when doing pkg_resources.require.
+    """
+    result = []
+    for p in sys_path:
+        # pkg_resources does not define a specific order for egg-link files
+        # using os.listdir to enumerate them, we're sorting them to have
+        # reproducible tests.
+        for egg_link in sorted(glob.glob(os.path.join(p, '*.egg-link'))):
+            with open(egg_link) as fd:
+                for line in fd:
+                    line = line.strip()
+                    if line:
+                        result.append(os.path.join(p, line))
+                        # pkg_resources package only interprets the first
+                        # non-empty line in egg-link files.
+                        break
+        result.append(p)
+    return result
+
+
+def _get_venv_path_dirs(venv):
+    """Get sys.path for venv without starting up the interpreter."""
+    venv = os.path.abspath(venv)
+    sitedir = _get_venv_sitepackages(venv)
+    sys_path = []
+    addsitedir(sys_path, sitedir)
+    return sys_path
+
+
+def _get_venv_sitepackages(venv):
+    if os.name == 'nt':
+        p = os.path.join(venv, 'lib', 'site-packages')
+    else:
+        p = os.path.join(venv, 'lib', 'python%d.%d' % sys.version_info[:2],
+                         'site-packages')
+    return p
+
+
+def _execute_code(module_path, code):
+    c = "import os; from os.path import *; result=%s"
+    variables = {'__file__': module_path}
+    try:
+        exec_function(c % code, variables)
+    except Exception:
+        debug.warning('sys.path manipulation detected, but failed to evaluate.')
+    else:
+        try:
+            res = variables['result']
+            if isinstance(res, str):
+                return [os.path.abspath(res)]
+        except KeyError:
+            pass
+    return []
 
 
 def _paths_from_assignment(module_context, expr_stmt):
     """
     Extracts the assigned strings from an assignment that looks as follows::
 
-        sys.path[0:0] = ['module/path', 'another/module/path']
+    >>> sys.path[0:0] = ['module/path', 'another/module/path']
 
     This function is in general pretty tolerant (and therefore 'buggy').
     However, it's not a big issue usually to add more paths to Jedi's sys_path,
@@ -47,8 +108,8 @@ def _paths_from_assignment(module_context, expr_stmt):
             assert trailer.children[0] == '.' and trailer.children[1].value == 'path'
             # TODO Essentially we're not checking details on sys.path
             # manipulation. Both assigment of the sys.path and changing/adding
-            # parts of the sys.path are the same: They get added to the end of
-            # the current sys.path.
+            # parts of the sys.path are the same: They get added to the current
+            # sys.path.
             """
             execution = c[2]
             assert execution.children[0] == '['
@@ -59,40 +120,34 @@ def _paths_from_assignment(module_context, expr_stmt):
         except AssertionError:
             continue
 
+        from jedi.evaluate.iterable import py__iter__
+        from jedi.evaluate.precedence import is_string
         cn = ContextualizedNode(module_context.create_context(expr_stmt), expr_stmt)
-        for lazy_context in cn.infer().iterate(cn):
+        for lazy_context in py__iter__(module_context.evaluator, cn.infer(), cn):
             for context in lazy_context.infer():
                 if is_string(context):
-                    abs_path = _abs_path(module_context, context.get_safe_value())
-                    if abs_path is not None:
-                        yield abs_path
+                    yield context.obj
 
 
-def _paths_from_list_modifications(module_context, trailer1, trailer2):
+def _paths_from_list_modifications(module_path, trailer1, trailer2):
     """ extract the path from either "sys.path.append" or "sys.path.insert" """
     # Guarantee that both are trailers, the first one a name and the second one
     # a function execution with at least one param.
     if not (trailer1.type == 'trailer' and trailer1.children[0] == '.'
             and trailer2.type == 'trailer' and trailer2.children[0] == '('
             and len(trailer2.children) == 3):
-        return
+        return []
 
     name = trailer1.children[1].value
     if name not in ['insert', 'append']:
-        return
+        return []
     arg = trailer2.children[1]
     if name == 'insert' and len(arg.children) in (3, 4):  # Possible trailing comma.
         arg = arg.children[2]
-
-    for context in module_context.create_context(arg).eval_node(arg):
-        if is_string(context):
-            abs_path = _abs_path(module_context, context.get_safe_value())
-            if abs_path is not None:
-                yield abs_path
+    return _execute_code(module_path, arg.get_code())
 
 
-@evaluator_method_cache(default=[])
-def check_sys_path_modifications(module_context):
+def _check_module(module_context):
     """
     Detect sys.path modifications within module.
     """
@@ -101,61 +156,81 @@ def check_sys_path_modifications(module_context):
             power = name.parent.parent
             if power.type in ('power', 'atom_expr'):
                 c = power.children
-                if c[0].type == 'name' and c[0].value == 'sys' \
+                if isinstance(c[0], tree.Name) and c[0].value == 'sys' \
                         and c[1].type == 'trailer':
                     n = c[1].children[1]
-                    if n.type == 'name' and n.value == 'path':
+                    if isinstance(n, tree.Name) and n.value == 'path':
                         yield name, power
 
-    if module_context.tree_node is None:
-        return []
+    sys_path = list(module_context.evaluator.sys_path)  # copy
+    if isinstance(module_context, CompiledObject):
+        return sys_path
 
-    added = []
     try:
         possible_names = module_context.tree_node.get_used_names()['path']
     except KeyError:
         pass
     else:
         for name, power in get_sys_path_powers(possible_names):
-            expr_stmt = power.parent
+            stmt = name.get_definition()
             if len(power.children) >= 4:
-                added.extend(
+                sys_path.extend(
                     _paths_from_list_modifications(
-                        module_context, *power.children[2:4]
+                        module_context.py__file__(), *power.children[2:4]
                     )
                 )
-            elif expr_stmt is not None and expr_stmt.type == 'expr_stmt':
-                added.extend(_paths_from_assignment(module_context, expr_stmt))
-    return added
+            elif name.get_definition().type == 'expr_stmt':
+                sys_path.extend(_paths_from_assignment(module_context, stmt))
+    return sys_path
 
 
-def discover_buildout_paths(evaluator, script_path):
+@memoize_default(evaluator_is_first_arg=True, default=[])
+def sys_path_with_modifications(evaluator, module_context):
+    path = module_context.py__file__()
+    if path is None:
+        # Support for modules without a path is bad, therefore return the
+        # normal path.
+        return list(evaluator.sys_path)
+
+    curdir = os.path.abspath(os.curdir)
+    #TODO why do we need a chdir?
+    with common.ignored(OSError):
+        os.chdir(os.path.dirname(path))
+
     buildout_script_paths = set()
 
-    for buildout_script_path in _get_buildout_script_paths(script_path):
+    result = _check_module(module_context)
+    result += _detect_django_path(path)
+    for buildout_script_path in _get_buildout_script_paths(path):
         for path in _get_paths_from_buildout_script(evaluator, buildout_script_path):
             buildout_script_paths.add(path)
-
-    return buildout_script_paths
+    # cleanup, back to old directory
+    os.chdir(curdir)
+    return list(result) + list(buildout_script_paths)
 
 
 def _get_paths_from_buildout_script(evaluator, buildout_script_path):
     try:
-        module_node = evaluator.parse(
+        module_node = parse(
             path=buildout_script_path,
-            cache=True,
-            cache_path=settings.cache_directory
+            grammar=evaluator.grammar,
+            cache=True
         )
     except IOError:
         debug.warning('Error trying to read buildout_script: %s', buildout_script_path)
         return
 
-    from jedi.evaluate.context import ModuleContext
-    module = ModuleContext(
-        evaluator, module_node, buildout_script_path,
-        code_lines=get_cached_code_lines(evaluator.grammar, buildout_script_path),
-    )
-    for path in check_sys_path_modifications(module):
+    from jedi.evaluate.representation import ModuleContext
+    for path in _check_module(ModuleContext(evaluator, module_node, buildout_script_path)):
+        yield path
+
+
+def traverse_parents(path):
+    while True:
+        new = os.path.dirname(path)
+        if new == path:
+            return
+        path = new
         yield path
 
 
@@ -166,61 +241,44 @@ def _get_parent_dir_with_file(path, filename):
     return None
 
 
-def _get_buildout_script_paths(search_path):
+def _detect_django_path(module_path):
+    """ Detects the path of the very well known Django library (if used) """
+    result = []
+
+    for parent in traverse_parents(module_path):
+        with common.ignored(IOError):
+            with open(parent + os.path.sep + 'manage.py'):
+                debug.dbg('Found django path: %s', module_path)
+                result.append(parent)
+    return result
+
+
+def _get_buildout_script_paths(module_path):
     """
     if there is a 'buildout.cfg' file in one of the parent directories of the
     given module it will return a list of all files in the buildout bin
     directory that look like python files.
 
-    :param search_path: absolute path to the module.
-    :type search_path: str
+    :param module_path: absolute path to the module.
+    :type module_path: str
     """
-    project_root = _get_parent_dir_with_file(search_path, 'buildout.cfg')
+    project_root = _get_parent_dir_with_file(module_path, 'buildout.cfg')
     if not project_root:
-        return
+        return []
     bin_path = os.path.join(project_root, 'bin')
     if not os.path.exists(bin_path):
-        return
-
+        return []
+    extra_module_paths = []
     for filename in os.listdir(bin_path):
         try:
             filepath = os.path.join(bin_path, filename)
             with open(filepath, 'r') as f:
                 firstline = f.readline()
                 if firstline.startswith('#!') and 'python' in firstline:
-                    yield filepath
+                    extra_module_paths.append(filepath)
         except (UnicodeDecodeError, IOError) as e:
-            # Probably a binary file; permission error or race cond. because
-            # file got deleted. Ignore it.
+            # Probably a binary file; permission error or race cond. because file got deleted
+            # ignore
             debug.warning(unicode(e))
             continue
-
-
-def dotted_path_in_sys_path(sys_path, module_path):
-    """
-    Returns the dotted path inside a sys.path.
-    """
-    # First remove the suffix.
-    for suffix in all_suffixes():
-        if module_path.endswith(suffix):
-            module_path = module_path[:-len(suffix)]
-        break
-    else:
-        # There should always be a suffix in a valid Python file on the path.
-        return None
-
-    if module_path.startswith(os.path.sep):
-        # The paths in sys.path most of the times don't end with a slash.
-        module_path = module_path[1:]
-
-    for p in sys_path:
-        if module_path.startswith(p):
-            rest = module_path[len(p):]
-            if rest:
-                split = rest.split(os.path.sep)
-                for string in split:
-                    if not string or '.' in string:
-                        return None
-                return '.'.join(split)
-
-    return None
+    return extra_module_paths
