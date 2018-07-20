@@ -388,9 +388,10 @@ def get_mypy_settings(view):
 
     mypy_settings = []
     if get_settings(view, 'mypy_silent_imports', False):
-        mypy_settings.append('--silent-imports')
+        mypy_settings.append('--ignore-missing-imports')
+        mypy_settings.append('--follow-imports=skip') 
     if get_settings(view, 'mypy_almost_silent', False):
-        mypy_settings.append('--almost-silent')
+        mypy_settings.append('--follow-imports=error')
     if get_settings(view, 'mypy_py2', False):
         mypy_settings.append('--py2')
     if get_settings(view, 'mypy_disallow_untyped_calls', False):
