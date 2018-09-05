@@ -220,7 +220,7 @@ def get_settings(view, name, default=None):
             while True:
                 environfile = os.path.join(dirname, '.anaconda')
                 if os.path.exists(environfile) and os.path.isfile(environfile):
-                    print("Environ found on %s" % environfile)
+                    # print("Environ found on %s" % environfile)
                     with open(environfile, 'r') as jsonfile:
                         try:
                             data = json.loads(jsonfile.read())
