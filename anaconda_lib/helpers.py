@@ -208,7 +208,15 @@ def get_settings(view, name, default=None):
     if (name in ('python_interpreter', 'extra_paths') and not
             ENVIRON_HOOK_INVALID[view.id()]):
         if view.window() is not None and view.window().folders():
-            dirname = view.window().folders()[0]
+            allow_multiple_env_hooks = get_settings(
+                view,
+                'anaconda_allow_project_environment_hooks',
+                False
+            )
+            if allow_multiple_env_hooks:
+                dirname = os.path.dirname(view.file_name())
+            else:
+                dirname = view.window().folders()[0]
             while True:
                 environfile = os.path.join(dirname, '.anaconda')
                 if os.path.exists(environfile) and os.path.isfile(environfile):
