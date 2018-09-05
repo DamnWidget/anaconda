@@ -682,7 +682,14 @@
         If this is set to true, anaconda will unload plugins that
         make it malfunction interfering with it
     */
-    "auto_unload_conflictive_plugins": true
+    "auto_unload_conflictive_plugins": true,
+    /*
+        If this is set to true, anaconda will search for environment hook
+        files in any directory level down to the one the current file is in
+        as opposed to the default where it will only search down to the
+        root of your working directory.
+    */
+    "anaconda_allow_project_environment_hooks": false
 }
 
 // vim: set ft=javascript:
