@@ -47,7 +47,7 @@ def dot_completion(view):
         return True
 
     for trigger in view.settings().get('auto_complete_triggers', []):
-        if trigger.get('character', '') == '.':
+        if trigger.get('characters', '') == '.':
             if 'source.python' in trigger.get('selector'):
                 return True
 
@@ -66,7 +66,7 @@ def enable_dot_completion(view):
     triggers = view.settings().get('auto_complete_triggers', [])
     triggers.append({
         'characters': '.',
-        'selector': 'source.python - string - constant.numeric'
+        'selector': 'source.python - string - comment - constant.numeric'
     })
     view.settings().set('auto_complete_triggers', triggers)
 
