@@ -8,7 +8,7 @@ import sublime
 
 from ..logger import Log
 from .worker import Worker
-from ..helpers import project_name
+from ..helpers import project_name, get_socket_timeout
 from ..constants import WorkerStatus
 from ..builder.python_builder import AnacondaSetPythonBuilder
 
@@ -30,10 +30,11 @@ class LocalWorker(Worker):
             self.tip = self.process.tip
             return False
 
+        timeout = get_socket_timeout(0.2)
         start = time.time()
         times = 1
-        interval = 2
-        while not self._status(0.20):
+        interval = timeout * 10
+        while not self._status(timeout):
             if time.time() - start >= interval:  # expressed in seconds
                 msg = '{}. tried to connect {} times during {} seconds'
                 self.error = msg.format(self.error, times, interval)
