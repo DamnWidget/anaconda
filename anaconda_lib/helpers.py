@@ -380,6 +380,17 @@ def get_window_view(vid):
             return view
 
 
+def get_socket_timeout(default):
+    """
+    Some systems with weird enterprise security stuff can take a while
+    to return a socket - permit overrides to default timeouts. Same thing
+    occurs with certain other sublime plugins added. This lets the user
+    set a timeout appropriate to their system without swallowing all
+    startup errors
+    """
+    return get_settings(active_view(), 'socket_timeout', default)
+
+
 def cache(func):
     """
     Stupid and simplistic cache system that caches results from functions
