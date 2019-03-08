@@ -275,8 +275,8 @@ def expand(view, path):
 
     window = view.window()
     if window is not None:
-        tmp = sublime.expand_variables(path, window.extract_variables())
-        tmp = os.path.expanduser(os.path.expandvars(tmp))
+        tmp = os.path.expanduser(os.path.expandvars(path))
+        tmp = sublime.expand_variables(tmp, window.extract_variables())
     else:
         return path
 
