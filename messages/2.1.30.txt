@@ -14,3 +14,4 @@ Welcome to new anaconda v2.1.30, what can do you find in this minor release?
 ## Fixes
     - Fix typos on configuration file documenation
     - Add custom settings to expose socket stablishment timeout to the users
+    - Upgrade pyflakes to 2.1.1 to improve the handling of type annotations
