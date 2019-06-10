@@ -1,0 +1,20 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+Anaconda v2.1.31
+================
+
+Welcome to new anaconda v2.1.31, what can do you find in this minor release?
+
+## Upgrades
+    - PyFlakes upgraded to 2.1.1 it will fix #746
+
+## Fixes
+    - Upgrade pyflakes to 2.1.1 to improve the handling of type annotations
+    - Now anaconda does not ignores `$VIRTUAL_ENV` anymore
+    - Fix WSL-1903 problem
