@@ -154,6 +154,9 @@ class JSONServer(asyncore.dispatcher):
         self.last_call = time.time()
 
         self.bind(self.address)
+        if address_family == socket.AF_UNIX:
+            # WSL 1903 fix
+            os.chmod(self.address, 0o600)
         logging.debug('bind: address=%s' % (address,))
         self.listen(self.request_queue_size)
         logging.debug('listen: backlog=%d' % (self.request_queue_size,))
