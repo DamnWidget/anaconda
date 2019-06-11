@@ -154,7 +154,7 @@ class JSONServer(asyncore.dispatcher):
         self.last_call = time.time()
 
         self.bind(self.address)
-        if self.address_family == socket.AF_UNIX:
+        if platform.system().lower() != 'linux':
             # WSL 1903 fix
             os.chmod(self.address, 0o600)
         logging.debug('bind: address=%s' % (address,))
