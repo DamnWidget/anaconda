@@ -6,10 +6,10 @@
                                      The Sublime Text 3 Python IDE
 
 
-Anaconda v2.1.32
+Anaconda v2.1.33
 ================
 
-Welcome to new anaconda v2.1.32, what can do you find in this minor release?
+Welcome to new anaconda v2.1.33, what can do you find in this minor release?
 
 ## Fixes
-    - Fixing a nasty socket problem occurring in WSL 1903
+    - Further fixing a bug introduced due to Windows WSL 1903 release

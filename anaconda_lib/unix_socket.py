@@ -47,3 +47,10 @@ class UnixSocketPath(object):
             )
 
         return socket_path
+
+
+def get_current_umask():
+    'Return the current umask without changing it.'
+    current_umask = os.umask(0)
+    os.umask(current_umask)
+    return current_umask
