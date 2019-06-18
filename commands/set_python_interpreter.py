@@ -59,7 +59,7 @@ class AnacondaSetPythonInterpreter(sublime_plugin.TextCommand):
 
     def get_project_data(self) -> Dict[str, Any]:
         """Return the project data for the current window"""
-        return sublime.active_window().project_data()
+        return sublime.active_window().project_data() or {}
 
     def get_current_interpreter_path(self) -> str:
         """Returns the current path from the settings if possible"""
