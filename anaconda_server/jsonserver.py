@@ -339,6 +339,7 @@ if __name__ == "__main__":
     logger = get_logger(log_directory)
 
     try:
+        server = None
         if not LINUX:
             server = JSONServer(('localhost', port))
         else:
@@ -362,7 +363,8 @@ if __name__ == "__main__":
     except Exception as error:
         log_traceback()
         logger.error(str(error))
-        server.shutdown()
+        if server is not None:
+            server.shutdown()
         sys.exit(-1)
 
     server.logger = logger
