@@ -14,24 +14,31 @@ import subprocess
 from subprocess import PIPE, Popen
 
 
-MYPY_SUPPORTED = False
-MYPY_VERSION = None
-try:
-    from mypy import main as mypy
-    MYPY_SUPPORTED = True
-    MYPY_VERSION = tuple(
-      int(i) for i in mypy.__version__.replace('-dev', '').split('.')
-    )
-    del mypy
-except ImportError:
-    print('MyPy is enabled but we could not import it')
-    logging.info('MyPy is enabled but we could not import it')
-    pass
+def parse_mypy_version():
+    try:
+        from mypy import main as mypy
+        version = mypy.__version__
+        if "dev" in version:
+            # Handle when Mypy is installed directly from github:
+            # eg: 0.730+dev.ddec163790d107f1fd9982f19cbfa0b6966c2eea
+            version = version.split("+dev.")[0]
+            # Handle old style Mypy version: 0.480-dev
+            version = version.replace('-dev', '')
+
+        tuple_version = tuple(int(i) for i in version.split('.'))
+        while len(tuple_version) < 3:
+            tuple_version += (0,)
+        return tuple_version
+    except ImportError:
+        print('MyPy is enabled but we could not import it')
+        logging.info('MyPy is enabled but we could not import it')
+        return None
 
 
 class MyPy(object):
     """MyPy class for Anaconda
     """
+    VERSION = parse_mypy_version()
 
     def __init__(self, code, filename, mypypath, settings):
         self.code = code
@@ -50,7 +57,7 @@ class MyPy(object):
         """Check the code with MyPy check types
         """
 
-        if not MYPY_SUPPORTED:
+        if MyPy.VERSION is None:
             raise RuntimeError("MyPy was not found")
 
         errors = []
@@ -67,7 +74,7 @@ class MyPy(object):
         """
 
         err_ctx = '--hide-error-context'
-        if MYPY_VERSION < (0, 4, 5):
+        if MyPy.VERSION < (0, 4, 5):
             err_ctx = '--suppress-error-context'
 
         args = shlex.split('\'{0}\' -O -m mypy {1} {2} \'{3}\''.format(
