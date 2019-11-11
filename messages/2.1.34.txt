@@ -14,3 +14,4 @@ Welcome to new anaconda v2.1.34, what can do you find in this minor release?
 ## Fixes
     - Allow params in file:// interpreter path (https://github.com/DamnWidget/anaconda/pull/838)
     - Handle MyPy dev versions (https://github.com/DamnWidget/anaconda/pull/834)
+    - Add Rename object under cursor to command palette
