@@ -86,5 +86,9 @@
     {
         "caption": "Anaconda: Run Last Test",
         "command": "anaconda_run_last_test"
+    },
+    {
+	"caption": "Anaconda: Rename object under cursor",
+	"command": "anaconda_rename"
     }
 ]
