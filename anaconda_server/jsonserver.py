@@ -177,10 +177,10 @@ class JSONServer(asyncore.dispatcher):
         self.handle_close()
 
     def handle_accept(self):
-        """Called when we accept and incomming connection
+        """Called when we accept and incoming connection
         """
         sock, addr = self.accept()
-        self.logger.info('Incomming connection from {0}'.format(
+        self.logger.info('Incoming connection from {0}'.format(
             repr(addr) or 'unix socket')
         )
         self.handler(sock, self)
