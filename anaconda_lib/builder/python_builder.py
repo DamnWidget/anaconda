@@ -68,7 +68,7 @@ class AnacondaSetPythonBuilder(object):
 
         template_file = os.path.join(
             os.path.dirname(__file__),
-            '../../', 'templates', 'python_build.tpl'
+            '..', '..', 'templates', 'python_build.tpl'
         )
         with open(template_file, 'r', encoding='utf8') as tplfile:
             template = Template(tplfile.read())
