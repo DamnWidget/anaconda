@@ -153,7 +153,7 @@ class Interpreter(object):
             )
             
             if len(urldata.scheme) == 1:
-                # Assume this comes from a Windows path if schema is a single character
+                # Assume this comes from a Windows path if scheme is a single character
                 python = os.path.join('{}:'.format(urldata.scheme), urldata.path)
             else:
                 python = urldata.path
