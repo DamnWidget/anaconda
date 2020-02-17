@@ -73,12 +73,16 @@ class MyPy(object):
         """Wrap calls to MyPy as a library
         """
 
+        err_sum = '--no-error-summary'
+        if MyPy.VERSION < (0, 761, 0):
+            err_sum = ''
+
         err_ctx = '--hide-error-context'
         if MyPy.VERSION < (0, 4, 5):
             err_ctx = '--suppress-error-context'
 
-        args = shlex.split('\'{0}\' -O -m mypy {1} {2} \'{3}\''.format(
-            sys.executable, err_ctx,
+        args = shlex.split('\'{0}\' -O -m mypy {1} {2} {3} \'{4}\''.format(
+            sys.executable, err_sum, err_ctx,
             ' '.join(self.settings[:-1]), self.filename)
         )
         env = os.environ.copy()
