@@ -151,7 +151,13 @@ class Interpreter(object):
                     os.path.expandvars(get_interpreter(view))
                 )
             )
-            python = urldata.path
+            
+            if len(urldata.scheme) == 1:
+                # Assume this comes from a Windows path if scheme is a single character
+                python = os.path.join('{}:'.format(urldata.scheme), urldata.path)
+            else:
+                python = urldata.path
+                
             if '$VIRTUAL_ENV' in python:
                 Log.warning(
                     'WARNING: your anaconda configured python interpreter '
