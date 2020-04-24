@@ -9,6 +9,7 @@ from nose.plugins.skip import SkipTest
 
 from handlers.python_lint_handler import PythonLintHandler
 
+PYTHON38 = sys.version_info >= (3, 8)
 PYTHON3 = sys.version_info >= (3, 0)
 PYTHON26 = sys.version_info < (2, 7)
 
@@ -107,7 +108,7 @@ async def f(a: int) -> int:
         handler.lint(self._settings, 'a = \'this is a very long string: {0}\'\n'.format('a' * 80))  # noqa
 
     def test_pep8_assignment_operator(self):
-        if not PYTHON3:
+        if not PYTHON38:
             raise SkipTest()
         self._settings['pep8'] = True
         handler = PythonLintHandler('lint', None, 0, 0, self._check_pep8)
