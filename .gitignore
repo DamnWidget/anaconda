@@ -47,3 +47,5 @@ Main.sublime-menu
 
 # mypy cache
 .mypy_cache/
+/Context.sublime-menu
+/Context.sublime-menu-hidden

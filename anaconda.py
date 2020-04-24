@@ -9,6 +9,7 @@ Anaconda is a python autocompletion and linting plugin for Sublime Text 3
 
 import os
 import sys
+import shutil
 import logging
 from string import Template
 
@@ -30,6 +31,8 @@ LOOP_RUNNING = False
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.setLevel(logging.DEBUG)
+
+CURRENT_PATH = os.path.dirname( os.path.realpath( __file__ ) )
 
 
 def plugin_loaded() -> None:
@@ -56,6 +59,42 @@ def plugin_loaded() -> None:
     if not LOOP_RUNNING:
         ioloop.loop()
 
+    install_context_menu()
+    disable_linter_context_menu()
+
+def install_context_menu():
+    origin  = os.path.join( CURRENT_PATH, 'Base Context.sublime-menu' )
+    destine = os.path.join( CURRENT_PATH, 'Context.sublime-menu' )
+
+    shutil.copy( origin, destine )
+
+class HideMenuOnActivation(sublime_plugin.EventListener):
+
+    def on_activated_async(self, view):
+        disable_linter_context_menu()
+
+def disable_linter_context_menu():
+    """
+        Disable the linter Context Menu, if not on a linter view.
+
+        Allow to hide .sublime-menu folders
+        https://github.com/SublimeTextIssues/Core/issues/1859
+    """
+    origin  = os.path.join( CURRENT_PATH, 'Context.sublime-menu' )
+    destine = os.path.join( CURRENT_PATH, 'Context.sublime-menu-hidden' )
+
+    try:
+        if is_current_view_linted( sublime.active_window().active_view() ):
+            shutil.move( destine, origin )
+
+        else:
+            shutil.move( origin, destine )
+
+    except IOError:
+        pass
+
+def is_current_view_linted(view):
+    return view.match_selector( view.sel()[0].begin(), 'source.python')
 
 def plugin_unloaded() -> None:
     """Called directly from sublime on plugin unload
