@@ -115,14 +115,17 @@ class MyPy(object):
                     self.silent and 'stub' in line.lower()):
                 continue
 
-            data = line.split(':') if os.name != 'nt' else line[2:].split(':')
+            data = line.split(
+                ':', maxsplit=3
+            ) if os.name != 'nt' else line[2:].split(':', maxsplit=3)
+
             errors.append({
                 'level': 'W',
                 'lineno': int(data[1]),
                 'offset': 0,
                 'code': ' ',
                 'raw_error': '[W] MyPy {0}: {1}'.format(
-                    data[2], data[3]
+                    data[2].strip(), data[3].strip()
                 ),
                 'message': '[W] MyPy%s: %s',
                 'underline_range': True

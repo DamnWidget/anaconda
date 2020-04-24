@@ -240,7 +240,7 @@ async def f(a: int) -> int:
     def _check_mypy(self, result):
         assert result['success'] is True
         assert len(result['errors']) == 1
-        assert result['errors'][0]['raw_error'] == '[W] MyPy  error:  Incompatible return value type (got "int", expected "str")'  # noqa
+        assert result['errors'][0]['raw_error'] == '[W] MyPy error: Incompatible return value type (got "int", expected "str")'  # noqa
         assert result['errors'][0]['level'] == 'W'
         assert result['uid'] == 0
         assert result['vid'] == 0
