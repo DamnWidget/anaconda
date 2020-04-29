@@ -9,6 +9,7 @@ from nose.plugins.skip import SkipTest
 
 from handlers.python_lint_handler import PythonLintHandler
 
+PYTHON38 = sys.version_info >= (3, 8)
 PYTHON3 = sys.version_info >= (3, 0)
 PYTHON26 = sys.version_info < (2, 7)
 
@@ -38,6 +39,12 @@ class TestLint(object):
 def f():
     a = 1
     [1 for a, b in [(1, 2)]]
+    '''
+
+    _lintable_assignmentoperator = '''
+def f():
+    if a := 1:
+        return a
     '''
 
     _lintable_docstring = '''
@@ -94,11 +101,18 @@ async def f(a: int) -> int:
         handler = PythonLintHandler('lint', None, 0, 0, self._check_pep8_ignores)  # noqa
         handler.lint(self._settings, self._lintable_code)
 
-    def test_pep8_max_line_lenght(self):
+    def test_pep8_max_line_length(self):
         self._settings['pep8'] = True
         self._settings['pep8_max_line_length'] = 120
         handler = PythonLintHandler('lint', None, 0, 0, self._check_pep8_max_line_length)  # noqa
         handler.lint(self._settings, 'a = \'this is a very long string: {0}\'\n'.format('a' * 80))  # noqa
+
+    def test_pep8_assignment_operator(self):
+        if not PYTHON38:
+            raise SkipTest()
+        self._settings['pep8'] = True
+        handler = PythonLintHandler('lint', None, 0, 0, self._check_pep8)
+        handler.lint(self._settings, self._lintable_assignmentoperator)
 
     def test_pep257_lint(self):
         if PYTHON26:
@@ -181,6 +195,7 @@ async def f(a: int) -> int:
         assert result['vid'] == 0
 
     def _check_pep8_max_line_length(self, result):
+        print(result)
         assert result['success'] is True
         assert len(result['errors']) == 0
         assert result['uid'] == 0

@@ -346,7 +346,7 @@ class DictComprehension(ArrayMixin, Comprehension):
     def _imitate_items(self):
         items = set(
             FakeSequence(
-                self.evaluator, 'tuple'
+                self.evaluator, 'tuple',
                 (context.LazyKnownContexts(keys), context.LazyKnownContexts(values))
             ) for keys, values in self._iterate()
         )
