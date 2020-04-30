@@ -8,10 +8,12 @@ import __future__
 import ast
 import bisect
 import collections
+import contextlib
 import doctest
 import functools
 import os
 import re
+import string
 import sys
 import tokenize
 
@@ -28,6 +30,8 @@ except AttributeError:
     PYPY = False
 
 builtin_vars = dir(__import__('__builtin__' if PY2 else 'builtins'))
+
+parse_format_string = string.Formatter().parse
 
 if PY2:
     tokenize_tokenize = tokenize.generate_tokens
@@ -69,16 +73,146 @@ else:
 if PY35_PLUS:
     FOR_TYPES = (ast.For, ast.AsyncFor)
     LOOP_TYPES = (ast.While, ast.For, ast.AsyncFor)
+    FUNCTION_TYPES = (ast.FunctionDef, ast.AsyncFunctionDef)
 else:
     FOR_TYPES = (ast.For,)
     LOOP_TYPES = (ast.While, ast.For)
+    FUNCTION_TYPES = (ast.FunctionDef,)
 
-# https://github.com/python/typed_ast/blob/55420396/ast27/Parser/tokenizer.c#L102-L104
+
+if PY38_PLUS:
+    def _is_singleton(node):  # type: (ast.AST) -> bool
+        return (
+            isinstance(node, ast.Constant) and
+            isinstance(node.value, (bool, type(Ellipsis), type(None)))
+        )
+elif not PY2:
+    def _is_singleton(node):  # type: (ast.AST) -> bool
+        return isinstance(node, (ast.NameConstant, ast.Ellipsis))
+else:
+    def _is_singleton(node):  # type: (ast.AST) -> bool
+        return (
+            isinstance(node, ast.Name) and
+            node.id in {'True', 'False', 'Ellipsis', 'None'}
+        )
+
+
+def _is_tuple_constant(node):  # type: (ast.AST) -> bool
+    return (
+        isinstance(node, ast.Tuple) and
+        all(_is_constant(elt) for elt in node.elts)
+    )
+
+
+if PY38_PLUS:
+    def _is_constant(node):
+        return isinstance(node, ast.Constant) or _is_tuple_constant(node)
+else:
+    _const_tps = (ast.Str, ast.Num)
+    if not PY2:
+        _const_tps += (ast.Bytes,)
+
+    def _is_constant(node):
+        return (
+            isinstance(node, _const_tps) or
+            _is_singleton(node) or
+            _is_tuple_constant(node)
+        )
+
+
+def _is_const_non_singleton(node):  # type: (ast.AST) -> bool
+    return _is_constant(node) and not _is_singleton(node)
+
+
+# https://github.com/python/typed_ast/blob/1.4.0/ast27/Parser/tokenizer.c#L102-L104
 TYPE_COMMENT_RE = re.compile(r'^#\s*type:\s*')
-# https://github.com/python/typed_ast/blob/55420396/ast27/Parser/tokenizer.c#L1400
-TYPE_IGNORE_RE = re.compile(TYPE_COMMENT_RE.pattern + r'ignore\s*(#|$)')
-# https://github.com/python/typed_ast/blob/55420396/ast27/Grammar/Grammar#L147
+# https://github.com/python/typed_ast/blob/1.4.0/ast27/Parser/tokenizer.c#L1408-L1413
+ASCII_NON_ALNUM = ''.join([chr(i) for i in range(128) if not chr(i).isalnum()])
+TYPE_IGNORE_RE = re.compile(
+    TYPE_COMMENT_RE.pattern + r'ignore([{}]|$)'.format(ASCII_NON_ALNUM))
+# https://github.com/python/typed_ast/blob/1.4.0/ast27/Grammar/Grammar#L147
 TYPE_FUNC_RE = re.compile(r'^(\(.*?\))\s*->\s*(.*)$')
+
+
+MAPPING_KEY_RE = re.compile(r'\(([^()]*)\)')
+CONVERSION_FLAG_RE = re.compile('[#0+ -]*')
+WIDTH_RE = re.compile(r'(?:\*|\d*)')
+PRECISION_RE = re.compile(r'(?:\.(?:\*|\d*))?')
+LENGTH_RE = re.compile('[hlL]?')
+# https://docs.python.org/3/library/stdtypes.html#old-string-formatting
+VALID_CONVERSIONS = frozenset('diouxXeEfFgGcrsa%')
+
+
+def _must_match(regex, string, pos):
+    # type: (Pattern[str], str, int) -> Match[str]
+    match = regex.match(string, pos)
+    assert match is not None
+    return match
+
+
+def parse_percent_format(s):  # type: (str) -> Tuple[PercentFormat, ...]
+    """Parses the string component of a `'...' % ...` format call
+
+    Copied from https://github.com/asottile/pyupgrade at v1.20.1
+    """
+
+    def _parse_inner():
+        # type: () -> Generator[PercentFormat, None, None]
+        string_start = 0
+        string_end = 0
+        in_fmt = False
+
+        i = 0
+        while i < len(s):
+            if not in_fmt:
+                try:
+                    i = s.index('%', i)
+                except ValueError:  # no more % fields!
+                    yield s[string_start:], None
+                    return
+                else:
+                    string_end = i
+                    i += 1
+                    in_fmt = True
+            else:
+                key_match = MAPPING_KEY_RE.match(s, i)
+                if key_match:
+                    key = key_match.group(1)  # type: Optional[str]
+                    i = key_match.end()
+                else:
+                    key = None
+
+                conversion_flag_match = _must_match(CONVERSION_FLAG_RE, s, i)
+                conversion_flag = conversion_flag_match.group() or None
+                i = conversion_flag_match.end()
+
+                width_match = _must_match(WIDTH_RE, s, i)
+                width = width_match.group() or None
+                i = width_match.end()
+
+                precision_match = _must_match(PRECISION_RE, s, i)
+                precision = precision_match.group() or None
+                i = precision_match.end()
+
+                # length modifier is ignored
+                i = _must_match(LENGTH_RE, s, i).end()
+
+                try:
+                    conversion = s[i]
+                except IndexError:
+                    raise ValueError('end-of-string while parsing format')
+                i += 1
+
+                fmt = (key, conversion_flag, width, precision, conversion)
+                yield s[string_start:string_end], fmt
+
+                in_fmt = False
+                string_start = i
+
+        if in_fmt:
+            raise ValueError('end-of-string while parsing format')
+
+    return tuple(_parse_inner())
 
 
 class _FieldsOrder(dict):
@@ -530,27 +664,80 @@ def getNodeName(node):
         return node.name
 
 
-def is_typing_overload(value, scope):
-    def is_typing_overload_decorator(node):
-        return (
-            (
-                isinstance(node, ast.Name) and
-                node.id in scope and
-                isinstance(scope[node.id], ImportationFrom) and
-                scope[node.id].fullName == 'typing.overload'
-            ) or (
-                isinstance(node, ast.Attribute) and
-                isinstance(node.value, ast.Name) and
-                node.value.id == 'typing' and
-                node.attr == 'overload'
-            )
-        )
+TYPING_MODULES = frozenset(('typing', 'typing_extensions'))
+
+
+def _is_typing_helper(node, is_name_match_fn, scope_stack):
+    """
+    Internal helper to determine whether or not something is a member of a
+    typing module. This is used as part of working out whether we are within a
+    type annotation context.
+
+    Note: you probably don't want to use this function directly. Instead see the
+    utils below which wrap it (`_is_typing` and `_is_any_typing_member`).
+    """
+
+    def _bare_name_is_attr(name):
+        for scope in reversed(scope_stack):
+            if name in scope:
+                return (
+                    isinstance(scope[name], ImportationFrom) and
+                    scope[name].module in TYPING_MODULES and
+                    is_name_match_fn(scope[name].real_name)
+                )
+
+        return False
 
     return (
-        isinstance(value.source, ast.FunctionDef) and
-        len(value.source.decorator_list) == 1 and
-        is_typing_overload_decorator(value.source.decorator_list[0])
+        (
+            isinstance(node, ast.Name) and
+            _bare_name_is_attr(node.id)
+        ) or (
+            isinstance(node, ast.Attribute) and
+            isinstance(node.value, ast.Name) and
+            node.value.id in TYPING_MODULES and
+            is_name_match_fn(node.attr)
+        )
     )
+
+
+def _is_typing(node, typing_attr, scope_stack):
+    """
+    Determine whether `node` represents the member of a typing module specified
+    by `typing_attr`.
+
+    This is used as part of working out whether we are within a type annotation
+    context.
+    """
+    return _is_typing_helper(node, lambda x: x == typing_attr, scope_stack)
+
+
+def _is_any_typing_member(node, scope_stack):
+    """
+    Determine whether `node` represents any member of a typing module.
+
+    This is used as part of working out whether we are within a type annotation
+    context.
+    """
+    return _is_typing_helper(node, lambda x: True, scope_stack)
+
+
+def is_typing_overload(value, scope_stack):
+    return (
+        isinstance(value.source, FUNCTION_TYPES) and
+        any(
+            _is_typing(dec, 'overload', scope_stack)
+            for dec in value.source.decorator_list
+        )
+    )
+
+
+def in_annotation(func):
+    @functools.wraps(func)
+    def in_annotation_func(self, *args, **kwargs):
+        with self._enter_annotation():
+            return func(self, *args, **kwargs)
+    return in_annotation_func
 
 
 def make_tokens(code):
@@ -634,11 +821,14 @@ class Checker(object):
         ast.DictComp: GeneratorScope,
     }
     if PY35_PLUS:
-        _ast_node_scope[ast.AsyncFunctionDef] = FunctionScope,
+        _ast_node_scope[ast.AsyncFunctionDef] = FunctionScope
 
     nodeDepth = 0
     offset = None
     traceTree = False
+    _in_annotation = False
+    _in_typing_literal = False
+    _in_deferred = False
 
     builtIns = set(builtin_vars).union(_MAGIC_GLOBALS)
     _customBuiltIns = os.environ.get('PYFLAKES_BUILTINS')
@@ -670,6 +860,7 @@ class Checker(object):
         for builtin in self.builtIns:
             self.addBinding(None, Builtin(builtin))
         self.handleChildren(tree)
+        self._in_deferred = True
         self.runDeferred(self._deferredFunctions)
         # Set _deferredFunctions to None so that deferFunction will fail
         # noisily if called after we've run through the deferred functions.
@@ -813,22 +1004,31 @@ class Checker(object):
     def getParent(self, node):
         # Lookup the first parent which is not Tuple, List or Starred
         while True:
-            node = node.parent
+            node = node._pyflakes_parent
             if not hasattr(node, 'elts') and not hasattr(node, 'ctx'):
                 return node
 
     def getCommonAncestor(self, lnode, rnode, stop):
-        if stop in (lnode, rnode) or not (hasattr(lnode, 'parent') and
-                                          hasattr(rnode, 'parent')):
+        if (
+                stop in (lnode, rnode) or
+                not (
+                    hasattr(lnode, '_pyflakes_parent') and
+                    hasattr(rnode, '_pyflakes_parent')
+                )
+        ):
             return None
         if lnode is rnode:
             return lnode
 
-        if (lnode.depth > rnode.depth):
-            return self.getCommonAncestor(lnode.parent, rnode, stop)
-        if (lnode.depth < rnode.depth):
-            return self.getCommonAncestor(lnode, rnode.parent, stop)
-        return self.getCommonAncestor(lnode.parent, rnode.parent, stop)
+        if (lnode._pyflakes_depth > rnode._pyflakes_depth):
+            return self.getCommonAncestor(lnode._pyflakes_parent, rnode, stop)
+        if (lnode._pyflakes_depth < rnode._pyflakes_depth):
+            return self.getCommonAncestor(lnode, rnode._pyflakes_parent, stop)
+        return self.getCommonAncestor(
+            lnode._pyflakes_parent,
+            rnode._pyflakes_parent,
+            stop,
+        )
 
     def descendantOf(self, node, ancestors, stop):
         for a in ancestors:
@@ -866,7 +1066,7 @@ class Checker(object):
         - `node` is the statement responsible for the change
         - `value` is the new value, a Binding instance
         """
-        # assert value.source in (node, node.parent):
+        # assert value.source in (node, node._pyflakes_parent):
         for scope in self.scopeStack[::-1]:
             if value.name in scope:
                 break
@@ -888,7 +1088,7 @@ class Checker(object):
                                 node, value.name, existing.source)
                 elif not existing.used and value.redefines(existing):
                     if value.name != '_' or isinstance(existing, Importation):
-                        if not is_typing_overload(existing, self.scope):
+                        if not is_typing_overload(existing, self.scopeStack):
                             self.report(messages.RedefinedWhileUnused,
                                         node, value.name, existing.source)
 
@@ -901,12 +1101,30 @@ class Checker(object):
 
         self.scope[value.name] = value
 
+    def _unknown_handler(self, node):
+        # this environment variable configures whether to error on unknown
+        # ast types.
+        #
+        # this is silent by default but the error is enabled for the pyflakes
+        # testsuite.
+        #
+        # this allows new syntax to be added to python without *requiring*
+        # changes from the pyflakes side.  but will still produce an error
+        # in the pyflakes testsuite (so more specific handling can be added if
+        # needed).
+        if os.environ.get('PYFLAKES_ERROR_UNKNOWN'):
+            raise NotImplementedError('Unexpected type: {}'.format(type(node)))
+        else:
+            self.handleChildren(node)
+
     def getNodeHandler(self, node_class):
         try:
             return self._nodeHandlers[node_class]
         except KeyError:
             nodeType = getNodeType(node_class)
-        self._nodeHandlers[node_class] = handler = getattr(self, nodeType)
+        self._nodeHandlers[node_class] = handler = getattr(
+            self, nodeType, self._unknown_handler,
+        )
         return handler
 
     def handleNodeLoad(self, node):
@@ -1005,12 +1223,12 @@ class Checker(object):
 
         parent_stmt = self.getParent(node)
         if isinstance(parent_stmt, (FOR_TYPES, ast.comprehension)) or (
-                parent_stmt != node.parent and
+                parent_stmt != node._pyflakes_parent and
                 not self.isLiteralTupleUnpacking(parent_stmt)):
             binding = Binding(name, node)
         elif name == '__all__' and isinstance(self.scope, ModuleScope):
-            binding = ExportBinding(name, node.parent, self.scope)
-        elif isinstance(getattr(node, 'ctx', None), ast.Param):
+            binding = ExportBinding(name, node._pyflakes_parent, self.scope)
+        elif PY2 and isinstance(getattr(node, 'ctx', None), ast.Param):
             binding = Argument(name, self.getScopeNode(node))
         else:
             binding = Assignment(name, node)
@@ -1022,11 +1240,11 @@ class Checker(object):
             """
             Return `True` if node is part of a conditional body.
             """
-            current = getattr(node, 'parent', None)
+            current = getattr(node, '_pyflakes_parent', None)
             while current:
                 if isinstance(current, (ast.If, ast.While, ast.IfExp)):
                     return True
-                current = getattr(current, 'parent', None)
+                current = getattr(current, '_pyflakes_parent', None)
             return False
 
         name = getNodeName(node)
@@ -1045,6 +1263,14 @@ class Checker(object):
                 del self.scope[name]
             except KeyError:
                 self.report(messages.UndefinedName, node, name)
+
+    @contextlib.contextmanager
+    def _enter_annotation(self):
+        orig, self._in_annotation = self._in_annotation, True
+        try:
+            yield
+        finally:
+            self._in_annotation = orig
 
     def _handle_type_comments(self, node):
         for (lineno, col_offset), comment in self._type_comments.get(node, ()):
@@ -1113,8 +1339,8 @@ class Checker(object):
                                         self.isDocstring(node)):
             self.futuresAllowed = False
         self.nodeDepth += 1
-        node.depth = self.nodeDepth
-        node.parent = parent
+        node._pyflakes_depth = self.nodeDepth
+        node._pyflakes_parent = parent
         try:
             handler = self.getNodeHandler(node.__class__)
             handler(node)
@@ -1153,7 +1379,8 @@ class Checker(object):
         self.scopeStack = [self.scopeStack[0]]
         node_offset = self.offset or (0, 0)
         self.pushScope(DoctestScope)
-        self.addBinding(None, Builtin('_'))
+        if '_' not in self.scopeStack[0]:
+            self.addBinding(None, Builtin('_'))
         for example in examples:
             try:
                 tree = ast.parse(example.source, "<doctest>")
@@ -1172,6 +1399,7 @@ class Checker(object):
         self.popScope()
         self.scopeStack = saved_stack
 
+    @in_annotation
     def handleStringAnnotation(self, s, node, ref_lineno, ref_col_offset, err):
         try:
             tree = ast.parse(s)
@@ -1195,6 +1423,7 @@ class Checker(object):
 
         self.handleNode(parsed_annotation, node)
 
+    @in_annotation
     def handleAnnotation(self, annotation, node):
         if isinstance(annotation, ast.Str):
             # Defer handling forward annotation.
@@ -1207,7 +1436,8 @@ class Checker(object):
                 messages.ForwardAnnotationSyntaxError,
             ))
         elif self.annotationsFutureEnabled:
-            self.deferFunction(lambda: self.handleNode(annotation, node))
+            fn = in_annotation(Checker.handleNode)
+            self.deferFunction(lambda: fn(self, annotation, node))
         else:
             self.handleNode(annotation, node)
 
@@ -1215,18 +1445,309 @@ class Checker(object):
         pass
 
     # "stmt" type nodes
-    DELETE = PRINT = FOR = ASYNCFOR = WHILE = IF = WITH = WITHITEM = \
+    DELETE = PRINT = FOR = ASYNCFOR = WHILE = WITH = WITHITEM = \
         ASYNCWITH = ASYNCWITHITEM = TRYFINALLY = EXEC = \
         EXPR = ASSIGN = handleChildren
 
     PASS = ignore
 
     # "expr" type nodes
-    BOOLOP = BINOP = UNARYOP = IFEXP = SET = \
-        CALL = REPR = ATTRIBUTE = SUBSCRIPT = \
-        STARRED = NAMECONSTANT = handleChildren
+    BOOLOP = UNARYOP = SET = \
+        REPR = ATTRIBUTE = \
+        STARRED = NAMECONSTANT = NAMEDEXPR = handleChildren
 
-    NUM = STR = BYTES = ELLIPSIS = CONSTANT = ignore
+    def SUBSCRIPT(self, node):
+        if (
+                (
+                    isinstance(node.value, ast.Name) and
+                    node.value.id == 'Literal'
+                ) or (
+                    isinstance(node.value, ast.Attribute) and
+                    node.value.attr == 'Literal'
+                )
+        ):
+            orig, self._in_typing_literal = self._in_typing_literal, True
+            try:
+                self.handleChildren(node)
+            finally:
+                self._in_typing_literal = orig
+        else:
+            if _is_any_typing_member(node.value, self.scopeStack):
+                with self._enter_annotation():
+                    self.handleChildren(node)
+            else:
+                self.handleChildren(node)
+
+    def _handle_string_dot_format(self, node):
+        try:
+            placeholders = tuple(parse_format_string(node.func.value.s))
+        except ValueError as e:
+            self.report(messages.StringDotFormatInvalidFormat, node, e)
+            return
+
+        class state:  # py2-compatible `nonlocal`
+            auto = None
+            next_auto = 0
+
+        placeholder_positional = set()
+        placeholder_named = set()
+
+        def _add_key(fmtkey):
+            """Returns True if there is an error which should early-exit"""
+            if fmtkey is None:  # end of string or `{` / `}` escapes
+                return False
+
+            # attributes / indices are allowed in `.format(...)`
+            fmtkey, _, _ = fmtkey.partition('.')
+            fmtkey, _, _ = fmtkey.partition('[')
+
+            try:
+                fmtkey = int(fmtkey)
+            except ValueError:
+                pass
+            else:  # fmtkey was an integer
+                if state.auto is True:
+                    self.report(messages.StringDotFormatMixingAutomatic, node)
+                    return True
+                else:
+                    state.auto = False
+
+            if fmtkey == '':
+                if state.auto is False:
+                    self.report(messages.StringDotFormatMixingAutomatic, node)
+                    return True
+                else:
+                    state.auto = True
+
+                fmtkey = state.next_auto
+                state.next_auto += 1
+
+            if isinstance(fmtkey, int):
+                placeholder_positional.add(fmtkey)
+            else:
+                placeholder_named.add(fmtkey)
+
+            return False
+
+        for _, fmtkey, spec, _ in placeholders:
+            if _add_key(fmtkey):
+                return
+
+            # spec can also contain format specifiers
+            if spec is not None:
+                try:
+                    spec_placeholders = tuple(parse_format_string(spec))
+                except ValueError as e:
+                    self.report(messages.StringDotFormatInvalidFormat, node, e)
+                    return
+
+                for _, spec_fmtkey, spec_spec, _ in spec_placeholders:
+                    # can't recurse again
+                    if spec_spec is not None and '{' in spec_spec:
+                        self.report(
+                            messages.StringDotFormatInvalidFormat,
+                            node,
+                            'Max string recursion exceeded',
+                        )
+                        return
+                    if _add_key(spec_fmtkey):
+                        return
+
+        # bail early if there is *args or **kwargs
+        if (
+                # python 2.x *args / **kwargs
+                getattr(node, 'starargs', None) or
+                getattr(node, 'kwargs', None) or
+                # python 3.x *args
+                any(
+                    isinstance(arg, getattr(ast, 'Starred', ()))
+                    for arg in node.args
+                ) or
+                # python 3.x **kwargs
+                any(kwd.arg is None for kwd in node.keywords)
+        ):
+            return
+
+        substitution_positional = set(range(len(node.args)))
+        substitution_named = {kwd.arg for kwd in node.keywords}
+
+        extra_positional = substitution_positional - placeholder_positional
+        extra_named = substitution_named - placeholder_named
+
+        missing_arguments = (
+            (placeholder_positional | placeholder_named) -
+            (substitution_positional | substitution_named)
+        )
+
+        if extra_positional:
+            self.report(
+                messages.StringDotFormatExtraPositionalArguments,
+                node,
+                ', '.join(sorted(str(x) for x in extra_positional)),
+            )
+        if extra_named:
+            self.report(
+                messages.StringDotFormatExtraNamedArguments,
+                node,
+                ', '.join(sorted(extra_named)),
+            )
+        if missing_arguments:
+            self.report(
+                messages.StringDotFormatMissingArgument,
+                node,
+                ', '.join(sorted(str(x) for x in missing_arguments)),
+            )
+
+    def CALL(self, node):
+        if (
+                isinstance(node.func, ast.Attribute) and
+                isinstance(node.func.value, ast.Str) and
+                node.func.attr == 'format'
+        ):
+            self._handle_string_dot_format(node)
+
+        if (
+            _is_typing(node.func, 'cast', self.scopeStack) and
+            len(node.args) >= 1 and
+            isinstance(node.args[0], ast.Str)
+        ):
+            with self._enter_annotation():
+                self.handleNode(node.args[0], node)
+
+        self.handleChildren(node)
+
+    def _handle_percent_format(self, node):
+        try:
+            placeholders = parse_percent_format(node.left.s)
+        except ValueError:
+            self.report(
+                messages.PercentFormatInvalidFormat,
+                node,
+                'incomplete format',
+            )
+            return
+
+        named = set()
+        positional_count = 0
+        positional = None
+        for _, placeholder in placeholders:
+            if placeholder is None:
+                continue
+            name, _, width, precision, conversion = placeholder
+
+            if conversion == '%':
+                continue
+
+            if conversion not in VALID_CONVERSIONS:
+                self.report(
+                    messages.PercentFormatUnsupportedFormatCharacter,
+                    node,
+                    conversion,
+                )
+
+            if positional is None and conversion:
+                positional = name is None
+
+            for part in (width, precision):
+                if part is not None and '*' in part:
+                    if not positional:
+                        self.report(
+                            messages.PercentFormatStarRequiresSequence,
+                            node,
+                        )
+                    else:
+                        positional_count += 1
+
+            if positional and name is not None:
+                self.report(
+                    messages.PercentFormatMixedPositionalAndNamed,
+                    node,
+                )
+                return
+            elif not positional and name is None:
+                self.report(
+                    messages.PercentFormatMixedPositionalAndNamed,
+                    node,
+                )
+                return
+
+            if positional:
+                positional_count += 1
+            else:
+                named.add(name)
+
+        if (
+                isinstance(node.right, (ast.List, ast.Tuple)) and
+                # does not have any *splats (py35+ feature)
+                not any(
+                    isinstance(elt, getattr(ast, 'Starred', ()))
+                    for elt in node.right.elts
+                )
+        ):
+            substitution_count = len(node.right.elts)
+            if positional and positional_count != substitution_count:
+                self.report(
+                    messages.PercentFormatPositionalCountMismatch,
+                    node,
+                    positional_count,
+                    substitution_count,
+                )
+            elif not positional:
+                self.report(messages.PercentFormatExpectedMapping, node)
+
+        if (
+                isinstance(node.right, ast.Dict) and
+                all(isinstance(k, ast.Str) for k in node.right.keys)
+        ):
+            if positional and positional_count > 1:
+                self.report(messages.PercentFormatExpectedSequence, node)
+                return
+
+            substitution_keys = {k.s for k in node.right.keys}
+            extra_keys = substitution_keys - named
+            missing_keys = named - substitution_keys
+            if not positional and extra_keys:
+                self.report(
+                    messages.PercentFormatExtraNamedArguments,
+                    node,
+                    ', '.join(sorted(extra_keys)),
+                )
+            if not positional and missing_keys:
+                self.report(
+                    messages.PercentFormatMissingArgument,
+                    node,
+                    ', '.join(sorted(missing_keys)),
+                )
+
+    def BINOP(self, node):
+        if (
+                isinstance(node.op, ast.Mod) and
+                isinstance(node.left, ast.Str)
+        ):
+            self._handle_percent_format(node)
+        self.handleChildren(node)
+
+    def STR(self, node):
+        if self._in_annotation and not self._in_typing_literal:
+            fn = functools.partial(
+                self.handleStringAnnotation,
+                node.s,
+                node,
+                node.lineno,
+                node.col_offset,
+                messages.ForwardAnnotationSyntaxError,
+            )
+            if self._in_deferred:
+                fn()
+            else:
+                self.deferFunction(fn)
+
+    if PY38_PLUS:
+        def CONSTANT(self, node):
+            if isinstance(node.value, str):
+                return self.STR(node)
+    else:
+        NUM = BYTES = ELLIPSIS = CONSTANT = ignore
 
     # "slice" type nodes
     SLICE = EXTSLICE = INDEX = handleChildren
@@ -1254,7 +1775,24 @@ class Checker(object):
             self.report(messages.RaiseNotImplemented, node)
 
     # additional node types
-    COMPREHENSION = KEYWORD = FORMATTEDVALUE = JOINEDSTR = handleChildren
+    COMPREHENSION = KEYWORD = FORMATTEDVALUE = handleChildren
+
+    _in_fstring = False
+
+    def JOINEDSTR(self, node):
+        if (
+                # the conversion / etc. flags are parsed as f-strings without
+                # placeholders
+                not self._in_fstring and
+                not any(isinstance(x, ast.FormattedValue) for x in node.values)
+        ):
+            self.report(messages.FStringMissingPlaceholders, node)
+
+        self._in_fstring, orig = True, self._in_fstring
+        try:
+            self.handleChildren(node)
+        finally:
+            self._in_fstring = orig
 
     def DICT(self, node):
         # Complain if there are duplicate keys with different values
@@ -1291,6 +1829,13 @@ class Checker(object):
                             key,
                         )
         self.handleChildren(node)
+
+    def IF(self, node):
+        if isinstance(node.test, ast.Tuple) and node.test.elts != []:
+            self.report(messages.IfTuple, node)
+        self.handleChildren(node)
+
+    IFEXP = IF
 
     def ASSERT(self, node):
         if isinstance(node.test, ast.Tuple) and node.test.elts != []:
@@ -1343,13 +1888,15 @@ class Checker(object):
         Handle occurrence of Name (which can be a load/store/delete access.)
         """
         # Locate the name in locals / function / globals scopes.
-        if isinstance(node.ctx, (ast.Load, ast.AugLoad)):
+        if isinstance(node.ctx, ast.Load):
             self.handleNodeLoad(node)
             if (node.id == 'locals' and isinstance(self.scope, FunctionScope) and
-                    isinstance(node.parent, ast.Call)):
+                    isinstance(node._pyflakes_parent, ast.Call)):
                 # we are doing locals() call in current scope
                 self.scope.usesLocals = True
-        elif isinstance(node.ctx, (ast.Store, ast.AugStore, ast.Param)):
+        elif isinstance(node.ctx, ast.Store):
+            self.handleNodeStore(node)
+        elif PY2 and isinstance(node.ctx, ast.Param):
             self.handleNodeStore(node)
         elif isinstance(node.ctx, ast.Del):
             self.handleNodeDelete(node)
@@ -1362,8 +1909,8 @@ class Checker(object):
         # definition (not OK), for 'continue', a finally block (not OK), or
         # the top module scope (not OK)
         n = node
-        while hasattr(n, 'parent'):
-            n, n_child = n.parent, n
+        while hasattr(n, '_pyflakes_parent'):
+            n, n_child = n._pyflakes_parent, n
             if isinstance(n, LOOP_TYPES):
                 # Doesn't apply unless it's in the loop itself
                 if n_child not in n.orelse:
@@ -1372,7 +1919,7 @@ class Checker(object):
                 break
             # Handle Try/TryFinally difference in Python < and >= 3.3
             if hasattr(n, 'finalbody') and isinstance(node, ast.Continue):
-                if n_child in n.finalbody:
+                if n_child in n.finalbody and not PY38_PLUS:
                     self.report(messages.ContinueInFinally, node)
                     return
         if isinstance(node, ast.Continue):
@@ -1433,6 +1980,10 @@ class Checker(object):
             addArgs(node.args.args)
             defaults = node.args.defaults
         else:
+            if PY38_PLUS:
+                for arg in node.args.posonlyargs:
+                    args.append(arg.arg)
+                    annotations.append(arg.annotation)
             for arg in node.args.args + node.args.kwonlyargs:
                 args.append(arg.arg)
                 annotations.append(arg.annotation)
@@ -1471,7 +2022,7 @@ class Checker(object):
 
             self.pushScope()
 
-            self.handleChildren(node, omit='decorator_list')
+            self.handleChildren(node, omit=['decorator_list', 'returns'])
 
             def checkUnusedAssignments():
                 """
@@ -1684,14 +2235,14 @@ class Checker(object):
             self.handleNode(node.value, node)
 
     def COMPARE(self, node):
-        literals = (ast.Str, ast.Num)
-        if not PY2:
-            literals += (ast.Bytes,)
-
         left = node.left
         for op, right in zip(node.ops, node.comparators):
-            if (isinstance(op, (ast.Is, ast.IsNot)) and
-                    (isinstance(left, literals) or isinstance(right, literals))):
+            if (
+                    isinstance(op, (ast.Is, ast.IsNot)) and (
+                        _is_const_non_singleton(left) or
+                        _is_const_non_singleton(right)
+                    )
+            ):
                 self.report(messages.IsLiteral, node)
             left = right
 
