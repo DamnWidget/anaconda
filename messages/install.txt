@@ -17,7 +17,7 @@ For a complete guide of use and configuration take a look at:
 
 	http://damnwidget.github.io/anaconda/
 
-Please, consider donating to maintain this project alive:
+Please, consider donating via PayPal to maintain this project alive:
 
-	https://pledgie.com/campaigns/32230
+	https://tinyurl.com/y7ktgzx6
 
