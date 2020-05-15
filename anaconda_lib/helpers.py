@@ -108,7 +108,7 @@ def is_code(view, lang='python', ignore_comments=False, ignore_repl=False):
     if ignore_comments is True:
         matcher = 'source.{}'.format(lang)
     else:
-        matcher = 'source.{} - string - comment'.format(lang)
+        matcher = 'source.{} - string - comment, string.quoted.double.line.fmt.format(lang)'
 
     return view.match_selector(location, matcher)
 

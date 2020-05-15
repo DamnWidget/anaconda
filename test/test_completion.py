@@ -22,7 +22,18 @@ class TestAutoCompletion(object):
         handler = JediHandler('autocomplete', data, 0, 0, self._check)
         handler.run()
 
+    def test_autocomplete_not_in_string(self):
+        data = {'source': 'import os; "{os.', 'line': 1, 'offset': 16}
+        handler = JediHandler('autocomplete', data, 0, 0, self._check_false)
+        handler.run()
+
+    def test_autocomplete_in_fstring(self):
+        data = {'source': 'import os; f"{os.', 'line': 1, 'offset': 17}
+        handler = JediHandler('autocomplete', data, 0, 0, self._check)
+        handler.run()
+
     def _check(self, kwrgs):
+
         assert kwrgs['success'] is True
         assert len(kwrgs['completions']) > 0
         if sys.version_info < (3, 6):
@@ -30,3 +41,6 @@ class TestAutoCompletion(object):
         else:
             assert kwrgs['completions'][0] == ('abc\tmodule', 'abc')
         assert kwrgs['uid'] == 0
+
+    def _check_false(self, kwrgs):
+        assert kwrgs['success'] is False
