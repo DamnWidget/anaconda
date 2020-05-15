@@ -66,7 +66,8 @@ def enable_dot_completion(view):
     triggers = view.settings().get('auto_complete_triggers', [])
     triggers.append({
         'characters': '.',
-        'selector': 'source.python - string - comment - constant.numeric'
+        'selector': 'source.python - string - comment - constant.numeric, '
+                    'string.quoted.double.line.fmt'
     })
     view.settings().set('auto_complete_triggers', triggers)
 
@@ -132,7 +133,7 @@ def is_python(view, ignore_comments=False, autocomplete_ignore_repl=False):
     if ignore_comments is True:
         matcher = 'source.python'
     else:
-        matcher = 'source.python - string - comment'
+        matcher = 'source.python - string - comment, string.quoted.double.line.fmt'
 
     return view.match_selector(location, matcher)
 
