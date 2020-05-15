@@ -81,8 +81,10 @@ class MyPy(object):
         if MyPy.VERSION < (0, 4, 5):
             err_ctx = '--suppress-error-context'
 
-        args = shlex.split('\'{0}\' -O -m mypy {1} {2} {3} \'{4}\''.format(
-            sys.executable, err_sum, err_ctx,
+        dont_follow_imports = "--follow-imports silent"
+
+        args = shlex.split('\'{0}\' -O -m mypy {1} {2} {3} {4} \'{5}\''.format(
+            sys.executable, err_sum, err_ctx, dont_follow_imports,
             ' '.join(self.settings[:-1]), self.filename)
         )
         env = os.environ.copy()
