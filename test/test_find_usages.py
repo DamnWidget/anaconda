@@ -25,5 +25,5 @@ class TestFindUsages(object):
     def _check_find_usages(self, result):
         assert result['success'] is True
         assert len(result['result']) == 1
-        assert result['result'][0] == ('usages_helper', None, 1, 27)
+        assert result['result'][0] == ('_usages_helper.usages_helper', None, 1, 27)
         assert result['uid'] == 0

@@ -7,7 +7,7 @@ import logging
 
 import jedi
 from lib.anaconda_handler import AnacondaHandler
-from jedi import refactoring as jedi_refactor
+from jedi.api import refactoring as jedi_refactor
 from commands import Doc, Goto, GotoAssignment, Rename, FindUsages
 from commands import CompleteParameters, AutoComplete
 
