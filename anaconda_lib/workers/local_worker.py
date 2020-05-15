@@ -3,6 +3,7 @@
 # This program is Free Software see LICENSE file for details
 
 import time
+import platform
 
 import sublime
 
@@ -110,15 +111,18 @@ class LocalWorker(Worker):
             ).format(self.interpreter.host)
             addr = self.interpreter.host
 
+        address_family = (
+            'AF_INET' if platform.system().lower() != 'linux' else 'AF_UNIX'
+        )
         self.tip = (
             'check that there is Python process executing the anaconda '
             'jsonserver.py script running in your system. If there is, check '
             '{} writing the following script in your Sublime Text 3 console:'
-            '\n\nimport socket; socket.socket(socket.AF_INET, '
-            'socket.SOCK_STREAM).connect({})\n\nIf anaconda works just fine '
+            '\n\nimport socket; socket.socket(socket.{}, '
+            'socket.SOCK_STREAM).connect("{}")\n\nIf anaconda works just fine '
             'after you received this error and the command above worked you '
             'can make anaconda to do not show you this error anymore setting '
             'the \'swallow_startup_errors\' to \'true\' in your '
-            'configuration file.'.format(check, addr)
+            'configuration file.'.format(check, address_family, addr)
         )
         return super(LocalWorker, self)._status(timeout)
