@@ -100,7 +100,7 @@ class MyPy(object):
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             kwargs['startupinfo'] = startupinfo
-        print(args, kwargs)
+
         proc = Popen(args, stdout=PIPE, stderr=PIPE, **kwargs)
         out, err = proc.communicate()
         if err is not None and len(err) > 0:
@@ -110,7 +110,7 @@ class MyPy(object):
 
         if sys.version_info >= (3,):
             out = out.decode('utf8')
-        print("errors", out)
+
         errors = []
         for line in out.splitlines():
             if (self.settings[-1] and not

@@ -56,8 +56,8 @@ class Linter:
         lines.add(lineno)
         message = message[0].upper() + message[1:]
 
-        # Remove trailing period from error message
-        if message[-1] == '.':
+        # Remove trailing period from error message unless the message is "can't import ."
+        if message.endswith('.') and not message.endswith("import ."):
             message = message[:-1]
 
         if lineno in messages:
@@ -363,7 +363,8 @@ def run_linter(view=None, hook=None):
             view, 'pyflakes_explicit_ignore', []),
         'use_mypy': get_settings(view, 'mypy', False),
         'mypy_settings': get_mypy_settings(view),
-        'mypypath': get_settings(view, 'mypy_mypypath', '')
+        'mypypath': get_settings(view, 'mypy_mypypath', ''),
+        'python_interpreter': get_settings(view, 'python_interpreter', ''),
     }
 
     text = view.substr(sublime.Region(0, view.size()))
@@ -389,7 +390,7 @@ def get_mypy_settings(view):
     mypy_settings = []
     if get_settings(view, 'mypy_silent_imports', False):
         mypy_settings.append('--ignore-missing-imports')
-        mypy_settings.append('--follow-imports=skip') 
+        mypy_settings.append('--follow-imports=skip')
     if get_settings(view, 'mypy_almost_silent', False):
         mypy_settings.append('--follow-imports=error')
     if get_settings(view, 'mypy_py2', False):

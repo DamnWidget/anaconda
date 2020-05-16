@@ -28,13 +28,14 @@ class PythonLintHandler(AnacondaHandler):
     """Handle request to execute Python linting commands form the JsonServer
     """
 
-    def __init__(self, command, data, uid, vid, callback, debug=False):
+    def __init__(self, command, data, uid, vid, settings, callback, debug=False):
         self.uid = uid
         self.vid = vid
         self.data = data
         self.debug = debug
         self.callback = callback
         self.command = command
+        self.settings = settings
         self._linters = {
             'pyflakes': False, 'pylint': False, 'pep8': False, 'pep257': False,
             'import_validator': False
@@ -42,15 +43,14 @@ class PythonLintHandler(AnacondaHandler):
         self._errors = []
         self._failures = []
 
-    def lint(self, settings, code=None, filename=None):
+    def lint(self, code=None, filename=None):
         """This is called from the JsonServer
         """
-
-        self._configure_linters(settings)
+        self._configure_linters()
         for linter_name, expected in self._linters.items():
             if expected is True:
                 func = getattr(self, linter_name)
-                func(settings, code, filename)
+                func(code, filename)
 
         if len(self._errors) == 0 and len(self._failures) > 0:
             self.callback({
@@ -68,30 +68,30 @@ class PythonLintHandler(AnacondaHandler):
             'vid': self.vid
         })
 
-    def pyflakes(self, settings, code=None, filename=None):
+    def pyflakes(self, code=None, filename=None):
         """Run the PyFlakes linter
         """
 
         lint = PyFlakesLinter
         PyFlakes(
-            self._merge, self.uid, self.vid, lint, settings, code, filename)
+            self._merge, self.uid, self.vid, lint, self.settings, code, filename)
 
-    def pep8(self, settings, code=None, filename=None):
+    def pep8(self, code=None, filename=None):
         """Run the pep8 linter
         """
 
         lint = Pep8Linter
-        PEP8(self._merge, self.uid, self.vid, lint, settings, code, filename)
+        PEP8(self._merge, self.uid, self.vid, lint, self.settings, code, filename)
 
-    def pep257(self, settings, code=None, filename=None):
+    def pep257(self, code=None, filename=None):
         """Run the pep257 linter
         """
 
         lint = AnacondaPep257
-        ignore = settings.get('pep257_ignore')
+        ignore = self.settings.get('pep257_ignore')
         PEP257(self._merge, self.uid, self.vid, lint, ignore, code, filename)
 
-    def pylint(self, settings, code=None, filename=None):
+    def pylint(self, code=None, filename=None):
         """Run the pyling linter
         """
 
@@ -100,37 +100,38 @@ class PythonLintHandler(AnacondaHandler):
             self._failures.append(errors)
             return
 
-        rcfile = settings.get('pylint_rcfile', False)
+        rcfile = self.settings.get('pylint_rcfile', False)
         PyLint(
-            partial(self._normalize, settings),
+            partial(self._normalize, self.settings),
             self.uid, self.vid, PyLinter, rcfile, filename
         )
 
-    def import_validator(self, settings, code, filename=None):
+    def import_validator(self, code, filename=None):
         """Run the import validator linter
         """
 
         lint = Validator
-        ImportValidator(self._merge, self.uid, self.vid, lint, code, filename)
+        ImportValidator(
+            self._merge, self.uid, self.vid, lint, code, filename, self.settings)
 
-    def mypy(self, settings, code=None, filename=None):
+    def mypy(self, code=None, filename=None):
         """Run the mypy linter
         """
 
         lint = AnacondaMyPy
         MyPy(
             self._merge, self.uid, self.vid, lint,
-            code, filename, self.mypypath, settings
+            code, filename, self.mypypath, self.settings
         )
 
-    def _normalize(self, settings, data):
+    def _normalize(self, data):
         """Normalize pylint data before to merge
         """
 
         normalized_errors = []
         for error_level, error_data in data.get('errors', {}).items():
-            pylint_ignores = settings.get('pylint_ignore', [])
-            pylint_rcfile = settings.get('pylint_rcfile')
+            pylint_ignores = self.settings.get('pylint_ignore', [])
+            pylint_rcfile = self.settings.get('pylint_rcfile')
             for error in error_data:
                 try:
                     if error['code'] in pylint_ignores and not pylint_rcfile:
@@ -155,16 +156,16 @@ class PythonLintHandler(AnacondaHandler):
 
         self._merge(data)
 
-    def _configure_linters(self, settings):
+    def _configure_linters(self):
         """Enable or disable linters
         """
 
-        self._linters['pyflakes'] = settings.get('use_pyflakes', True)
-        self._linters['pylint'] = settings.get('use_pylint', False)
-        self._linters['pep257'] = settings.get('use_pep257', False)
-        self._linters['mypy'] = settings.get('use_mypy', False)
-        self._linters['pep8'] = settings.get('pep8', True)
-        self._linters['import_validator'] = settings.get(
+        self._linters['pyflakes'] = self.settings.get('use_pyflakes', True)
+        self._linters['pylint'] = self.settings.get('use_pylint', False)
+        self._linters['pep257'] = self.settings.get('use_pep257', False)
+        self._linters['mypy'] = self.settings.get('use_mypy', False)
+        self._linters['pep8'] = self.settings.get('pep8', True)
+        self._linters['import_validator'] = self.settings.get(
             'validate_imports', False)
 
         # disable pyflakes if pylint is in use
@@ -172,7 +173,7 @@ class PythonLintHandler(AnacondaHandler):
             self._linters['pyflakes'] = False
 
         if self._linters['mypy']:
-            self.mypypath = settings.get('mypypath')
+            self.mypypath = self.settings.get('mypypath')
 
     def _merge(self, lint_result):
         """Merge the given linter results
