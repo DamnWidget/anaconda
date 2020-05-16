@@ -32,7 +32,7 @@ class TestDoc(object):
 
     def test_doc_handler(self):
         data = {'source': src, 'line': 5, 'offset': 8, 'html': True}
-        handler = JediHandler('doc', data, 0, 0, self._check_handler)
+        handler = JediHandler('doc', data, 0, 0, {}, self._check_handler)
         handler.run()
 
     def _check_html(self, kwrgs):

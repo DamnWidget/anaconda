@@ -23,7 +23,7 @@ class TestGoto(object):
 
     def test_goto_handler(self):
         data = {'source': src, 'line': 1, 'offset': 21}
-        handler = JediHandler('goto', data, 0, 0, self._check_goto)
+        handler = JediHandler('goto', data, 0, 0, {}, self._check_goto)
         handler.run()
 
     def _check_goto(self, result):
@@ -48,7 +48,7 @@ class TestGotoAssignment(object):
 
     def test_goto_assignment_handler(self):
         data = {'source': src, 'line': 1, 'offset': 13}
-        handler = JediHandler('goto_assignment', data, 0, 0, self._check_goto_assignment)
+        handler = JediHandler('goto_assignment', data, 0, 0, {}, self._check_goto_assignment)
         handler.run()
 
     def _check_goto_assignment(self, result):

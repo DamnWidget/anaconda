@@ -35,7 +35,7 @@ class TestCompleteParameters(object):
             'offset': 5, 'filname': None, 'settings': self.settings
         }
         handler = JediHandler(
-            'parameters', data, 0, 0, self._check_parameters)
+            'parameters', data, 0, 0, self.settings, self._check_parameters)
         handler.run()
 
     def test_complete_all_parameters_handler(self):
@@ -45,7 +45,7 @@ class TestCompleteParameters(object):
             'offset': 5, 'filname': None, 'settings': self.settings
         }
         handler = JediHandler(
-            'parameters', data, 0, 0, self._check_all_parameters)
+            'parameters', data, 0, 0, self.settings, self._check_all_parameters)
         handler.run()
 
     def _check_parameters(self, result):
