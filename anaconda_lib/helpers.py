@@ -67,7 +67,7 @@ def enable_dot_completion(view):
     triggers.append({
         'characters': '.',
         'selector': 'source.python - string - comment - constant.numeric, '
-                    'string.quoted.double.line.fmt'
+                    'meta.interpolated.format.fstring'
     })
     view.settings().set('auto_complete_triggers', triggers)
 
@@ -108,7 +108,7 @@ def is_code(view, lang='python', ignore_comments=False, ignore_repl=False):
     if ignore_comments is True:
         matcher = 'source.{}'.format(lang)
     else:
-        matcher = 'source.{} - string - comment, string.quoted.double.line.fmt.format(lang)'
+        matcher = 'source.{} - string - comment, meta.interpolated.format.fstring'.format(lang)
 
     return view.match_selector(location, matcher)
 
@@ -133,7 +133,7 @@ def is_python(view, ignore_comments=False, autocomplete_ignore_repl=False):
     if ignore_comments is True:
         matcher = 'source.python'
     else:
-        matcher = 'source.python - string - comment, string.quoted.double.line.fmt'
+        matcher = 'source.python - string - comment, meta.interpolated.format.fstring'
 
     return view.match_selector(location, matcher)
 
