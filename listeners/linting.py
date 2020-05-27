@@ -14,7 +14,8 @@ from ..anaconda_lib.helpers import (
 )
 from ..anaconda_lib.linting.sublime import (
     ANACONDA, erase_lint_marks, run_linter,
-    last_selected_lineno, update_statusbar
+    last_selected_lineno, update_statusbar,
+    get_lineno_msgs
 )
 
 
@@ -152,3 +153,29 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """
 
         erase_lint_marks(view)
+
+    def on_hover(self, view: sublime.View, point: int, hover_zone: int):
+        # Planned to make my own listener class(sublime_plugin.ViewEventListener) for this function
+        # but couldn't figure out how to register them
+        # Tell me if I need to move this, or if it can piggyback under this listener
+
+        # from anaconda_lib.tooltips:show_tooltips
+        st_ver = int(sublime.version())
+        if st_ver < 3070:
+            return
+
+        if hover_zone == sublime.HOVER_TEXT:
+            if get_settings(view, 'anaconda_linter_hover_message', False):
+                rowcol = view.rowcol(point)
+                line = rowcol[0]  # tuple (lineno, col)
+                messages = get_lineno_msgs(view, line)
+
+                if messages:
+                    # Not sure how to properly choose the height & width values, but this works fine on my laptop
+                    # Also unsure as to how to format it so its pretty and colorful (Tooltip._generate ?)
+                    max_width = len(messages) * 840
+                    max_height = len(max(messages))
+                    message = "\n".join(messages)
+                    # Newline is not rendered   , errors all on one line :( help
+                    view.show_popup(message, location=point, max_width=max_width, max_height=max_height)
+                    # amount of time of popup?
