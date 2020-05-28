@@ -19,3 +19,15 @@ div.anaconda {
     font-weight: bold;
     font-size: 1.05em;
 }
+
+.anaconda .error_warning .errors {
+    color: red;
+}
+
+.anaconda .error_warning .warnings {
+    color: orange;
+}
+
+.anaconda .error_warning .violations {
+    color: blue;
+}
