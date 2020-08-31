@@ -34,7 +34,10 @@ class AnacondaCompleteFuncargs(sublime_plugin.TextCommand):
             ),
             'complete_all_parameters': get_settings(
                 self.view, 'complete_all_parameters', False
-            )
+            ),
+            'python_interpreter': get_settings(
+                self.view, 'python_interpreter', ''
+            ),
         }
         callback = Callback(on_success=self.insert_snippet)
         Worker().execute(callback, **data)

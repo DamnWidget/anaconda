@@ -21,6 +21,7 @@ class AnacondaDoc(sublime_plugin.TextCommand):
     documentation = None
 
     def run(self, edit: sublime.Edit) -> None:
+
         if self.documentation is None:
             try:
                 location = self.view.rowcol(self.view.sel()[0].begin())
@@ -31,6 +32,10 @@ class AnacondaDoc(sublime_plugin.TextCommand):
                 if int(sublime.version()) >= 3070:
                     data['html'] = get_settings(
                         self.view, 'enable_docstrings_tooltip', False)
+                data["settings"] = {
+                    'python_interpreter': get_settings(self.view, 'python_interpreter', ''),
+                }
+
                 Worker().execute(
                     Callback(on_success=self.prepare_data), **data
                 )

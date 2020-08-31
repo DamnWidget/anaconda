@@ -1,14 +1,18 @@
+import re
 import textwrap
 from inspect import cleandoc
+from weakref import WeakKeyDictionary
 
-from jedi._compatibility import literal_eval, is_py3
-from jedi.parser.python import tree
+from parso.python import tree
+from parso.cache import parser_cache
+from parso import split_lines
 
-_EXECUTE_NODES = set([
-    'funcdef', 'classdef', 'import_from', 'import_name', 'test', 'or_test',
-    'and_test', 'not_test', 'comparison', 'expr', 'xor_expr', 'and_expr',
-    'shift_expr', 'arith_expr', 'atom_expr', 'term', 'factor', 'power', 'atom'
-])
+from jedi._compatibility import literal_eval, force_unicode
+
+_EXECUTE_NODES = {'funcdef', 'classdef', 'import_from', 'import_name', 'test',
+                  'or_test', 'and_test', 'not_test', 'comparison', 'expr',
+                  'xor_expr', 'and_expr', 'shift_expr', 'arith_expr',
+                  'atom_expr', 'term', 'factor', 'power', 'atom'}
 
 _FLOW_KEYWORDS = (
     'try', 'except', 'finally', 'else', 'if', 'elif', 'with', 'for', 'while'
@@ -26,7 +30,7 @@ def get_executable_nodes(node, last_added=False):
         if last_added is False and node.parent.type != 'param' and next_leaf != '=':
             result.append(node)
     elif typ == 'expr_stmt':
-        # I think evaluating the statement (and possibly returned arrays),
+        # I think inferring the statement (and possibly returned arrays),
         # should be enough for static analysis.
         result.append(node)
         for child in node.children:
@@ -52,11 +56,13 @@ def get_executable_nodes(node, last_added=False):
     return result
 
 
-def get_comp_fors(comp_for):
+def get_sync_comp_fors(comp_for):
     yield comp_for
     last = comp_for.children[-1]
     while True:
         if last.type == 'comp_for':
+            yield last.children[1]  # Ignore the async.
+        elif last.type == 'sync_comp_for':
             yield last
         elif not last.type == 'comp_if':
             break
@@ -87,19 +93,6 @@ def get_flow_branch_keyword(flow_node, node):
             keyword = first_leaf
     return 0
 
-def get_statement_of_position(node, pos):
-    for c in node.children:
-        if c.start_pos <= pos <= c.end_pos:
-            if c.type not in ('decorated', 'simple_stmt', 'suite') \
-                    and not isinstance(c, (tree.Flow, tree.ClassOrFunc)):
-                return c
-            else:
-                try:
-                    return get_statement_of_position(c, pos)
-                except AttributeError:
-                    pass  # Must be a non-scope
-    return None
-
 
 def clean_scope_docstring(scope_node):
     """ Returns a cleaned version of the docstring token. """
@@ -112,10 +105,22 @@ def clean_scope_docstring(scope_node):
         cleaned = cleandoc(safe_literal_eval(node.value))
         # Since we want the docstr output to be always unicode, just
         # force it.
-        if is_py3 or isinstance(cleaned, unicode):
-            return cleaned
-        else:
-            return unicode(cleaned, 'UTF-8', 'replace')
+        return force_unicode(cleaned)
+    return ''
+
+
+def find_statement_documentation(tree_node):
+    if tree_node.type == 'expr_stmt':
+        tree_node = tree_node.parent  # simple_stmt
+        maybe_string = tree_node.get_next_sibling()
+        if maybe_string is not None:
+            if maybe_string.type == 'simple_stmt':
+                maybe_string = maybe_string.children[0]
+                if maybe_string.type == 'string':
+                    cleaned = cleandoc(safe_literal_eval(maybe_string.value))
+                    # Since we want the docstr output to be always unicode, just
+                    # force it.
+                    return force_unicode(cleaned)
     return ''
 
 
@@ -137,9 +142,10 @@ def safe_literal_eval(value):
         return ''
 
 
-def get_call_signature(funcdef, width=72, call_string=None):
+def get_signature(funcdef, width=72, call_string=None,
+                  omit_first_param=False, omit_return_annotation=False):
     """
-    Generate call signature of this function.
+    Generate a string signature of a function.
 
     :param width: Fold lines if a line is longer than this value.
     :type width: int
@@ -154,32 +160,19 @@ def get_call_signature(funcdef, width=72, call_string=None):
             call_string = '<lambda>'
         else:
             call_string = funcdef.name.value
-    if funcdef.type == 'lambdef':
-        p = '(' + ''.join(param.get_code() for param in funcdef.params).strip() + ')'
+    params = funcdef.get_params()
+    if omit_first_param:
+        params = params[1:]
+    p = '(' + ''.join(param.get_code() for param in params).strip() + ')'
+    # TODO this is pretty bad, we should probably just normalize.
+    p = re.sub(r'\s+', ' ', p)
+    if funcdef.annotation and not omit_return_annotation:
+        rtype = " ->" + funcdef.annotation.get_code()
     else:
-        p = funcdef.children[2].get_code()
-    code = call_string + p
+        rtype = ""
+    code = call_string + p + rtype
 
     return '\n'.join(textwrap.wrap(code, width))
-
-
-def get_doc_with_call_signature(scope_node):
-    """
-    Return a document string including call signature.
-    """
-    call_signature = None
-    if scope_node.type == 'classdef':
-        for funcdef in scope_node.iter_funcdefs():
-            if funcdef.name.value == '__init__':
-                call_signature = \
-                    get_call_signature(funcdef, call_string=scope_node.name.value)
-    elif scope_node.type in ('funcdef', 'lambdef'):
-        call_signature = get_call_signature(scope_node)
-
-    doc = clean_scope_docstring(scope_node)
-    if call_signature is None:
-        return doc
-    return '%s\n\n%s' % (call_signature, doc)
 
 
 def move(node, line_offset):
@@ -205,6 +198,9 @@ def get_following_comment_same_line(node):
             whitespace = node.children[5].get_first_leaf().prefix
         elif node.type == 'with_stmt':
             whitespace = node.children[3].get_first_leaf().prefix
+        elif node.type == 'funcdef':
+            # actually on the next line
+            whitespace = node.children[4].get_first_leaf().get_next_leaf().prefix
         else:
             whitespace = node.get_last_leaf().get_next_leaf().prefix
     except AttributeError:
@@ -224,7 +220,29 @@ def get_following_comment_same_line(node):
 
 
 def is_scope(node):
-    return node.type in ('file_input', 'classdef', 'funcdef', 'lambdef', 'comp_for')
+    t = node.type
+    if t == 'comp_for':
+        # Starting with Python 3.8, async is outside of the statement.
+        return node.children[1].type != 'sync_comp_for'
+
+    return t in ('file_input', 'classdef', 'funcdef', 'lambdef', 'sync_comp_for')
+
+
+def _get_parent_scope_cache(func):
+    cache = WeakKeyDictionary()
+
+    def wrapper(used_names, node, include_flows=False):
+        try:
+            for_module = cache[used_names]
+        except KeyError:
+            for_module = cache[used_names] = {}
+
+        try:
+            return for_module[node]
+        except KeyError:
+            result = for_module[node] = func(node, include_flows)
+            return result
+    return wrapper
 
 
 def get_parent_scope(node, include_flows=False):
@@ -232,11 +250,82 @@ def get_parent_scope(node, include_flows=False):
     Returns the underlying scope.
     """
     scope = node.parent
-    while scope is not None:
-        if include_flows and isinstance(scope, tree.Flow):
-            return scope
-        if is_scope(scope):
-            break
-        scope = scope.parent
-    return scope
+    if scope is None:
+        return None  # It's a module already.
 
+    while True:
+        if is_scope(scope) or include_flows and isinstance(scope, tree.Flow):
+            if scope.type in ('classdef', 'funcdef', 'lambdef'):
+                index = scope.children.index(':')
+                if scope.children[index].start_pos >= node.start_pos:
+                    if node.parent.type == 'param' and node.parent.name == node:
+                        pass
+                    elif node.parent.type == 'tfpdef' and node.parent.children[0] == node:
+                        pass
+                    else:
+                        scope = scope.parent
+                        continue
+            return scope
+        scope = scope.parent
+
+
+get_cached_parent_scope = _get_parent_scope_cache(get_parent_scope)
+
+
+def get_cached_code_lines(grammar, path):
+    """
+    Basically access the cached code lines in parso. This is not the nicest way
+    to do this, but we avoid splitting all the lines again.
+    """
+    return parser_cache[grammar._hashed][path].lines
+
+
+def cut_value_at_position(leaf, position):
+    """
+    Cuts of the value of the leaf at position
+    """
+    lines = split_lines(leaf.value, keepends=True)[:position[0] - leaf.line + 1]
+    column = position[1]
+    if leaf.line == position[0]:
+        column -= leaf.column
+    lines[-1] = lines[-1][:column]
+    return ''.join(lines)
+
+
+def expr_is_dotted(node):
+    """
+    Checks if a path looks like `name` or `name.foo.bar` and not `name()`.
+    """
+    if node.type == 'atom':
+        if len(node.children) == 3 and node.children[0] == '(':
+            return expr_is_dotted(node.children[1])
+        return False
+    if node.type == 'atom_expr':
+        children = node.children
+        if children[0] == 'await':
+            return False
+        if not expr_is_dotted(children[0]):
+            return False
+        # Check trailers
+        return all(c.children[0] == '.' for c in children[1:])
+    return node.type == 'name'
+
+
+def _function_is_x_method(method_name):
+    def wrapper(function_node):
+        """
+        This is a heuristic. It will not hold ALL the times, but it will be
+        correct pretty much for anyone that doesn't try to beat it.
+        staticmethod/classmethod are builtins and unless overwritten, this will
+        be correct.
+        """
+        for decorator in function_node.get_decorators():
+            dotted_name = decorator.children[1]
+            if dotted_name.get_code() == method_name:
+                return True
+        return False
+    return wrapper
+
+
+function_is_staticmethod = _function_is_x_method('staticmethod')
+function_is_classmethod = _function_is_x_method('classmethod')

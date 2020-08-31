@@ -9,7 +9,7 @@ from ..anaconda_lib.worker import Worker
 from ..anaconda_lib.workers.market import Market
 from ..anaconda_lib.helpers import is_remote_session
 from ..anaconda_lib.explore_panel import ExplorerPanel
-from ..anaconda_lib.helpers import prepare_send_data, is_python
+from ..anaconda_lib.helpers import prepare_send_data, is_python, get_settings
 
 
 class AnacondaGoto(sublime_plugin.TextCommand):
@@ -22,6 +22,11 @@ class AnacondaGoto(sublime_plugin.TextCommand):
         try:
             location = self.view.rowcol(self.view.sel()[0].begin())
             data = prepare_send_data(location, self.JEDI_COMMAND, 'jedi')
+            data['settings'] = {
+                'python_interpreter': get_settings(
+                    self.view, 'python_interpreter', ''
+                ),
+            }
             Worker().execute(self.on_success, **data)
         except:
             pass

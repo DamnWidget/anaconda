@@ -17,14 +17,12 @@ Completion output
 
 .. autodata:: case_insensitive_completion
 .. autodata:: add_bracket_after_function
-.. autodata:: no_completion_duplicates
 
 
 Filesystem cache
 ~~~~~~~~~~~~~~~~
 
 .. autodata:: cache_directory
-.. autodata:: use_filesystem_cache
 
 
 Parser
@@ -39,30 +37,7 @@ Dynamic stuff
 .. autodata:: dynamic_array_additions
 .. autodata:: dynamic_params
 .. autodata:: dynamic_params_for_other_modules
-.. autodata:: additional_dynamic_modules
 .. autodata:: auto_import_modules
-
-
-.. _settings-recursion:
-
-Recursions
-~~~~~~~~~~
-
-Recursion settings are important if you don't want extremly
-recursive python code to go absolutely crazy. First of there is a
-global limit :data:`max_executions`. This limit is important, to set
-a maximum amount of time, the completion may use.
-
-The default values are based on experiments while completing the |jedi| library
-itself (inception!). But I don't think there's any other Python library that
-uses recursion in a similarly extreme way. These settings make the completion
-definitely worse in some cases. But a completion should also be fast.
-
-.. autodata:: max_until_execution_unique
-.. autodata:: max_function_recursion_level
-.. autodata:: max_executions_without_builtins
-.. autodata:: max_executions
-.. autodata:: scale_call_signatures
 
 
 Caching
@@ -76,38 +51,26 @@ import os
 import platform
 
 # ----------------
-# completion output settings
+# Completion Output Settings
 # ----------------
 
 case_insensitive_completion = True
 """
-The completion is by default case insensitive.
+Completions are by default case insensitive.
 """
 
 add_bracket_after_function = False
 """
-Adds an opening bracket after a function, because that's normal behaviour.
-Removed it again, because in VIM that is not very practical.
-"""
-
-no_completion_duplicates = True
-"""
-If set, completions with the same name don't appear in the output anymore,
-but are in the `same_name_completions` attribute.
+Adds an opening bracket after a function for completions.
 """
 
 # ----------------
-# Filesystem cache
+# Filesystem Cache
 # ----------------
-
-use_filesystem_cache = True
-"""
-Use filesystem cache to save once parsed files with pickle.
-"""
 
 if platform.system().lower() == 'windows':
-    _cache_directory = os.path.join(os.getenv('APPDATA') or '~', 'Jedi',
-                                    'Jedi')
+    _cache_directory = os.path.join(os.getenv('LOCALAPPDATA') or 
+                                    os.path.expanduser('~'), 'Jedi', 'Jedi')
 elif platform.system().lower() == 'darwin':
     _cache_directory = os.path.join('~', 'Library', 'Caches', 'Jedi')
 else:
@@ -118,24 +81,33 @@ cache_directory = os.path.expanduser(_cache_directory)
 The path where the cache is stored.
 
 On Linux, this defaults to ``~/.cache/jedi/``, on OS X to
-``~/Library/Caches/Jedi/`` and on Windows to ``%APPDATA%\\Jedi\\Jedi\\``.
-On Linux, if environment variable ``$XDG_CACHE_HOME`` is set,
+``~/Library/Caches/Jedi/`` and on Windows to ``%LOCALAPPDATA%\\Jedi\\Jedi\\``.
+On Linux, if the environment variable ``$XDG_CACHE_HOME`` is set,
 ``$XDG_CACHE_HOME/jedi`` is used instead of the default one.
 """
 
 # ----------------
-# parser
+# Parser
 # ----------------
 
 fast_parser = True
 """
-Use the fast parser. This means that reparsing is only being done if
-something has been changed e.g. to a function. If this happens, only the
-function is being reparsed.
+Uses Parso's diff parser. If it is enabled, this might cause issues, please
+read the warning on :class:`.Script`. This feature makes it possible to only
+parse the parts again that have changed, while reusing the rest of the syntax
+tree.
+"""
+
+_cropped_file_size = 10e6  # 1 Megabyte
+"""
+Jedi gets extremely slow if the file size exceed a few thousand lines.
+To avoid getting stuck completely Jedi crops the file at some point.
+
+One megabyte of typical Python code equals about 20'000 lines of code.
 """
 
 # ----------------
-# dynamic stuff
+# Dynamic Stuff
 # ----------------
 
 dynamic_array_additions = True
@@ -154,66 +126,22 @@ dynamic_params_for_other_modules = True
 Do the same for other modules.
 """
 
-additional_dynamic_modules = []
-"""
-Additional modules in which |jedi| checks if statements are to be found. This
-is practical for IDEs, that want to administrate their modules themselves.
-"""
-
 dynamic_flow_information = True
 """
 Check for `isinstance` and other information to infer a type.
 """
 
 auto_import_modules = [
-    'hashlib',  # setattr
+    'gi',  # This third-party repository (GTK stuff) doesn't really work with jedi
 ]
 """
-Modules that are not analyzed but imported, although they contain Python code.
+Modules that will not be analyzed but imported, if they contain Python code.
 This improves autocompletion for libraries that use ``setattr`` or
 ``globals()`` modifications a lot.
 """
 
 # ----------------
-# recursions
-# ----------------
-
-max_until_execution_unique = 50
-"""
-This limit is probably the most important one, because if this limit is
-exceeded, functions can only be one time executed. So new functions will be
-executed, complex recursions with the same functions again and again, are
-ignored.
-"""
-
-max_function_recursion_level = 5
-"""
-`max_function_recursion_level` is more about whether the recursions are
-stopped in deepth or in width. The ratio beetween this and
-`max_until_execution_unique` is important here. It stops a recursion (after
-the number of function calls in the recursion), if it was already used
-earlier.
-"""
-
-max_executions_without_builtins = 200
-"""
-.. todo:: Document this.
-"""
-
-max_executions = 250
-"""
-A maximum amount of time, the completion may use.
-"""
-
-scale_call_signatures = 0.1
-"""
-Because call_signatures is normally used on every single key hit, it has
-to be faster than a normal completion. This is the factor that is used to
-scale `max_executions` and `max_until_execution_unique`:
-"""
-
-# ----------------
-# caching validity (time)
+# Caching Validity
 # ----------------
 
 call_signatures_validity = 3.0

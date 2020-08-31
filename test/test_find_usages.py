@@ -19,11 +19,11 @@ class TestFindUsages(object):
 
     def test_find_usages_handler(self):
         data = {'source': _code, 'line': 1, 'offset': 40, 'filename': None}
-        handler = JediHandler('usages', data, 0, 0, self._check_find_usages)
+        handler = JediHandler('usages', data, 0, 0, {}, self._check_find_usages)
         handler.run()
 
     def _check_find_usages(self, result):
         assert result['success'] is True
         assert len(result['result']) == 1
-        assert result['result'][0] == ('usages_helper', None, 1, 27)
+        assert result['result'][0] == ('_usages_helper.usages_helper', None, 1, 27)
         assert result['uid'] == 0

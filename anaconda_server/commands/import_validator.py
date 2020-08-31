@@ -12,19 +12,19 @@ class ImportValidator(Command):
     """Run the ImportValidate to detect invalid imports
     """
 
-    def __init__(self, callback, uid, vid, linter, code, filename):
+    def __init__(self, callback, uid, vid, linter, code, filename, settings):
         self.vid = vid
         self.code = code
         self.linter = linter
         self.filename = filename
+        self.settings = settings
         super(ImportValidator, self).__init__(callback, uid)
 
     def run(self):
         """Run the command
         """
-
         try:
-            v = self.linter(self.code, self.filename)
+            v = self.linter(self.code, self.filename, self.settings)
             self.callback({
                 'success': True,
                 'errors': [] if v.is_valid() else self._convert(v),
