@@ -55,6 +55,10 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
             currying = partial(self.prepare_data_status, view)
             if use_tooltips and st_version >= 3070:
                 currying = partial(self.prepare_data_tooltip, view)
+
+            data["settings"] = {
+                'python_interpreter': get_settings(view, 'python_interpreter', '')
+            }
             Worker().execute(currying, **data)
         except Exception as error:
             logging.error(error)
@@ -87,7 +91,7 @@ class AnacondaSignaturesEventListener(sublime_plugin.EventListener):
                     return self._show_popup(view)
 
         if view.is_popup_visible():
-                view.hide_popup()
+            view.hide_popup()
         view.erase_status('anaconda_doc')
 
     def prepare_data_status(

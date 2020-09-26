@@ -54,7 +54,7 @@ class AnacondaAutoFormat(sublime_plugin.TextCommand):
         }
         try:
             messages = {
-                'start': 'Autoformatting please wait... ',
+                'start': 'Autoformatting.  Please wait... ',
                 'end': 'Autoformatting done!',
                 'fail': 'Autoformatting failed, buffer not changed.',
                 'timeout': 'Autoformatting failed, buffer not changed.',

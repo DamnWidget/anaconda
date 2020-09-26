@@ -7,17 +7,18 @@
 Anaconda imports validator
 """
 
-from jedi import Script
+from jedi import Script, get_default_project
 
 
 class Validator:
     """Try to import whatever import that is in the given source
     """
 
-    def __init__(self, source, filename):
+    def __init__(self, source, filename, settings):
         self.source = source
         self.errors = []  # type: List
         self.filename = filename
+        self.settings = settings
 
     def is_valid(self):
         """Determine if the source imports are valid or not
@@ -37,6 +38,10 @@ class Validator:
         if 'noqa' in module_line:
             return True
 
+        jedi_project = get_default_project(self.filename)
+        if self.settings.get("python_interpreter", "") != "":
+            jedi_project._environment_path = self.settings.get("python_interpreter")
+
         error = []
         error_string = 'can\'t import {0}'
         valid = True
@@ -45,9 +50,9 @@ class Validator:
                 continue
 
             offset = int(module_line.find(word) + len(word) / 2)
-            s = Script(self.source, lineno, offset, self.filename)
+            s = Script(self.source, lineno, offset, self.filename, project=jedi_project)
             if not self.filename:
-                s = Script(module_line, 1, offset)
+                s = Script(module_line, 1, offset, project=jedi_project)
 
             if not s.goto_assignments():
                 if valid is True:

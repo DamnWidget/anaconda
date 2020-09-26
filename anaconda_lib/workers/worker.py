@@ -62,8 +62,8 @@ class Worker(object):
 
         if not self.check():
             msg = (
-                '{} initial check failed because:\n\n{}\n\n{}'.format(
-                    self, self.error, self.tip
+                'Anaconda worker could not start because:\n\n{}\n\n{}'.format(
+                    self.error, self.tip
                 )
             )
 

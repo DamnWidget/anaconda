@@ -21,18 +21,18 @@ class AnacondaHandler(AnacondaHandlerProvider):
         super(HandlerName, self).__init__(command, data, uid)
     """
 
-    def __init__(self, command, data, uid, vid, callback, debug=False):
+    def __init__(self, command, data, uid, vid, settings, callback, debug=False):
         self.uid = uid
         self.vid = vid
         self.data = data
         self.debug = debug
         self.callback = callback
         self.command = command
+        self.settings = settings
 
     def run(self):
         """Call the specific method
         """
-
         command = getattr(self, self.command)
         try:
             func_code = command.func_code
@@ -40,6 +40,7 @@ class AnacondaHandler(AnacondaHandlerProvider):
             # Renamed in Python 3
             func_code = command.__code__
 
+        # Loop through self.data, pulling out the parameters specified in the command
         kwargs = {}
         for argument, value in self.data.items():
             if argument in inspect.getargs(func_code).args:

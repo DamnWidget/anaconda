@@ -1,18 +1,20 @@
-from jedi._compatibility import encoding, is_py3, u
-import inspect
 import os
 import time
+from contextlib import contextmanager
+
+from jedi._compatibility import encoding, is_py3, u
+
+_inited = False
+
 
 def _lazy_colorama_init():
     """
-    Lazily init colorama if necessary, not to screw up stdout is debug not
-    enabled.
+    Lazily init colorama if necessary, not to screw up stdout if debugging is
+    not enabled.
 
     This version of the function does nothing.
     """
-    pass
 
-_inited=False
 
 try:
     if os.name == 'nt':
@@ -22,7 +24,8 @@ try:
         # Use colorama for nicer console output.
         from colorama import Fore, init
         from colorama import initialise
-        def _lazy_colorama_init():
+
+        def _lazy_colorama_init():  # noqa: F811
             """
             Lazily init colorama if necessary, not to screw up stdout is
             debug not enabled.
@@ -36,7 +39,7 @@ try:
                 # need this.
                 initialise.atexit_done = True
                 try:
-                    init()
+                    init(strip=False)
                 except Exception:
                     # Colorama fails with initializing under vim and is buggy in
                     # version 0.3.6.
@@ -50,6 +53,7 @@ except ImportError:
         YELLOW = ''
         MAGENTA = ''
         RESET = ''
+        BLUE = ''
 
 NOTICE = object()
 WARNING = object()
@@ -61,7 +65,6 @@ enable_notice = False
 
 # callback, interface: level, str
 debug_function = None
-ignored_modules = ['jedi.parser']
 _debug_indent = 0
 _start_time = time.time()
 
@@ -75,13 +78,23 @@ def reset_time():
 def increase_indent(func):
     """Decorator for makin """
     def wrapper(*args, **kwargs):
-        global _debug_indent
-        _debug_indent += 1
-        try:
+        with increase_indent_cm():
             return func(*args, **kwargs)
-        finally:
-            _debug_indent -= 1
     return wrapper
+
+
+@contextmanager
+def increase_indent_cm(title=None):
+    global _debug_indent
+    if title:
+        dbg('Start: ' + title, color='MAGENTA')
+    _debug_indent += 1
+    try:
+        yield
+    finally:
+        _debug_indent -= 1
+        if title:
+            dbg('End: ' + title, color='MAGENTA')
 
 
 def dbg(message, *args, **kwargs):
@@ -91,12 +104,9 @@ def dbg(message, *args, **kwargs):
     assert color
 
     if debug_function and enable_notice:
-        frm = inspect.stack()[1]
-        mod = inspect.getmodule(frm[0])
-        if not (mod.__name__ in ignored_modules):
-            i = ' ' * _debug_indent
-            _lazy_colorama_init()
-            debug_function(color, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
+        i = ' ' * _debug_indent
+        _lazy_colorama_init()
+        debug_function(color, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
 
 
 def warning(message, *args, **kwargs):

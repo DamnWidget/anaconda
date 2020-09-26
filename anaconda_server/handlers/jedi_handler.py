@@ -7,7 +7,7 @@ import logging
 
 import jedi
 from lib.anaconda_handler import AnacondaHandler
-from jedi import refactoring as jedi_refactor
+from jedi.api import refactoring as jedi_refactor
 from commands import Doc, Goto, GotoAssignment, Rename, FindUsages
 from commands import CompleteParameters, AutoComplete
 
@@ -24,7 +24,6 @@ class JediHandler(AnacondaHandler):
     def run(self):
         """Call the specific method (override base class)
         """
-
         self.real_callback = self.callback
         self.callback = self.handle_result_and_purge_cache
         super(JediHandler, self).run()
@@ -43,15 +42,18 @@ class JediHandler(AnacondaHandler):
     def script(self):
         """Generates a new valid Jedi Script and return it back
         """
-
         return self.jedi_script(**self.data)
 
     def jedi_script(
             self, source, line, offset, filename='', encoding='utf8', **kw):
         """Generate an usable Jedi Script
         """
+        jedi_project = jedi.get_default_project(filename)
+        if self.settings.get("python_interpreter", "") != "":
+            jedi_project._environment_path = self.settings.get("python_interpreter")
 
-        return jedi.Script(source, int(line), int(offset), filename, encoding)
+        return jedi.Script(
+            source, int(line), int(offset), filename, encoding, project=jedi_project)
 
     def rename(self, directories, new_word):
         """Rename the object under the cursor by the given word
@@ -68,11 +70,11 @@ class JediHandler(AnacondaHandler):
 
         AutoComplete(self.callback, self.uid, self.script)
 
-    def parameters(self, settings):
+    def parameters(self):
         """Call complete parameter
         """
 
-        CompleteParameters(self.callback, self.uid, self.script, settings)
+        CompleteParameters(self.callback, self.uid, self.script, self.settings)
 
     def usages(self):
         """Call find usages

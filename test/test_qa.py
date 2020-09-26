@@ -40,7 +40,7 @@ def f(n):
 
     def test_mccabe_handler(self):
         data = {'code': self._code, 'threshold': 4, 'filename': ''}
-        handler = QAHandler('mccabe', data, 0, 0, self._check_mccabe)
+        handler = QAHandler('mccabe', data, 0, 0, {}, self._check_mccabe)
         handler.run()
 
     def _check_mccabe(self, result):
