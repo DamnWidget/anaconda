@@ -119,7 +119,7 @@ class LocalWorker(Worker):
             'jsonserver.py script running in your system. If there is, check '
             '{} writing the following script in your Sublime Text 3 console:'
             '\n\nimport socket; socket.socket(socket.{}, '
-            'socket.SOCK_STREAM).connect("{}")\n\nIf anaconda works just fine '
+            'socket.SOCK_STREAM).connect({})\n\nIf anaconda works just fine '
             'after you received this error and the command above worked you '
             'can make anaconda to do not show you this error anymore setting '
             'the \'swallow_startup_errors\' to \'true\' in your '
