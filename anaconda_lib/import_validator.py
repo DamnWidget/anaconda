@@ -39,8 +39,6 @@ class Validator:
             return True
 
         jedi_project = get_default_project(self.filename)
-        if self.settings.get("python_interpreter", "") != "":
-            jedi_project._environment_path = self.settings.get("python_interpreter")
 
         error = []
         error_string = 'can\'t import {0}'
