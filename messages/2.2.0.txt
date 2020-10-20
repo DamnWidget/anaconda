@@ -1,0 +1,23 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 3 Python IDE
+
+
+Anaconda v2.2.0
+================
+
+Welcome to new anaconda v2.2.0, what can do you find in this minor release?
+
+## Fixes
+    - Fixes issues with python interpreter path being truncated or missing
+
+## Additions
+    - Utility to auto reload the jsonserver (useful for anaconda's developers)
+
+## Deprecations
+   - This version series (v2.2.x) will be the last one suppporting Python 2.7 and Python 3.5
+     due Jedi dropping support for these
+
