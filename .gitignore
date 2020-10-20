@@ -49,3 +49,4 @@ Main.sublime-menu
 .mypy_cache/
 poetry.lock
 pyproject.toml
+.env

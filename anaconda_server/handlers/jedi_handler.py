@@ -49,8 +49,6 @@ class JediHandler(AnacondaHandler):
         """Generate an usable Jedi Script
         """
         jedi_project = jedi.get_default_project(filename)
-        if self.settings.get("python_interpreter", "") != "":
-            jedi_project._environment_path = self.settings.get("python_interpreter")
 
         return jedi.Script(
             source, int(line), int(offset), filename, encoding, project=jedi_project)
