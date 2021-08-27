@@ -361,10 +361,12 @@
             https://pycodestyle.readthedocs.io/en/latest/intro.html#error-codes.
         Search for "Ennn:", where nnn is a 3-digit number.
         E309 is ignored by default as it conflicts with pep257 E211
+        W503 is ignored by default as it conflicts with pep8 W504
     */
     "pep8_ignore":
     [
-        "E309"
+        "E309",
+        "W503"
     ],
 
     // Maximum line length for pep8
