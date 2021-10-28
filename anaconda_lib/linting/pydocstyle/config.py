@@ -3,9 +3,14 @@
 import copy
 import itertools
 import os
-from collections import Set, namedtuple
 from re import compile as re
 
+try:
+    from collections import Set, namedtuple
+except ImportError:
+    # this will fail in Pyton >= 3.10
+    from collections.abc import Set
+    from collections import namedtuple
 
 try:  # Python 3.x
     from ConfigParser import RawConfigParser
@@ -36,7 +41,7 @@ class ConfigurationParser(object):
     ------------------
     Responsible for deciding things that are related to the user interface and
     configuration discovery, e.g. verbosity, debug options, etc.
-    All run configurations default to `False` or `None` and are decided only 
+    All run configurations default to `False` or `None` and are decided only
     by CLI.
 
     Check Configurations:
@@ -178,14 +183,14 @@ class ConfigurationParser(object):
 
     def _get_config_by_discovery(self, node):
         """Get a configuration for checking `node` by config discovery.
-        
+
         Config discovery happens when no explicit config file is specified. The
         file system is searched for config files starting from the directory
         containing the file being checked, and up until the root directory of
         the project.
-        
+
         See `_get_config` for further details.
-        
+
         """
         path = self._get_node_dir(node)
 
