@@ -72,6 +72,8 @@ class PyLinter(object):
         data = self.output
 
         for error in data.splitlines():
+            if not error or error.startswith("-") or error.startswith("Your code has been rated at"):
+                continue
             if '************* Module ' in error:
                 _, module = error.split('************* Module ')
                 if module not in self.filename:

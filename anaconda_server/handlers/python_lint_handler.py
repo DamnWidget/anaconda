@@ -102,8 +102,7 @@ class PythonLintHandler(AnacondaHandler):
 
         rcfile = self.settings.get('pylint_rcfile', False)
         PyLint(
-            partial(self._normalize, self.settings),
-            self.uid, self.vid, PyLinter, rcfile, filename
+            self._normalize, self.uid, self.vid, PyLinter, rcfile, filename
         )
 
     def import_validator(self, code, filename=None):
