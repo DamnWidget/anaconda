@@ -54,7 +54,7 @@ class PyLinter(object):
             args.append('--rcfile={0}'.format(os.path.expanduser(self.rcfile)))
 
         args.append(self.filename)
-        args = [sys.executable, '-m', 'pylint.lint'] + args
+        args = [sys.executable, '-m', 'pylint'] + args
 
         proc = spawn(args, stdout=PIPE, stderr=PIPE, cwd=os.getcwd())
         if proc is None:
