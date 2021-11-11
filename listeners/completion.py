@@ -84,6 +84,10 @@ class AnacondaCompletionEventListener(sublime_plugin.EventListener):
     def _complete(self, data: Dict[str, Any]) -> None:
 
         view = active_view()
+        # Temporary fix for completion bug in ST4
+        if int(sublime.version()) >= 4000:
+            if view.substr(view.sel()[0].begin() - 1) == ':' or view.substr(view.sel()[0].begin() - 1) == ')':
+                return
         proposals = data['completions'] if data['success'] else []
 
         if proposals:
