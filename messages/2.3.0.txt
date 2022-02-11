@@ -1,0 +1,44 @@
+
+                                                          |
+              _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
+             (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
+            \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
+                                     The Sublime Text 4 Python IDE
+
+
+Anaconda v2.3.0
+================
+
+Welcome to new anaconda v2.3.0, what can do you find in this release?
+
+## IMPORTANT
+    - Starting with this release v2.3.0 Anaconda will not work with Sublime Text 3 anymore
+    - It will also not work for older versions of Python (older than 3.6)
+
+## WARNING!!!!
+    If you want to continue using anaconda on ST3, uninstall this package from
+    package control, download version 2.2.3 from the Github repository and install
+    it in your User packages directory. Alternatively you can rollback to 2.2.3 and
+    instruct package control to do not update anaconda anymore
+
+## Fixes
+    - Autocompletion
+    - Goto Definition
+    - Goto Assignment
+    - Show Signatures
+    - Hover Documentation
+    - Show Documentation
+    - Python 3.10 features linting
+
+## Updates
+    - Update Parso to latest version
+    - Update Jedi to latest version
+    - Update PyFlakes to latest version
+    - Update PyCodestyle to latest version
+    - Update McCabe to latest version
+    - Added support for Pylint >= 2.5.0
+
+## Other Changes
+    - Drop support for Python < 3.6
+    - Drop support for Sublime Text 3 or Sublime Text 4 build < 4107
+
