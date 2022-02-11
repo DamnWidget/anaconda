@@ -1,8 +1,12 @@
 import os
+from pathlib import Path
+from typing import Union
 
 
-class FileIO(object):
-    def __init__(self, path):
+class FileIO:
+    def __init__(self, path: Union[os.PathLike, str]):
+        if isinstance(path, str):
+            path = Path(path)
         self.path = path
 
     def read(self):  # Returns bytes/str
@@ -18,8 +22,7 @@ class FileIO(object):
         """
         try:
             return os.path.getmtime(self.path)
-        except OSError:
-            # Might raise FileNotFoundError, OSError for Python 2
+        except FileNotFoundError:
             return None
 
     def __repr__(self):
@@ -28,7 +31,7 @@ class FileIO(object):
 
 class KnownContentFileIO(FileIO):
     def __init__(self, path, content):
-        super(KnownContentFileIO, self).__init__(path)
+        super().__init__(path)
         self._content = content
 
     def read(self):

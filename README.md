@@ -91,9 +91,9 @@ anaconda capabilities to other languages, the complete list of them can be shown
 
 | Language | Web Site | Package Control | Status |
 | --- | --- | --- | --- |
-| **Go** | https://github.com/DamnWidget/anaconda_go | Yes | Active |
-| **Rust** | https://github.com/DamnWidget/anaconda_rust | Yes | Active |
-| **PHP** | https://github.com/DamnWidget/anaconda_php | Yes | Active |
+| **Go** | https://github.com/DamnWidget/anaconda_go | Yes | Unmaintained |
+| **Rust** | https://github.com/DamnWidget/anaconda_rust | Yes | Unmaintained |
+| **PHP** | https://github.com/DamnWidget/anaconda_php | Yes | Unmaintained |
 
 Would you like to see your language empowered by anaconda? Use `anaconda_rust` or `anaconda_php` as templates and bring your language to life with anaconda's plugable architecture.
 

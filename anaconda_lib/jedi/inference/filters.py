@@ -3,23 +3,25 @@ Filters are objects that you can use to filter names in different scopes. They
 are needed for name resolution.
 """
 from abc import abstractmethod
+from typing import List, MutableMapping, Type
 import weakref
 
 from parso.tree import search_ancestor
+from parso.python.tree import Name, UsedNamesMapping
 
-from jedi._compatibility import use_metaclass
 from jedi.inference import flow_analysis
 from jedi.inference.base_value import ValueSet, ValueWrapper, \
     LazyValueWrapper
-from jedi.parser_utils import get_cached_parent_scope
+from jedi.parser_utils import get_cached_parent_scope, get_parso_cache_node
 from jedi.inference.utils import to_list
 from jedi.inference.names import TreeNameDefinition, ParamName, \
-    AnonymousParamName, AbstractNameDefinition
+    AnonymousParamName, AbstractNameDefinition, NameWrapper
 
+_definition_name_cache: MutableMapping[UsedNamesMapping, List[Name]]
 _definition_name_cache = weakref.WeakKeyDictionary()
 
 
-class AbstractFilter(object):
+class AbstractFilter:
     _until_position = None
 
     def _filter(self, names):
@@ -36,8 +38,8 @@ class AbstractFilter(object):
         raise NotImplementedError
 
 
-class FilterWrapper(object):
-    name_wrapper_class = None
+class FilterWrapper:
+    name_wrapper_class: Type[NameWrapper]
 
     def __init__(self, wrapped_filter):
         self._wrapped_filter = wrapped_filter
@@ -52,11 +54,15 @@ class FilterWrapper(object):
         return self.wrap_names(self._wrapped_filter.values())
 
 
-def _get_definition_names(used_names, name_key):
+def _get_definition_names(parso_cache_node, used_names, name_key):
+    if parso_cache_node is None:
+        names = used_names.get(name_key, ())
+        return tuple(name for name in names if name.is_definition(include_setitem=True))
+
     try:
-        for_module = _definition_name_cache[used_names]
+        for_module = _definition_name_cache[parso_cache_node]
     except KeyError:
-        for_module = _definition_name_cache[used_names] = {}
+        for_module = _definition_name_cache[parso_cache_node] = {}
 
     try:
         return for_module[name_key]
@@ -68,18 +74,40 @@ def _get_definition_names(used_names, name_key):
         return result
 
 
-class AbstractUsedNamesFilter(AbstractFilter):
+class _AbstractUsedNamesFilter(AbstractFilter):
     name_class = TreeNameDefinition
 
-    def __init__(self, parent_context, parser_scope):
-        self._parser_scope = parser_scope
-        self._module_node = self._parser_scope.get_root_node()
-        self._used_names = self._module_node.get_used_names()
+    def __init__(self, parent_context, node_context=None):
+        if node_context is None:
+            node_context = parent_context
+        self._node_context = node_context
+        self._parser_scope = node_context.tree_node
+        module_context = node_context.get_root_context()
+        # It is quite hacky that we have to use that. This is for caching
+        # certain things with a WeakKeyDictionary. However, parso intentionally
+        # uses slots (to save memory) and therefore we end up with having to
+        # have a weak reference to the object that caches the tree.
+        #
+        # Previously we have tried to solve this by using a weak reference onto
+        # used_names. However that also does not work, because it has a
+        # reference from the module, which itself is referenced by any node
+        # through parents.
+        path = module_context.py__file__()
+        if path is None:
+            # If the path is None, there is no guarantee that parso caches it.
+            self._parso_cache_node = None
+        else:
+            self._parso_cache_node = get_parso_cache_node(
+                module_context.inference_state.latest_grammar
+                if module_context.is_stub() else module_context.inference_state.grammar,
+                path
+            )
+        self._used_names = module_context.tree_node.get_used_names()
         self.parent_context = parent_context
 
     def get(self, name):
         return self._convert_names(self._filter(
-            _get_definition_names(self._used_names, name),
+            _get_definition_names(self._parso_cache_node, self._used_names, name),
         ))
 
     def _convert_names(self, names):
@@ -90,7 +118,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
             name
             for name_key in self._used_names
             for name in self._filter(
-                _get_definition_names(self._used_names, name_key),
+                _get_definition_names(self._parso_cache_node, self._used_names, name_key),
             )
         )
 
@@ -98,7 +126,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
         return '<%s: %s>' % (self.__class__.__name__, self.parent_context)
 
 
-class ParserTreeFilter(AbstractUsedNamesFilter):
+class ParserTreeFilter(_AbstractUsedNamesFilter):
     def __init__(self, parent_context, node_context=None, until_position=None,
                  origin_scope=None):
         """
@@ -107,15 +135,12 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
         value, but for some type inference it's important to have a local
         value of the other classes.
         """
-        if node_context is None:
-            node_context = parent_context
-        super(ParserTreeFilter, self).__init__(parent_context, node_context.tree_node)
-        self._node_context = node_context
+        super().__init__(parent_context, node_context)
         self._origin_scope = origin_scope
         self._until_position = until_position
 
     def _filter(self, names):
-        names = super(ParserTreeFilter, self)._filter(names)
+        names = super()._filter(names)
         names = [n for n in names if self._is_name_reachable(n)]
         return list(self._check_flows(names))
 
@@ -124,7 +149,7 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
         if parent.type == 'trailer':
             return False
         base_node = parent if parent.type in ('classdef', 'funcdef') else name
-        return get_cached_parent_scope(self._used_names, base_node) == self._parser_scope
+        return get_cached_parent_scope(self._parso_cache_node, base_node) == self._parser_scope
 
     def _check_flows(self, names):
         for name in sorted(names, key=lambda name: name.start_pos, reverse=True):
@@ -143,7 +168,7 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 
 class _FunctionExecutionFilter(ParserTreeFilter):
     def __init__(self, parent_context, function_value, until_position, origin_scope):
-        super(_FunctionExecutionFilter, self).__init__(
+        super().__init__(
             parent_context,
             until_position=until_position,
             origin_scope=origin_scope,
@@ -167,9 +192,9 @@ class _FunctionExecutionFilter(ParserTreeFilter):
 
 
 class FunctionExecutionFilter(_FunctionExecutionFilter):
-    def __init__(self, *args, **kwargs):
-        self._arguments = kwargs.pop('arguments')  # Python 2
-        super(FunctionExecutionFilter, self).__init__(*args, **kwargs)
+    def __init__(self, *args, arguments, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._arguments = arguments
 
     def _convert_param(self, param, name):
         return ParamName(self._function_value, name, self._arguments)
@@ -180,7 +205,7 @@ class AnonymousFunctionExecutionFilter(_FunctionExecutionFilter):
         return AnonymousParamName(self._function_value, name)
 
 
-class GlobalNameFilter(AbstractUsedNamesFilter):
+class GlobalNameFilter(_AbstractUsedNamesFilter):
     def get(self, name):
         try:
             names = self._used_names[name]
@@ -230,7 +255,7 @@ class DictFilter(AbstractFilter):
         return '<%s: for {%s}>' % (self.__class__.__name__, keys)
 
 
-class MergedFilter(object):
+class MergedFilter:
     def __init__(self, *filters):
         self._filters = filters
 
@@ -246,16 +271,16 @@ class MergedFilter(object):
 
 class _BuiltinMappedMethod(ValueWrapper):
     """``Generator.__next__`` ``dict.values`` methods and so on."""
-    api_type = u'function'
+    api_type = 'function'
 
     def __init__(self, value, method, builtin_func):
-        super(_BuiltinMappedMethod, self).__init__(builtin_func)
+        super().__init__(builtin_func)
         self._value = value
         self._method = method
 
     def py__call__(self, arguments):
         # TODO add TypeError if params are given/or not correct.
-        return self._method(self._value)
+        return self._method(self._value, arguments)
 
 
 class SpecialMethodFilter(DictFilter):
@@ -264,14 +289,9 @@ class SpecialMethodFilter(DictFilter):
     classes like Generator (for __next__, etc).
     """
     class SpecialMethodName(AbstractNameDefinition):
-        api_type = u'function'
+        api_type = 'function'
 
-        def __init__(self, parent_context, string_name, value, builtin_value):
-            callable_, python_version = value
-            if python_version is not None and \
-                    python_version != parent_context.inference_state.environment.version_info.major:
-                raise KeyError
-
+        def __init__(self, parent_context, string_name, callable_, builtin_value):
             self.parent_context = parent_context
             self.string_name = string_name
             self._callable = callable_
@@ -293,7 +313,7 @@ class SpecialMethodFilter(DictFilter):
             ])
 
     def __init__(self, value, dct, builtin_value):
-        super(SpecialMethodFilter, self).__init__(dct)
+        super().__init__(dct)
         self.value = value
         self._builtin_value = builtin_value
         """
@@ -309,7 +329,7 @@ class SpecialMethodFilter(DictFilter):
 
 class _OverwriteMeta(type):
     def __init__(cls, name, bases, dct):
-        super(_OverwriteMeta, cls).__init__(name, bases, dct)
+        super().__init__(name, bases, dct)
 
         base_dct = {}
         for base_cls in reversed(cls.__bases__):
@@ -326,28 +346,26 @@ class _OverwriteMeta(type):
         cls.overwritten_methods = base_dct
 
 
-class _AttributeOverwriteMixin(object):
+class _AttributeOverwriteMixin:
     def get_filters(self, *args, **kwargs):
         yield SpecialMethodFilter(self, self.overwritten_methods, self._wrapped_value)
-
-        for filter in self._wrapped_value.get_filters():
-            yield filter
+        yield from self._wrapped_value.get_filters(*args, **kwargs)
 
 
-class LazyAttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
-                                           LazyValueWrapper)):
+class LazyAttributeOverwrite(_AttributeOverwriteMixin, LazyValueWrapper,
+                             metaclass=_OverwriteMeta):
     def __init__(self, inference_state):
         self.inference_state = inference_state
 
 
-class AttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
-                                       ValueWrapper)):
+class AttributeOverwrite(_AttributeOverwriteMixin, ValueWrapper,
+                         metaclass=_OverwriteMeta):
     pass
 
 
-def publish_method(method_name, python_version_match=None):
+def publish_method(method_name):
     def decorator(func):
         dct = func.__dict__.setdefault('registered_overwritten_methods', {})
-        dct[method_name] = func, python_version_match
+        dct[method_name] = func
         return func
     return decorator

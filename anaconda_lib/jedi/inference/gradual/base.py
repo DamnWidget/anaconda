@@ -25,8 +25,7 @@ class _BoundTypeVarName(AbstractNameDefinition):
                 # Replace any with the constraints if they are there.
                 from jedi.inference.gradual.typing import AnyClass
                 if isinstance(value, AnyClass):
-                    for constraint in self._type_var.constraints:
-                        yield constraint
+                    yield from self._type_var.constraints
                 else:
                     yield value
         return ValueSet(iter_())
@@ -38,7 +37,7 @@ class _BoundTypeVarName(AbstractNameDefinition):
         return '<%s %s -> %s>' % (self.__class__.__name__, self.py__name__(), self._value_set)
 
 
-class _TypeVarFilter(object):
+class _TypeVarFilter:
     """
     A filter for all given variables in a class.
 
@@ -70,11 +69,10 @@ class _TypeVarFilter(object):
 
 class _AnnotatedClassContext(ClassContext):
     def get_filters(self, *args, **kwargs):
-        filters = super(_AnnotatedClassContext, self).get_filters(
+        filters = super().get_filters(
             *args, **kwargs
         )
-        for f in filters:
-            yield f
+        yield from filters
 
         # The type vars can only be looked up if it's a global search and
         # not a direct lookup on the class.
@@ -138,10 +136,18 @@ class DefineGenericBaseClass(LazyValueWrapper):
             any(
                 # TODO why is this ordering the correct one?
                 cls2.is_same_class(cls1)
-                for cls1 in class_set1
-                for cls2 in class_set2
+                # TODO I'm still not sure gather_annotation_classes is a good
+                # idea. They are essentially here to avoid comparing Tuple <=>
+                # tuple and instead compare tuple <=> tuple, but at the moment
+                # the whole `is_same_class` and `is_sub_class` matching is just
+                # not in the best shape.
+                for cls1 in class_set1.gather_annotation_classes()
+                for cls2 in class_set2.gather_annotation_classes()
             ) for class_set1, class_set2 in zip(given_params1, given_params2)
         )
+
+    def get_signatures(self):
+        return []
 
     def __repr__(self):
         return '<%s: %s%s>' % (
@@ -151,7 +157,7 @@ class DefineGenericBaseClass(LazyValueWrapper):
         )
 
 
-class GenericClass(ClassMixin, DefineGenericBaseClass):
+class GenericClass(DefineGenericBaseClass, ClassMixin):
     """
     A class that is defined with generics, might be something simple like:
 
@@ -159,7 +165,7 @@ class GenericClass(ClassMixin, DefineGenericBaseClass):
         my_foo_int_cls = Foo[int]
     """
     def __init__(self, class_value, generics_manager):
-        super(GenericClass, self).__init__(generics_manager)
+        super().__init__(generics_manager)
         self._class_value = class_value
 
     def _get_wrapped_value(self):
@@ -181,7 +187,7 @@ class GenericClass(ClassMixin, DefineGenericBaseClass):
         return _TypeVarFilter(self.get_generics(), self.list_type_vars())
 
     def py__call__(self, arguments):
-        instance, = super(GenericClass, self).py__call__(arguments)
+        instance, = super().py__call__(arguments)
         return ValueSet([_GenericInstanceWrapper(instance)])
 
     def _as_context(self):
@@ -190,15 +196,18 @@ class GenericClass(ClassMixin, DefineGenericBaseClass):
     @to_list
     def py__bases__(self):
         for base in self._wrapped_value.py__bases__():
-            yield _LazyGenericBaseClass(self, base)
+            yield _LazyGenericBaseClass(self, base, self._generics_manager)
 
     def _create_instance_with_generics(self, generics_manager):
         return GenericClass(self._class_value, generics_manager)
 
     def is_sub_class_of(self, class_value):
-        if super(GenericClass, self).is_sub_class_of(class_value):
+        if super().is_sub_class_of(class_value):
             return True
         return self._class_value.is_sub_class_of(class_value)
+
+    def with_generics(self, generics_tuple):
+        return self._class_value.with_generics(generics_tuple)
 
     def infer_type_vars(self, value_set):
         # Circular
@@ -222,7 +231,7 @@ class GenericClass(ClassMixin, DefineGenericBaseClass):
                 else:
                     continue
 
-                if py_class.api_type != u'class':
+                if py_class.api_type != 'class':
                     # Functions & modules don't have an MRO and we're not
                     # expecting a Callable (those are handled separately within
                     # TypingClassValueWithIndex).
@@ -240,10 +249,11 @@ class GenericClass(ClassMixin, DefineGenericBaseClass):
         return type_var_dict
 
 
-class _LazyGenericBaseClass(object):
-    def __init__(self, class_value, lazy_base_class):
+class _LazyGenericBaseClass:
+    def __init__(self, class_value, lazy_base_class, generics_manager):
         self._class_value = class_value
         self._lazy_base_class = lazy_base_class
+        self._generics_manager = generics_manager
 
     @iterator_to_value_set
     def infer(self):
@@ -256,7 +266,17 @@ class _LazyGenericBaseClass(object):
                     TupleGenericManager(tuple(self._remap_type_vars(base))),
                 )
             else:
-                yield base
+                if base.is_class_mixin():
+                    # This case basically allows classes like `class Foo(List)`
+                    # to be used like `Foo[int]`. The generics are not
+                    # necessary and can be used later.
+                    yield GenericClass.create_cached(
+                        base.inference_state,
+                        base,
+                        self._generics_manager,
+                    )
+                else:
+                    yield base
 
     def _remap_type_vars(self, base):
         from jedi.inference.gradual.type_var import TypeVar
@@ -276,6 +296,9 @@ class _LazyGenericBaseClass(object):
                     new |= ValueSet([type_var])
             yield new
 
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._lazy_base_class)
+
 
 class _GenericInstanceWrapper(ValueWrapper):
     def py__stop_iteration_returns(self):
@@ -287,7 +310,7 @@ class _GenericInstanceWrapper(ValueWrapper):
                 except IndexError:
                     pass
             elif cls.py__name__() == 'Iterator':
-                return ValueSet([builtin_from_name(self.inference_state, u'None')])
+                return ValueSet([builtin_from_name(self.inference_state, 'None')])
         return self._wrapped_value.py__stop_iteration_returns()
 
     def get_type_hint(self, add_class_info=True):
@@ -304,10 +327,10 @@ class _PseudoTreeNameClass(Value):
     this class. Essentially this class makes it possible to goto that `Tuple`
     name, without affecting anything else negatively.
     """
-    api_type = u'class'
+    api_type = 'class'
 
     def __init__(self, parent_context, tree_name):
-        super(_PseudoTreeNameClass, self).__init__(
+        super().__init__(
             parent_context.inference_state,
             parent_context
         )
@@ -334,7 +357,7 @@ class _PseudoTreeNameClass(Value):
     def py__class__(self):
         # This might not be 100% correct, but it is good enough. The details of
         # the typing library are not really an issue for Jedi.
-        return builtin_from_name(self.inference_state, u'type')
+        return builtin_from_name(self.inference_state, 'type')
 
     @property
     def name(self):
@@ -360,13 +383,16 @@ class BaseTypingValue(LazyValueWrapper):
     def _get_wrapped_value(self):
         return _PseudoTreeNameClass(self.parent_context, self._tree_name)
 
+    def get_signatures(self):
+        return self._wrapped_value.get_signatures()
+
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)
 
 
 class BaseTypingClassWithGenerics(DefineGenericBaseClass):
     def __init__(self, parent_context, tree_name, generics_manager):
-        super(BaseTypingClassWithGenerics, self).__init__(generics_manager)
+        super().__init__(generics_manager)
         self.inference_state = parent_context.inference_state
         self.parent_context = parent_context
         self._tree_name = tree_name
@@ -393,12 +419,15 @@ class BaseTypingInstance(LazyValueWrapper):
     def get_annotated_class_object(self):
         return self._class_value
 
+    def get_qualified_names(self):
+        return (self.py__name__(),)
+
     @property
     def name(self):
         return ValueName(self, self._tree_name)
 
     def _get_wrapped_value(self):
-        object_, = builtin_from_name(self.inference_state, u'object').execute_annotation()
+        object_, = builtin_from_name(self.inference_state, 'object').execute_annotation()
         return object_
 
     def __repr__(self):

@@ -1,4 +1,3 @@
-
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
@@ -14,7 +13,8 @@ from .base import Command
 # imported, this command just crashes and forces a JsonServer new instance
 if sys.version_info >= (3, 0):
     import html
-    if sys .version_info < (3, 4):
+
+    if sys.version_info < (3, 4):
         import html as cgi
         from html.parser import HTMLParser
 else:
@@ -24,21 +24,21 @@ else:
 
 
 class Doc(Command):
-    """Get back a python definition where to go
-    """
+    """Get back a python definition where to go"""
 
-    def __init__(self, callback, uid, script, html):
+    def __init__(self, callback, line, col, uid, script, html):
         self.script = script
         self.html = html
+        self.line = line
+        self.col = col
         super(Doc, self).__init__(callback, uid)
 
     def run(self):
-        """Run the command
-        """
+        """Run the command"""
 
         processed = []
         try:
-            definitions = self.script.goto_definitions()
+            definitions = self.script.infer(line=self.line, column=self.col)
         except Exception as error:
             logging.debug(error)
             logging.debug(self.script)
@@ -53,33 +53,36 @@ class Doc(Command):
             for definition in definitions:
                 if definition not in processed:
                     docs.append(
-                        self._plain(definition) if not self.html
+                        self._plain(definition)
+                        if not self.html
                         else self._html(definition)
                     )
                     processed.append(definition)
 
-        self.callback({
-            'success': success,
-            'doc': ('<br><br>' if self.html
-                    else '\n' + '-' * 79 + '\n').join(docs),
-            'uid': self.uid
-        })
+        self.callback(
+            {
+                'success': success,
+                'doc': (
+                    '<br><br>' if self.html else '\n' + '-' * 79 + '\n'
+                ).join(docs),
+                'uid': self.uid,
+            }
+        )
 
     def _plain(sef, definition):
-        """Generate a documentation string for use as plain text
-        """
+        """Generate a documentation string for use as plain text"""
 
         return 'Docstring for {0}\n{1}\n{2}'.format(
             definition.full_name, '=' * 40, definition.docstring()
         )
 
     def _html(self, definition):
-        """Generate documentation string in HTML format
-        """
+        """Generate documentation string in HTML format"""
 
         if sys.version_info >= (3, 4):
             escaped_doc = html.escape(
-                html.unescape(definition.docstring()), quote=False)
+                html.unescape(definition.docstring()), quote=False
+            )
         else:
             try:
                 escaped_doc = cgi.escape(

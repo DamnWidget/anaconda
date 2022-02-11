@@ -93,7 +93,7 @@ class JSONHandler(asynchat.async_chat):
 
             self.server.last_call = time.time()
 
-        if type(data) is dict:
+        if isinstance(data, dict):
             logging.info(
                 'client requests: {0}'.format(data['method'])
             )
@@ -109,7 +109,9 @@ class JSONHandler(asynchat.async_chat):
                     method, handler_type)
                 )
             try:
-                self.handle_command(handler_type, method, uid, vid, settings, data)
+                self.handle_command(
+                    handler_type, method, uid, vid, settings, data,
+                )
             except Exception as error:
                 logging.error(error)
                 log_traceback()
@@ -137,7 +139,9 @@ class JSONHandler(asynchat.async_chat):
         if DEBUG_MODE is True:
             print('{0} handler retrieved from registry'.format(handler))
 
-        handler(method, data, uid, vid, settings, self.return_back, DEBUG_MODE).run()
+        handler(
+            method, data, uid, vid, settings, self.return_back, DEBUG_MODE,
+        ).run()
 
 
 class JSONServer(asyncore.dispatcher):

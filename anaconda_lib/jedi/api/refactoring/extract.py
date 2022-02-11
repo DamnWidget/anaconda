@@ -9,7 +9,6 @@ from jedi.common import indent_block
 from jedi.parser_utils import function_is_classmethod, function_is_staticmethod
 
 
-_EXTRACT_USE_PARENT = EXPRESSION_PARTS + ['trailer']
 _DEFINITION_SCOPES = ('suite', 'file_input')
 _VARIABLE_EXCTRACTABLE = EXPRESSION_PARTS + \
     ('atom testlist_star_expr testlist test lambdef lambdef_nocond '
@@ -57,7 +56,9 @@ def _find_nodes(module_node, pos, until_pos):
         if _is_not_extractable_syntax(start_node):
             start_node = start_node.parent
 
-        while start_node.parent.type in _EXTRACT_USE_PARENT:
+        if start_node.parent.type == 'trailer':
+            start_node = start_node.parent.parent
+        while start_node.parent.type in EXPRESSION_PARTS:
             start_node = start_node.parent
 
         nodes = [start_node]
@@ -349,8 +350,7 @@ def _find_non_global_names(nodes):
             if node.type == 'trailer' and node.children[0] == '.':
                 continue
 
-            for x in _find_non_global_names(children):  # Python 2...
-                yield x
+            yield from _find_non_global_names(children)
 
 
 def _get_code_insertion_node(node, is_bound_method):

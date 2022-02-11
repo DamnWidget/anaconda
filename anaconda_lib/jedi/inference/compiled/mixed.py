@@ -3,12 +3,10 @@ Used only for REPL Completion.
 """
 
 import inspect
-import os
-import sys
+from pathlib import Path
 
 from jedi.parser_utils import get_cached_code_lines
 
-from jedi._compatibility import unwrap
 from jedi import settings
 from jedi.cache import memoize_method
 from jedi.inference import compiled
@@ -44,7 +42,7 @@ class MixedObject(ValueWrapper):
     to modify the runtime.
     """
     def __init__(self, compiled_value, tree_value):
-        super(MixedObject, self).__init__(tree_value)
+        super().__init__(tree_value)
         self.compiled_value = compiled_value
         self.access_handle = compiled_value.access_handle
 
@@ -71,11 +69,21 @@ class MixedObject(ValueWrapper):
         else:
             return self.compiled_value.get_safe_value(default)
 
+    @property
+    def array_type(self):
+        return self.compiled_value.array_type
+
+    def get_key_values(self):
+        return self.compiled_value.get_key_values()
+
     def py__simple_getitem__(self, index):
         python_object = self.compiled_value.access_handle.access._obj
         if type(python_object) in ALLOWED_GETITEM_TYPES:
             return self.compiled_value.py__simple_getitem__(index)
         return self._wrapped_value.py__simple_getitem__(index)
+
+    def negate(self):
+        return self.compiled_value.negate()
 
     def _as_context(self):
         if self.parent_context is None:
@@ -105,7 +113,7 @@ class MixedName(NameWrapper):
     The ``CompiledName._compiled_value`` is our MixedObject.
     """
     def __init__(self, wrapped_name, parent_tree_value):
-        super(MixedName, self).__init__(wrapped_name)
+        super().__init__(wrapped_name)
         self._parent_tree_value = parent_tree_value
 
     @property
@@ -131,12 +139,12 @@ class MixedName(NameWrapper):
 
 class MixedObjectFilter(compiled.CompiledValueFilter):
     def __init__(self, inference_state, compiled_value, tree_value):
-        super(MixedObjectFilter, self).__init__(inference_state, compiled_value)
+        super().__init__(inference_state, compiled_value)
         self._tree_value = tree_value
 
     def _create_name(self, name):
         return MixedName(
-            super(MixedObjectFilter, self)._create_name(name),
+            super()._create_name(name),
             self._tree_value,
         )
 
@@ -153,12 +161,11 @@ def _load_module(inference_state, path):
 
 def _get_object_to_check(python_object):
     """Check if inspect.getfile has a chance to find the source."""
-    if sys.version_info[0] > 2:
-        try:
-            python_object = unwrap(python_object)
-        except ValueError:
-            # Can return a ValueError when it wraps around
-            pass
+    try:
+        python_object = inspect.unwrap(python_object)
+    except ValueError:
+        # Can return a ValueError when it wraps around
+        pass
 
     if (inspect.ismodule(python_object)
             or inspect.isclass(python_object)
@@ -180,11 +187,19 @@ def _find_syntax_node_name(inference_state, python_object):
     try:
         python_object = _get_object_to_check(python_object)
         path = inspect.getsourcefile(python_object)
-    except TypeError:
+    except (OSError, TypeError):
         # The type might not be known (e.g. class_with_dict.__weakref__)
         return None
-    if path is None or not os.path.exists(path):
-        # The path might not exist or be e.g. <stdin>.
+    path = None if path is None else Path(path)
+    try:
+        if path is None or not path.exists():
+            # The path might not exist or be e.g. <stdin>.
+            return None
+    except OSError:
+        # Might raise an OSError on Windows:
+        #
+        #     [WinError 123] The filename, directory name, or volume label
+        #     syntax is incorrect: '<string>'
         return None
 
     file_io = FileIO(path)

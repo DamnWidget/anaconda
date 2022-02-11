@@ -43,11 +43,10 @@ class Parser(BaseParser):
         # Not sure if this is the best idea, but IMO it's the easiest way to
         # avoid extreme amounts of work around the subtle difference of 2/3
         # grammar in list comoprehensions.
-        'list_for': tree.SyncCompFor,
         'decorator': tree.Decorator,
         'lambdef': tree.Lambda,
-        'old_lambdef': tree.Lambda,
         'lambdef_nocond': tree.Lambda,
+        'namedexpr_test': tree.NamedExpr,
     }
     default_node = tree.PythonNode
 
@@ -63,8 +62,8 @@ class Parser(BaseParser):
     }
 
     def __init__(self, pgen_grammar, error_recovery=True, start_nonterminal='file_input'):
-        super(Parser, self).__init__(pgen_grammar, start_nonterminal,
-                                     error_recovery=error_recovery)
+        super().__init__(pgen_grammar, start_nonterminal,
+                         error_recovery=error_recovery)
 
         self.syntax_errors = []
         self._omit_dedent_list = []
@@ -77,7 +76,7 @@ class Parser(BaseParser):
 
             tokens = self._recovery_tokenize(tokens)
 
-        return super(Parser, self).parse(tokens)
+        return super().parse(tokens)
 
     def convert_node(self, nonterminal, children):
         """
@@ -96,15 +95,7 @@ class Parser(BaseParser):
                 # ones and therefore have pseudo start/end positions and no
                 # prefixes. Just ignore them.
                 children = [children[0]] + children[2:-1]
-            elif nonterminal == 'list_if':
-                # Make transitioning from 2 to 3 easier.
-                nonterminal = 'comp_if'
-            elif nonterminal == 'listmaker':
-                # Same as list_if above.
-                nonterminal = 'testlist_comp'
             node = self.default_node(nonterminal, children)
-        for c in children:
-            c.parent = node
         return node
 
     def convert_leaf(self, type, value, prefix, start_pos):
@@ -146,7 +137,7 @@ class Parser(BaseParser):
                         return
 
         if not self._error_recovery:
-            return super(Parser, self).error_recovery(token)
+            return super().error_recovery(token)
 
         def current_suite(stack):
             # For now just discard everything that is not a suite or
@@ -192,8 +183,6 @@ class Parser(BaseParser):
 
         if all_nodes:
             node = tree.PythonErrorNode(all_nodes)
-            for n in all_nodes:
-                n.parent = node
             self.stack[start_index - 1].nodes.append(node)
 
         self.stack[start_index:] = []

@@ -3,10 +3,12 @@ Imitate the parser representation.
 """
 import re
 from functools import partial
+from inspect import Parameter
+from pathlib import Path
+from typing import Optional
 
 from jedi import debug
 from jedi.inference.utils import to_list
-from jedi._compatibility import force_unicode, Parameter, cast_path
 from jedi.cache import memoize_method
 from jedi.inference.filters import AbstractFilter
 from jedi.inference.names import AbstractNameDefinition, ValueNameMixin, \
@@ -20,7 +22,7 @@ from jedi.inference.signature import BuiltinSignature
 from jedi.inference.context import CompiledContext, CompiledModuleContext
 
 
-class CheckAttribute(object):
+class CheckAttribute:
     """Raises :exc:`AttributeError` if the attribute X is not available."""
     def __init__(self, check_name=None):
         # Remove the py in front of e.g. py__call__.
@@ -29,7 +31,7 @@ class CheckAttribute(object):
     def __call__(self, func):
         self.func = func
         if self.check_name is None:
-            self.check_name = force_unicode(func.__name__[2:])
+            self.check_name = func.__name__[2:]
         return self
 
     def __get__(self, instance, owner):
@@ -43,7 +45,7 @@ class CheckAttribute(object):
 
 class CompiledValue(Value):
     def __init__(self, inference_state, access_handle, parent_context=None):
-        super(CompiledValue, self).__init__(inference_state, parent_context)
+        super().__init__(inference_state, parent_context)
         self.access_handle = access_handle
 
     def py__call__(self, arguments):
@@ -56,9 +58,9 @@ class CompiledValue(Value):
             ).execute_annotation()
 
         try:
-            self.access_handle.getattr_paths(u'__call__')
+            self.access_handle.getattr_paths('__call__')
         except AttributeError:
-            return super(CompiledValue, self).py__call__(arguments)
+            return super().py__call__(arguments)
         else:
             if self.access_handle.is_class():
                 from jedi.inference.value import CompiledInstance
@@ -163,9 +165,9 @@ class CompiledValue(Value):
             try:
                 access = self.access_handle.py__simple_getitem__(index)
             except AttributeError:
-                return super(CompiledValue, self).py__simple_getitem__(index)
+                return super().py__simple_getitem__(index)
         if access is None:
-            return NO_VALUES
+            return super().py__simple_getitem__(index)
 
         return ValueSet([create_from_access_path(self.inference_state, access)])
 
@@ -174,20 +176,15 @@ class CompiledValue(Value):
         if all_access_paths is None:
             # This means basically that no __getitem__ has been defined on this
             # object.
-            return super(CompiledValue, self).py__getitem__(index_value_set, contextualized_node)
+            return super().py__getitem__(index_value_set, contextualized_node)
         return ValueSet(
             create_from_access_path(self.inference_state, access)
             for access in all_access_paths
         )
 
     def py__iter__(self, contextualized_node=None):
-        # Python iterators are a bit strange, because there's no need for
-        # the __iter__ function as long as __getitem__ is defined (it will
-        # just start with __getitem__(0). This is especially true for
-        # Python 2 strings, where `str.__iter__` is not even defined.
         if not self.access_handle.has_iter():
-            for x in super(CompiledValue, self).py__iter__(contextualized_node):
-                yield x
+            yield from super().py__iter__(contextualized_node)
 
         access_path_list = self.access_handle.py__iter__list()
         if access_path_list is None:
@@ -222,10 +219,8 @@ class CompiledValue(Value):
                 continue
             else:
                 bltn_obj = builtin_from_name(self.inference_state, name)
-                for result in self.inference_state.execute(bltn_obj, params):
-                    yield result
-        for type_ in docstrings.infer_return_types(self):
-            yield type_
+                yield from self.inference_state.execute(bltn_obj, params)
+        yield from docstrings.infer_return_types(self)
 
     def get_safe_value(self, default=_sentinel):
         try:
@@ -264,7 +259,7 @@ class CompiledValue(Value):
                 v.with_generics(arguments)
                 for v in self.inference_state.typing_module.py__getattribute__(name)
             ]).execute_annotation()
-        return super(CompiledValue, self).execute_annotation()
+        return super().execute_annotation()
 
     def negate(self):
         return create_from_access_path(self.inference_state, self.access_handle.negate())
@@ -298,10 +293,7 @@ class CompiledModule(CompiledValue):
         return CompiledModuleContext(self)
 
     def py__path__(self):
-        paths = self.access_handle.py__path__()
-        if paths is None:
-            return None
-        return map(cast_path, paths)
+        return self.access_handle.py__path__()
 
     def is_package(self):
         return self.py__path__() is not None
@@ -314,8 +306,8 @@ class CompiledModule(CompiledValue):
             return ()
         return tuple(name.split('.'))
 
-    def py__file__(self):
-        return cast_path(self.access_handle.py__file__())
+    def py__file__(self) -> Optional[Path]:
+        return self.access_handle.py__file__()  # type: ignore[no-any-return]
 
 
 class CompiledName(AbstractNameDefinition):
@@ -326,8 +318,7 @@ class CompiledName(AbstractNameDefinition):
         self.string_name = name
 
     def py__doc__(self):
-        value, = self.infer()
-        return value.py__doc__()
+        return self.infer_compiled_value().py__doc__()
 
     def _get_qualified_names(self):
         parent_qualified_names = self.parent_context.get_qualified_names()
@@ -351,16 +342,12 @@ class CompiledName(AbstractNameDefinition):
 
     @property
     def api_type(self):
-        api = self.infer()
-        # If we can't find the type, assume it is an instance variable
-        if not api:
-            return "instance"
-        return next(iter(api)).api_type
+        return self.infer_compiled_value().api_type
 
-    @memoize_method
     def infer(self):
         return ValueSet([self.infer_compiled_value()])
 
+    @memoize_method
     def infer_compiled_value(self):
         return create_from_name(self._inference_state, self._parent_value, self.string_name)
 
@@ -447,7 +434,7 @@ class CompiledValueFilter(AbstractFilter):
         access_handle = self.compiled_value.access_handle
         return self._get(
             name,
-            lambda name, unsafe: access_handle.is_allowed_getattr(name, unsafe),
+            lambda name, safe: access_handle.is_allowed_getattr(name, safe=safe),
             lambda name: name in access_handle.dir(),
             check_has_attribute=True
         )
@@ -456,15 +443,12 @@ class CompiledValueFilter(AbstractFilter):
         """
         To remove quite a few access calls we introduced the callback here.
         """
-        # Always use unicode objects in Python 2 from here.
-        name = force_unicode(name)
-
         if self._inference_state.allow_descriptor_getattr:
             pass
 
         has_attribute, is_descriptor = allowed_getattr_callback(
             name,
-            unsafe=self._inference_state.allow_descriptor_getattr
+            safe=not self._inference_state.allow_descriptor_getattr
         )
         if check_has_attribute and not has_attribute:
             return []
@@ -488,7 +472,7 @@ class CompiledValueFilter(AbstractFilter):
         from jedi.inference.compiled import builtin_from_name
         names = []
         needs_type_completions, dir_infos = self.compiled_value.access_handle.get_dir_infos()
-        # We could use `unsafe` here as well, especially as a parameter to
+        # We could use `safe=False` here as well, especially as a parameter to
         # get_dir_infos. But this would lead to a lot of property executions
         # that are probably not wanted. The drawback for this is that we
         # have a different name for `get` and `values`. For `get` we always
@@ -496,13 +480,13 @@ class CompiledValueFilter(AbstractFilter):
         for name in dir_infos:
             names += self._get(
                 name,
-                lambda name, unsafe: dir_infos[name],
+                lambda name, safe: dir_infos[name],
                 lambda name: name in dir_infos,
             )
 
         # ``dir`` doesn't include the type names.
         if not self.is_instance and needs_type_completions:
-            for filter in builtin_from_name(self._inference_state, u'type').get_filters():
+            for filter in builtin_from_name(self._inference_state, 'type').get_filters():
                 names += filter.values()
         return names
 
@@ -518,11 +502,11 @@ class CompiledValueFilter(AbstractFilter):
 
 
 docstr_defaults = {
-    'floating point number': u'float',
-    'character': u'str',
-    'integer': u'int',
-    'dictionary': u'dict',
-    'string': u'str',
+    'floating point number': 'float',
+    'character': 'str',
+    'integer': 'int',
+    'dictionary': 'dict',
+    'string': 'str',
 }
 
 
@@ -534,7 +518,6 @@ def _parse_function_doc(doc):
     TODO docstrings like utime(path, (atime, mtime)) and a(b [, b]) -> None
     TODO docstrings like 'tuple of integers'
     """
-    doc = force_unicode(doc)
     # parse round parentheses: def func(a, (b,c))
     try:
         count = 0
@@ -553,7 +536,7 @@ def _parse_function_doc(doc):
         # UnboundLocalError for undefined end in last line
         debug.dbg('no brackets found - no param')
         end = 0
-        param_str = u''
+        param_str = ''
     else:
         # remove square brackets, that show an optional param ( = None)
         def change_options(m):
@@ -571,9 +554,9 @@ def _parse_function_doc(doc):
     param_str = param_str.replace('-', '_')  # see: isinstance.__doc__
 
     # parse return value
-    r = re.search(u'-[>-]* ', doc[end:end + 7])
+    r = re.search('-[>-]* ', doc[end:end + 7])
     if r is None:
-        ret = u''
+        ret = ''
     else:
         index = end + r.end()
         # get result type, which can contain newlines

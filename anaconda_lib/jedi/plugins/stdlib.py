@@ -11,8 +11,8 @@ compiled module that returns the types for C-builtins.
 """
 import parso
 import os
+from inspect import Parameter
 
-from jedi._compatibility import force_unicode, Parameter
 from jedi import debug
 from jedi.inference.utils import safe_property
 from jedi.inference.helpers import get_str_or_none
@@ -119,7 +119,9 @@ def execute(callback):
             else:
                 return call()
 
-            if value.is_bound_method():
+            if value.is_bound_method() or value.is_instance():
+                # value can be an instance for example if it is a partial
+                # object.
                 return call()
 
             # for now we just support builtin functions.
@@ -180,14 +182,9 @@ def argument_clinic(clinic_string, want_value=False, want_context=False,
 
 @argument_clinic('iterator[, default], /', want_inference_state=True)
 def builtins_next(iterators, defaults, inference_state):
-    if inference_state.environment.version_info.major == 2:
-        name = 'next'
-    else:
-        name = '__next__'
-
     # TODO theoretically we have to check here if something is an iterator.
     # That is probably done by checking if it's not a class.
-    return defaults | iterators.py__getattribute__(name).execute_with_values()
+    return defaults | iterators.py__getattribute__('__next__').execute_with_values()
 
 
 @argument_clinic('iterator[, default], /')
@@ -206,7 +203,7 @@ def builtins_getattr(objects, names, defaults=None):
                 debug.warning('getattr called without str')
                 continue
             else:
-                return value.py__getattribute__(force_unicode(string))
+                return value.py__getattribute__(string)
     return NO_VALUES
 
 
@@ -257,16 +254,14 @@ def builtins_super(types, objects, context):
 
 class ReversedObject(AttributeOverwrite):
     def __init__(self, reversed_obj, iter_list):
-        super(ReversedObject, self).__init__(reversed_obj)
+        super().__init__(reversed_obj)
         self._iter_list = iter_list
 
-    @publish_method('__iter__')
     def py__iter__(self, contextualized_node=None):
         return self._iter_list
 
-    @publish_method('next', python_version_match=2)
-    @publish_method('__next__', python_version_match=3)
-    def py__next__(self):
+    @publish_method('__next__')
+    def _next(self, arguments):
         return ValueSet.from_sets(
             lazy_value.infer() for lazy_value in self._iter_list
         )
@@ -328,7 +323,7 @@ def builtins_isinstance(objects, types, arguments, inference_state):
                     analysis.add(lazy_value.context, 'type-error-isinstance', node, message)
 
     return ValueSet(
-        compiled.builtin_from_name(inference_state, force_unicode(str(b)))
+        compiled.builtin_from_name(inference_state, str(b))
         for b in bool_results
     )
 
@@ -345,7 +340,7 @@ def builtins_staticmethod(functions):
 
 class ClassMethodObject(ValueWrapper):
     def __init__(self, class_method_obj, function):
-        super(ClassMethodObject, self).__init__(class_method_obj)
+        super().__init__(class_method_obj)
         self._function = function
 
     def py__get__(self, instance, class_value):
@@ -357,7 +352,7 @@ class ClassMethodObject(ValueWrapper):
 
 class ClassMethodGet(ValueWrapper):
     def __init__(self, get_method, klass, function):
-        super(ClassMethodGet, self).__init__(get_method)
+        super().__init__(get_method)
         self._class = klass
         self._function = function
 
@@ -370,7 +365,7 @@ class ClassMethodGet(ValueWrapper):
 
 class ClassMethodArguments(TreeArgumentsWrapper):
     def __init__(self, klass, arguments):
-        super(ClassMethodArguments, self).__init__(arguments)
+        super().__init__(arguments)
         self._class = klass
 
     def unpack(self, func=None):
@@ -389,19 +384,21 @@ def builtins_classmethod(functions, value, arguments):
 
 
 class PropertyObject(AttributeOverwrite, ValueWrapper):
+    api_type = 'property'
+
     def __init__(self, property_obj, function):
-        super(PropertyObject, self).__init__(property_obj)
+        super().__init__(property_obj)
         self._function = function
 
     def py__get__(self, instance, class_value):
         if instance is None:
-            return NO_VALUES
+            return ValueSet([self])
         return self._function.execute_with_values(instance)
 
     @publish_method('deleter')
     @publish_method('getter')
     @publish_method('setter')
-    def _return_self(self):
+    def _return_self(self, arguments):
         return ValueSet({self})
 
 
@@ -425,11 +422,11 @@ def collections_namedtuple(value, arguments, callback):
     inference_state = value.inference_state
 
     # Process arguments
-    name = u'jedi_unknown_namedtuple'
+    name = 'jedi_unknown_namedtuple'
     for c in _follow_param(inference_state, arguments, 0):
         x = get_str_or_none(c)
         if x is not None:
-            name = force_unicode(x)
+            name = x
             break
 
     # TODO here we only use one of the types, we should use all.
@@ -439,10 +436,10 @@ def collections_namedtuple(value, arguments, callback):
     _fields = list(param_values)[0]
     string = get_str_or_none(_fields)
     if string is not None:
-        fields = force_unicode(string).replace(',', ' ').split()
+        fields = string.replace(',', ' ').split()
     elif isinstance(_fields, iterable.Sequence):
         fields = [
-            force_unicode(get_str_or_none(v))
+            get_str_or_none(v)
             for lazy_value in _fields.py__iter__()
             for v in lazy_value.infer()
         ]
@@ -455,7 +452,7 @@ def collections_namedtuple(value, arguments, callback):
         typename=name,
         field_names=tuple(fields),
         num_fields=len(fields),
-        arg_list=repr(tuple(fields)).replace("u'", "").replace("'", "")[1:-1],
+        arg_list=repr(tuple(fields)).replace("'", "")[1:-1],
         repr_fmt='',
         field_defs='\n'.join(_NAMEDTUPLE_FIELD_TEMPLATE.format(index=index, name=name)
                              for index, name in enumerate(fields))
@@ -474,12 +471,11 @@ def collections_namedtuple(value, arguments, callback):
 
 class PartialObject(ValueWrapper):
     def __init__(self, actual_value, arguments, instance=None):
-        super(PartialObject, self).__init__(actual_value)
-        self._actual_value = actual_value
+        super().__init__(actual_value)
         self._arguments = arguments
         self._instance = instance
 
-    def _get_function(self, unpacked_arguments):
+    def _get_functions(self, unpacked_arguments):
         key, lazy_value = next(unpacked_arguments, (None, None))
         if key is not None or lazy_value is None:
             debug.warning("Partial should have a proper function %s", self._arguments)
@@ -488,8 +484,8 @@ class PartialObject(ValueWrapper):
 
     def get_signatures(self):
         unpacked_arguments = self._arguments.unpack()
-        func = self._get_function(unpacked_arguments)
-        if func is None:
+        funcs = self._get_functions(unpacked_arguments)
+        if funcs is None:
             return []
 
         arg_count = 0
@@ -501,16 +497,29 @@ class PartialObject(ValueWrapper):
                 arg_count += 1
             else:
                 keys.add(key)
-        return [PartialSignature(s, arg_count, keys) for s in func.get_signatures()]
+        return [PartialSignature(s, arg_count, keys) for s in funcs.get_signatures()]
 
     def py__call__(self, arguments):
-        func = self._get_function(self._arguments.unpack())
-        if func is None:
+        funcs = self._get_functions(self._arguments.unpack())
+        if funcs is None:
             return NO_VALUES
 
-        return func.execute(
+        return funcs.execute(
             MergedPartialArguments(self._arguments, arguments, self._instance)
         )
+
+    def py__doc__(self):
+        """
+        In CPython partial does not replace the docstring. However we are still
+        imitating it here, because we want this docstring to be worth something
+        for the user.
+        """
+        callables = self._get_functions(self._arguments.unpack())
+        if callables is None:
+            return ''
+        for callable_ in callables:
+            return callable_.py__doc__()
+        return ''
 
     def py__get__(self, instance, class_value):
         return ValueSet([self])
@@ -518,12 +527,14 @@ class PartialObject(ValueWrapper):
 
 class PartialMethodObject(PartialObject):
     def py__get__(self, instance, class_value):
-        return ValueSet([PartialObject(self._actual_value, self._arguments, instance)])
+        if instance is None:
+            return ValueSet([self])
+        return ValueSet([PartialObject(self._wrapped_value, self._arguments, instance)])
 
 
 class PartialSignature(SignatureWrapper):
     def __init__(self, wrapped_signature, skipped_arg_count, skipped_arg_set):
-        super(PartialSignature, self).__init__(wrapped_signature)
+        super().__init__(wrapped_signature)
         self._skipped_arg_count = skipped_arg_count
         self._skipped_arg_set = skipped_arg_set
 
@@ -616,7 +627,7 @@ class DataclassWrapper(ValueWrapper, ClassMixin):
 
 class DataclassSignature(AbstractSignature):
     def __init__(self, value, param_names):
-        super(DataclassSignature, self).__init__(value)
+        super().__init__(value)
         self._param_names = param_names
 
     def get_param_names(self, resolve_stars=False):
@@ -625,7 +636,7 @@ class DataclassSignature(AbstractSignature):
 
 class DataclassParamName(BaseTreeParamName):
     def __init__(self, parent_context, tree_name, annotation_node, default_node):
-        super(DataclassParamName, self).__init__(parent_context, tree_name)
+        super().__init__(parent_context, tree_name)
         self.annotation_node = annotation_node
         self.default_node = default_node
 
@@ -641,7 +652,7 @@ class DataclassParamName(BaseTreeParamName):
 
 class ItemGetterCallable(ValueWrapper):
     def __init__(self, instance, args_value_set):
-        super(ItemGetterCallable, self).__init__(instance)
+        super().__init__(instance)
         self._args_value_set = args_value_set
 
     @repack_with_argument_clinic('item, /')
@@ -679,7 +690,7 @@ class WrapsCallable(ValueWrapper):
 
 class Wrapped(ValueWrapper, FunctionMixin):
     def __init__(self, func, original_function):
-        super(Wrapped, self).__init__(func)
+        super().__init__(func)
         self._original_function = original_function
 
     @property
@@ -717,7 +728,7 @@ def _create_string_input_function(func):
 @argument_clinic('*args, /', want_callback=True)
 def _os_path_join(args_set, callback):
     if len(args_set) == 1:
-        string = u''
+        string = ''
         sequence, = args_set
         is_first = True
         for lazy_value in sequence.py__iter__():
@@ -729,7 +740,7 @@ def _os_path_join(args_set, callback):
                 break
             if not is_first:
                 string += os.path.sep
-            string += force_unicode(s)
+            string += s
             is_first = False
         else:
             return ValueSet([compiled.create_simple_object(sequence.inference_state, string)])
@@ -784,6 +795,9 @@ _implemented = {
         # Therefore, just make it return nothing, which leads to the stubs
         # being used instead. This only matters for 3.7+.
         '_alias': lambda value, arguments, callback: NO_VALUES,
+        # runtime_checkable doesn't really change anything and is just
+        # adding logs for infering stuff, so we can safely ignore it.
+        'runtime_checkable': lambda value, arguments, callback: NO_VALUES,
     },
     'dataclasses': {
         # For now this works at least better than Jedi trying to understand it.
@@ -799,15 +813,16 @@ _implemented = {
 
 
 def get_metaclass_filters(func):
-    def wrapper(cls, metaclasses):
+    def wrapper(cls, metaclasses, is_instance):
         for metaclass in metaclasses:
             if metaclass.py__name__() == 'EnumMeta' \
                     and metaclass.get_root_context().py__name__() == 'enum':
                 filter_ = ParserTreeFilter(parent_context=cls.as_context())
                 return [DictFilter({
-                    name.string_name: EnumInstance(cls, name).name for name in filter_.values()
+                    name.string_name: EnumInstance(cls, name).name
+                    for name in filter_.values()
                 })]
-        return func(cls, metaclasses)
+        return func(cls, metaclasses, is_instance)
     return wrapper
 
 
@@ -823,6 +838,14 @@ class EnumInstance(LazyValueWrapper):
         return ValueName(self, self._name.tree_name)
 
     def _get_wrapped_value(self):
+        n = self._name.string_name
+        if n.startswith('__') and n.endswith('__') or self._name.api_type == 'function':
+            inferred = self._name.infer()
+            if inferred:
+                return next(iter(inferred))
+            o, = self.inference_state.builtins_module.py__getattribute__('object')
+            return o
+
         value, = self._cls.execute_with_values()
         return value
 

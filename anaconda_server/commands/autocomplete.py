@@ -1,4 +1,3 @@
-
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
@@ -11,28 +10,28 @@ DEBUG_MODE = False
 
 
 class AutoComplete(Command):
-    """Return Jedi completions
-    """
+    """Return Jedi completions"""
 
-    def __init__(self, callback, uid, script):
+    def __init__(self, callback, line, col, uid, script):
         self.script = script
+        self.line = line
+        self.col = col
         super(AutoComplete, self).__init__(callback, uid)
 
     def run(self):
-        """Run the command
-        """
+        """Run the command"""
 
         try:
-            completions = self.script.completions()
+            completions = self.script.complete(line=self.line, column=self.col)
             if DEBUG_MODE is True:
                 logging.info(completions)
             data = [
                 ('{0}\t{1}'.format(comp.name, comp.type), comp.name)
                 for comp in completions
             ]
-            self.callback({
-                'success': True, 'completions': data, 'uid': self.uid
-            })
+            self.callback(
+                {'success': True, 'completions': data, 'uid': self.uid}
+            )
         except Exception as error:
             msg = 'The underlying Jedi library as raised an exception'
             logging.error(msg)
@@ -41,6 +40,6 @@ class AutoComplete(Command):
             if DEBUG_MODE:
                 logging.debug(traceback.format_exc())
 
-            self.callback({
-                'success': False, 'error': str(error), 'uid': self.uid
-            })
+            self.callback(
+                {'success': False, 'error': str(error), 'uid': self.uid}
+            )
