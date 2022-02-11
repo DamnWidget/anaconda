@@ -8,6 +8,16 @@ This means versions higher than 2.2.3 **will not** work in Sublime Text 3
 
 If for whatever reason you can not - you do not want to upgrade to Sublime Text 4, remove Anaconda from your setup using Package Control, download [v2.2.3](https://github.com/DamnWidget/anaconda/releases/tag/v2.2.3), unpack it in your Users package directory and never ever try to install it through package control
 
+## Alternatives
+
+The plugins ecosystem in Sublime Text have improved by a lot in the past few years, there are many alternatives to anaconda that might work better for you 
+
+**Python**: Give a try to [LSP-pyright](https://github.com/sublimelsp/LSP-pyright) it works pretty well afaik   
+**Go**: More LSP plugins [LSP-gopls](https://github.com/sublimelsp/LSP-gopls) works well and uses the official gopls server   
+**Rust**: Same for Rust [LSP-rust-analyzer](https://github.com/sublimelsp/LSP-rust-analyzer) it is pretty ussable it needs a bit of tuning but it works well   
+
+For all of these ^^ you need to install [LSP](https://github.com/sublimelsp/LSP)   
+
 [![Join the chat at https://gitter.im/DamnWidget/anaconda](https://img.shields.io/gitter/room/DamnWidget/anaconda.svg?maxAge=2592000)](https://gitter.im/DamnWidget/anaconda?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![GitHub release](https://img.shields.io/github/release/damnwidget/anaconda.svg)](https://github.com/DamnWidget/anaconda/releases/latest)
 [![Build Status](https://travis-ci.org/DamnWidget/anaconda.svg?branch=master)](https://travis-ci.org/DamnWidget/anaconda)
