@@ -18,6 +18,7 @@ def _stub_to_python_value_set(stub_value, ignore_compiled=False):
 
     was_instance = stub_value.is_instance()
     if was_instance:
+        arguments = getattr(stub_value, '_arguments', None)
         stub_value = stub_value.py__class__()
 
     qualified_names = stub_value.get_qualified_names()
@@ -30,11 +31,12 @@ def _stub_to_python_value_set(stub_value, ignore_compiled=False):
         method_name = qualified_names[-1]
         qualified_names = qualified_names[:-1]
         was_instance = True
+        arguments = None
 
     values = _infer_from_stub(stub_module_context, qualified_names, ignore_compiled)
     if was_instance:
         values = ValueSet.from_sets(
-            c.execute_with_values()
+            c.execute_with_values() if arguments is None else c.execute(arguments)
             for c in values
             if c.is_class()
         )
@@ -133,8 +135,7 @@ def _python_to_stub_names(names, fallback_to_python=False):
                 if converted:
                     converted_names = converted.goto(name.get_public_name())
                     if converted_names:
-                        for n in converted_names:
-                            yield n
+                        yield from converted_names
                         continue
         if fallback_to_python:
             # This is the part where if we haven't found anything, just return

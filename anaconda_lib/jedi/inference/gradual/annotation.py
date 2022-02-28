@@ -6,10 +6,10 @@ as annotations in future python versions.
 """
 
 import re
+from inspect import Parameter
 
 from parso import ParserSyntaxError, parse
 
-from jedi._compatibility import force_unicode, Parameter
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.base import DefineGenericBaseClass, GenericClass
@@ -53,8 +53,10 @@ def _infer_annotation_string(context, string, index=None):
     value_set = context.infer_node(node)
     if index is not None:
         value_set = value_set.filter(
-            lambda value: value.array_type == u'tuple'  # noqa
-                            and len(list(value.py__iter__())) >= index
+            lambda value: (
+                value.array_type == 'tuple'
+                and len(list(value.py__iter__())) >= index
+            )
         ).py__simple_getitem__(index)
     return value_set
 
@@ -62,7 +64,7 @@ def _infer_annotation_string(context, string, index=None):
 def _get_forward_reference_node(context, string):
     try:
         new_node = context.inference_state.grammar.parse(
-            force_unicode(string),
+            string,
             start_symbol='eval_input',
             error_recovery=False
         )
@@ -138,8 +140,7 @@ def _infer_param(function_value, param):
     """
     annotation = param.annotation
     if annotation is None:
-        # If no Python 3-style annotation, look for a Python 2-style comment
-        # annotation.
+        # If no Python 3-style annotation, look for a comment annotation.
         # Identify parameters to function in the same sequence as they would
         # appear in a type comment.
         all_params = [child for child in param.parent.children
@@ -195,16 +196,47 @@ def py__annotations__(funcdef):
     return dct
 
 
+def resolve_forward_references(context, all_annotations):
+    def resolve(node):
+        if node is None or node.type != 'string':
+            return node
+
+        node = _get_forward_reference_node(
+            context,
+            context.inference_state.compiled_subprocess.safe_literal_eval(
+                node.value,
+            ),
+        )
+
+        if node is None:
+            # There was a string, but it's not a valid annotation
+            return None
+
+        # The forward reference tree has an additional root node ('eval_input')
+        # that we don't want. Extract the node we do want, that is equivalent to
+        # the nodes returned by `py__annotations__` for a non-quoted node.
+        node = node.children[0]
+
+        return node
+
+    return {name: resolve(node) for name, node in all_annotations.items()}
+
+
 @inference_state_method_cache()
 def infer_return_types(function, arguments):
     """
     Infers the type of a function's return value,
     according to type annotations.
     """
-    all_annotations = py__annotations__(function.tree_node)
+    context = function.get_default_param_context()
+    all_annotations = resolve_forward_references(
+        context,
+        py__annotations__(function.tree_node),
+    )
     annotation = all_annotations.get("return", None)
     if annotation is None:
-        # If there is no Python 3-type annotation, look for a Python 2-type annotation
+        # If there is no Python 3-type annotation, look for an annotation
+        # comment.
         node = function.tree_node
         comment = parser_utils.get_following_comment_same_line(node)
         if comment is None:
@@ -215,11 +247,10 @@ def infer_return_types(function, arguments):
             return NO_VALUES
 
         return _infer_annotation_string(
-            function.get_default_param_context(),
+            context,
             match.group(1).strip()
         ).execute_annotation()
 
-    context = function.get_default_param_context()
     unknown_type_vars = find_unknown_type_vars(context, annotation)
     annotation_values = infer_annotation(context, annotation)
     if not unknown_type_vars:
@@ -281,7 +312,8 @@ def infer_return_for_callable(arguments, param_values, result_values):
 
     return ValueSet.from_sets(
         v.define_generics(all_type_vars)
-        if isinstance(v, (DefineGenericBaseClass, TypeVar)) else ValueSet({v})
+        if isinstance(v, (DefineGenericBaseClass, TypeVar))
+        else ValueSet({v})
         for v in result_values
     ).execute_annotation()
 

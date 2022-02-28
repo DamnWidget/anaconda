@@ -22,15 +22,13 @@ class JediHandler(AnacondaHandler):
     """
 
     def run(self):
-        """Call the specific method (override base class)
-        """
+        """Call the specific method (override base class)"""
         self.real_callback = self.callback
         self.callback = self.handle_result_and_purge_cache
         super(JediHandler, self).run()
 
     def handle_result_and_purge_cache(self, result):
-        """Handle the result from the call and purge in memory jedi cache
-        """
+        """Handle the result from the call and purge in memory jedi cache"""
 
         try:
             jedi.cache.clear_time_caches()
@@ -40,60 +38,93 @@ class JediHandler(AnacondaHandler):
 
     @property
     def script(self):
-        """Generates a new valid Jedi Script and return it back
-        """
+        """Generates a new valid Jedi Script and return it back"""
         return self.jedi_script(**self.data)
 
     def jedi_script(
-            self, source, line, offset, filename='', encoding='utf8', **kw):
-        """Generate an usable Jedi Script
-        """
+        self, source, line, offset, filename='', encoding='utf8', **kw
+    ):
+        """Generate an usable Jedi Script"""
         jedi_project = jedi.get_default_project(filename)
 
-        return jedi.Script(
-            source, int(line), int(offset), filename, encoding, project=jedi_project)
+        return jedi.Script(source, project=jedi_project)
 
     def rename(self, directories, new_word):
-        """Rename the object under the cursor by the given word
-        """
+        """Rename the object under the cursor by the given word"""
 
         Rename(
-            self.callback, self.uid, self.script,
-            directories, new_word, jedi_refactor
+            self.callback,
+            self.uid,
+            self.script,
+            directories,
+            new_word,
+            jedi_refactor,
         )
 
     def autocomplete(self):
-        """Call autocomplete
-        """
+        """Call autocomplete"""
 
-        AutoComplete(self.callback, self.uid, self.script)
+        AutoComplete(
+            self.callback,
+            self.data.get("line", 1),
+            self.data.get("offset", 0),
+            self.uid,
+            self.script,
+        )
 
     def parameters(self):
-        """Call complete parameter
-        """
+        """Call complete parameter"""
 
-        CompleteParameters(self.callback, self.uid, self.script, self.settings)
+        CompleteParameters(
+            self.callback,
+            self.data.get("line", 1),
+            self.data.get("offset", 0),
+            self.uid,
+            self.script,
+            self.settings,
+        )
 
     def usages(self):
-        """Call find usages
-        """
+        """Call find usages"""
 
-        FindUsages(self.callback, self.uid, self.script)
+        FindUsages(
+            self.callback,
+            self.data.get("line", 1),
+            self.data.get("offset", 0),
+            self.uid,
+            self.script,
+        )
 
     def goto(self):
-        """Call goto
-        """
+        """Call goto"""
 
-        Goto(self.callback, self.uid, self.script)
+        Goto(
+            self.callback,
+            self.data.get("line", 1),
+            self.data.get("offset", 0),
+            self.uid,
+            self.script,
+        )
 
     def goto_assignment(self):
-        """Call goto_assignment
-        """
+        """Call goto_assignment"""
 
-        GotoAssignment(self.callback, self.uid, self.script)
+        GotoAssignment(
+            self.callback,
+            self.data.get("line", 1),
+            self.data.get("offset", 0),
+            self.uid,
+            self.script,
+        )
 
     def doc(self, html=False):
-        """Call doc
-        """
+        """Call doc"""
 
-        Doc(self.callback, self.uid, self.script, html)
+        Doc(
+            self.callback,
+            self.data.get("line", 1),
+            self.data.get("offset", 0),
+            self.uid,
+            self.script,
+            html,
+        )

@@ -7,6 +7,8 @@ from __future__ import with_statement
 
 import optparse
 import sys
+import tokenize
+
 from collections import defaultdict
 try:
     import ast
@@ -14,7 +16,7 @@ try:
 except ImportError:   # Python 2.5
     from flake8.util import ast, iter_child_nodes
 
-__version__ = '0.2.1'
+__version__ = '0.7.0'
 
 
 class ASTVisitor(object):
@@ -59,14 +61,17 @@ class PathNode(object):
 
 
 class PathGraph(object):
-    def __init__(self, name, entity, lineno):
+    def __init__(self, name, entity, lineno, column=0):
         self.name = name
         self.entity = entity
         self.lineno = lineno
+        self.column = column
         self.nodes = defaultdict(list)
 
     def connect(self, n1, n2):
         self.nodes[n1].append(n2)
+        # Ensure that the destination node is always counted.
+        self.nodes[n2] = []
 
     def to_dot(self):
         print('subgraph {')
@@ -112,7 +117,7 @@ class PathGraphingAstVisitor(ASTVisitor):
         else:
             entity = node.name
 
-        name = '%d:1: %r' % (node.lineno, entity)
+        name = '%d:%d: %r' % (node.lineno, node.col_offset, entity)
 
         if self.graph is not None:
             # closure
@@ -124,12 +129,14 @@ class PathGraphingAstVisitor(ASTVisitor):
             self.graph.connect(pathnode, bottom)
             self.tail = bottom
         else:
-            self.graph = PathGraph(name, entity, node.lineno)
+            self.graph = PathGraph(name, entity, node.lineno, node.col_offset)
             pathnode = PathNode(name)
             self.tail = pathnode
             self.dispatch_list(node.body)
             self.graphs["%s%s" % (self.classname, node.name)] = self.graph
             self.reset()
+
+    visitAsyncFunctionDef = visitFunctionDef
 
     def visitClassDef(self, node):
         old_classname = self.classname
@@ -153,41 +160,45 @@ class PathGraphingAstVisitor(ASTVisitor):
         name = "Stmt %d" % lineno
         self.appendPathNode(name)
 
-    visitAssert = visitAssign = visitAugAssign = visitDelete = visitPrint = \
-        visitRaise = visitYield = visitImport = visitCall = visitSubscript = \
-        visitPass = visitContinue = visitBreak = visitGlobal = visitReturn = \
-        visitSimpleStatement
+    def default(self, node, *args):
+        if isinstance(node, ast.stmt):
+            self.visitSimpleStatement(node)
+        else:
+            super(PathGraphingAstVisitor, self).default(node, *args)
 
     def visitLoop(self, node):
         name = "Loop %d" % node.lineno
+        self._subgraph(node, name)
 
+    visitAsyncFor = visitFor = visitWhile = visitLoop
+
+    def visitIf(self, node):
+        name = "If %d" % node.lineno
+        self._subgraph(node, name)
+
+    def _subgraph(self, node, name, extra_blocks=()):
+        """create the subgraphs representing any `if` and `for` statements"""
         if self.graph is None:
             # global loop
-            self.graph = PathGraph(name, name, node.lineno)
+            self.graph = PathGraph(name, name, node.lineno, node.col_offset)
             pathnode = PathNode(name)
-            self.tail = pathnode
-            self.dispatch_list(node.body)
+            self._subgraph_parse(node, pathnode, extra_blocks)
             self.graphs["%s%s" % (self.classname, name)] = self.graph
             self.reset()
         else:
             pathnode = self.appendPathNode(name)
-            self.tail = pathnode
-            self.dispatch_list(node.body)
-            bottom = PathNode("", look='point')
-            self.graph.connect(self.tail, bottom)
-            self.graph.connect(pathnode, bottom)
-            self.tail = bottom
+            self._subgraph_parse(node, pathnode, extra_blocks)
 
-        # TODO: else clause in node.orelse
-
-    visitFor = visitWhile = visitLoop
-
-    def visitIf(self, node):
-        name = "If %d" % node.lineno
-        pathnode = self.appendPathNode(name)
+    def _subgraph_parse(self, node, pathnode, extra_blocks):
+        """parse the body and any `else` block of `if` and `for` statements"""
         loose_ends = []
+        self.tail = pathnode
         self.dispatch_list(node.body)
         loose_ends.append(self.tail)
+        for extra in extra_blocks:
+            self.tail = pathnode
+            self.dispatch_list(extra.body)
+            loose_ends.append(self.tail)
         if node.orelse:
             self.tail = pathnode
             self.dispatch_list(node.orelse)
@@ -202,24 +213,16 @@ class PathGraphingAstVisitor(ASTVisitor):
 
     def visitTryExcept(self, node):
         name = "TryExcept %d" % node.lineno
-        pathnode = self.appendPathNode(name)
-        loose_ends = []
-        self.dispatch_list(node.body)
-        loose_ends.append(self.tail)
-        for handler in node.handlers:
-            self.tail = pathnode
-            self.dispatch_list(handler.body)
-            loose_ends.append(self.tail)
-        if pathnode:
-            bottom = PathNode("", look='point')
-            for le in loose_ends:
-                self.graph.connect(le, bottom)
-            self.tail = bottom
+        self._subgraph(node, name, extra_blocks=node.handlers)
+
+    visitTry = visitTryExcept
 
     def visitWith(self, node):
         name = "With %d" % node.lineno
         self.appendPathNode(name)
         self.dispatch_list(node.body)
+
+    visitAsyncWith = visitWith
 
 
 class McCabeChecker(object):
@@ -228,20 +231,33 @@ class McCabeChecker(object):
     version = __version__
     _code = 'C901'
     _error_tmpl = "C901 %r is too complex (%d)"
-    max_complexity = 0
+    max_complexity = -1
 
     def __init__(self, tree, filename):
         self.tree = tree
 
     @classmethod
     def add_options(cls, parser):
-        parser.add_option('--max-complexity', default=-1, action='store',
-                          type='int', help="McCabe complexity threshold")
-        parser.config_options.append('max-complexity')
+        flag = '--max-complexity'
+        kwargs = {
+            'default': -1,
+            'action': 'store',
+            'type': int,
+            'help': 'McCabe complexity threshold',
+            'parse_from_config': 'True',
+        }
+        config_opts = getattr(parser, 'config_options', None)
+        if isinstance(config_opts, list):
+            # Flake8 2.x
+            kwargs.pop('parse_from_config')
+            parser.add_option(flag, **kwargs)
+            parser.config_options.append('max-complexity')
+        else:
+            parser.add_option(flag, **kwargs)
 
     @classmethod
     def parse_options(cls, options):
-        cls.max_complexity = options.max_complexity
+        cls.max_complexity = int(options.max_complexity)
 
     def run(self):
         if self.max_complexity < 0:
@@ -249,9 +265,9 @@ class McCabeChecker(object):
         visitor = PathGraphingAstVisitor()
         visitor.preorder(self.tree, visitor)
         for graph in visitor.graphs.values():
-            if graph.complexity() >= self.max_complexity:
+            if graph.complexity() > self.max_complexity:
                 text = self._error_tmpl % (graph.entity, graph.complexity())
-                yield graph.lineno, 0, text, type(self)
+                yield graph.lineno, graph.column, text, type(self)
 
 
 def get_code_complexity(code, threshold=7, filename='stdin'):
@@ -275,23 +291,40 @@ def get_code_complexity(code, threshold=7, filename='stdin'):
 
 def get_module_complexity(module_path, threshold=7):
     """Returns the complexity of a module"""
-    with open(module_path, "rU") as mod:
-        code = mod.read()
+    code = _read(module_path)
     return get_code_complexity(code, threshold, filename=module_path)
 
 
-def main(argv):
+def _read(filename):
+    if (2, 5) < sys.version_info < (3, 0):
+        with open(filename, 'rU') as f:
+            return f.read()
+    elif (3, 0) <= sys.version_info < (4, 0):
+        """Read the source code."""
+        try:
+            with open(filename, 'rb') as f:
+                (encoding, _) = tokenize.detect_encoding(f.readline)
+        except (LookupError, SyntaxError, UnicodeError):
+            # Fall back if file encoding is improperly declared
+            with open(filename, encoding='latin-1') as f:
+                return f.read()
+        with open(filename, 'r', encoding=encoding) as f:
+            return f.read()
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
     opar = optparse.OptionParser()
     opar.add_option("-d", "--dot", dest="dot",
                     help="output a graphviz dot file", action="store_true")
     opar.add_option("-m", "--min", dest="threshold",
                     help="minimum complexity for output", type="int",
-                    default=2)
+                    default=1)
 
     options, args = opar.parse_args(argv)
 
-    with open(args[0], "rU") as mod:
-        code = mod.read()
+    code = _read(args[0])
     tree = compile(code, args[0], "exec", ast.PyCF_ONLY_AST)
     visitor = PathGraphingAstVisitor()
     visitor.preorder(tree, visitor)
@@ -299,7 +332,8 @@ def main(argv):
     if options.dot:
         print('graph {')
         for graph in visitor.graphs.values():
-            if graph.complexity() >= options.threshold:
+            if (not options.threshold or
+                    graph.complexity() >= options.threshold):
                 graph.to_dot()
         print('}')
     else:

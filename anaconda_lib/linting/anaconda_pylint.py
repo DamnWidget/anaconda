@@ -19,6 +19,7 @@ else:
         from cStringIO import StringIO
     except ImportError:
         from StringIO import StringIO
+
         assert StringIO
 
 
@@ -30,8 +31,7 @@ PIPE = subprocess.PIPE
 
 
 class PyLinter(object):
-    """PyLinter class for Anaconda
-    """
+    """PyLinter class for Anaconda"""
 
     def __init__(self, filename, rcfile):
         self.filename = filename
@@ -41,37 +41,49 @@ class PyLinter(object):
         self.execute()
 
     def execute(self):
-        """Execute the linting process
-        """
+        """Execute the linting process"""
 
         if numversion < (1, 0, 0):
             args = '--include-ids=y -r n'.split(' ')
         else:
             args = '--msg-template={msg_id}:{line}:{column}:{msg} -r n'.split(
-                ' ')
+                ' '
+            )
 
         if self.rcfile:
             args.append('--rcfile={0}'.format(os.path.expanduser(self.rcfile)))
 
         args.append(self.filename)
-        args = [sys.executable, '-m', 'pylint.lint'] + args
+        pylint_exec = 'pylint.lint' if numversion > (2, 4, 4) else 'pylint'
+        args = [sys.executable, '-m', pylint_exec] + args
 
         proc = spawn(args, stdout=PIPE, stderr=PIPE, cwd=os.getcwd())
         if proc is None:
             return {'E': [], 'W': [], 'V': []}
 
-        self.output, _ = proc.communicate()
+        self.output, err = proc.communicate()
         if sys.version_info >= (3, 0):
             self.output = self.output.decode('utf8')
+            err = err.decode('utf8')
+
+        if err:
+            print('got an error from pylint: {0}'.format(err))
+            return {'E': [], 'W': [], 'V': []}
 
     def parse_errors(self):
-        """Parse the output given by PyLint
-        """
+        """Parse the output given by PyLint"""
 
         errors = {'E': [], 'W': [], 'V': []}
         data = self.output
 
         for error in data.splitlines():
+            if (
+                numversion > (2, 4, 4)
+                and not error.startswith('-')
+                or error.startswith('Your code has been rated at')
+            ):
+                continue
+
             if '************* Module ' in error:
                 _, module = error.split('************* Module ')
                 if module not in self.filename:
@@ -105,20 +117,21 @@ class PyLinter(object):
                         # doesn't
                         pass
 
-                errors[self._map_code(code)[0]].append({
-                    'line': int(line),
-                    'offset': offset,
-                    'code': self._map_code(code)[1],
-                    'message': '[{0}] {1}'.format(
-                        self._map_code(code)[1], message
-                    )
-                })
+                errors[self._map_code(code)[0]].append(
+                    {
+                        'line': int(line),
+                        'offset': offset,
+                        'code': self._map_code(code)[1],
+                        'message': '[{0}] {1}'.format(
+                            self._map_code(code)[1], message
+                        ),
+                    }
+                )
 
         return errors
 
     def _map_code(self, code):
-        """Map the given code to fit Anaconda codes
-        """
+        """Map the given code to fit Anaconda codes"""
 
         mapping = {'C': 'V', 'E': 'E', 'F': 'E', 'I': 'V', 'R': 'W', 'W': 'W'}
         return (mapping[code[0]], code[1:])

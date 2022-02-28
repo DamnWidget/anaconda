@@ -37,8 +37,8 @@ py__doc__()                            Returns the docstring for a value.
 
 """
 from jedi import debug
-from jedi._compatibility import use_metaclass
-from jedi.parser_utils import get_cached_parent_scope, expr_is_dotted
+from jedi.parser_utils import get_cached_parent_scope, expr_is_dotted, \
+    function_is_property
 from jedi.inference.cache import inference_state_method_cache, CachedMetaClass, \
     inference_state_method_generator_cache
 from jedi.inference import compiled
@@ -56,7 +56,7 @@ from jedi.plugins import plugin_manager
 
 class ClassName(TreeNameDefinition):
     def __init__(self, class_value, tree_name, name_context, apply_decorators):
-        super(ClassName, self).__init__(name_context, tree_name)
+        super().__init__(name_context, tree_name)
         self._apply_decorators = apply_decorators
         self._class_value = class_value
 
@@ -69,16 +69,29 @@ class ClassName(TreeNameDefinition):
 
         for result_value in inferred:
             if self._apply_decorators:
-                for c in result_value.py__get__(instance=None, class_value=self._class_value):
-                    yield c
+                yield from result_value.py__get__(instance=None, class_value=self._class_value)
             else:
                 yield result_value
+
+    @property
+    def api_type(self):
+        type_ = super().api_type
+        if type_ == 'function':
+            definition = self.tree_name.get_definition()
+            if function_is_property(definition):
+                # This essentially checks if there is an @property before
+                # the function. @property could be something different, but
+                # any programmer that redefines property as something that
+                # is not really a property anymore, should be shot. (i.e.
+                # this is a heuristic).
+                return 'property'
+        return type_
 
 
 class ClassFilter(ParserTreeFilter):
     def __init__(self, class_value, node_context=None, until_position=None,
                  origin_scope=None, is_instance=False):
-        super(ClassFilter, self).__init__(
+        super().__init__(
             class_value.as_context(), node_context,
             until_position=until_position,
             origin_scope=origin_scope,
@@ -101,7 +114,7 @@ class ClassFilter(ParserTreeFilter):
         while node is not None:
             if node == self._parser_scope or node == self.parent_context:
                 return True
-            node = get_cached_parent_scope(self._used_names, node)
+            node = get_cached_parent_scope(self._parso_cache_node, node)
         return False
 
     def _access_possible(self, name):
@@ -114,8 +127,6 @@ class ClassFilter(ParserTreeFilter):
             if expr_stmt is not None and expr_stmt.type == 'expr_stmt':
                 annassign = expr_stmt.children[1]
                 if annassign.type == 'annassign':
-                    # TODO this is not proper matching
-
                     # If there is an =, the variable is obviously also
                     # defined on the class.
                     if 'ClassVar' not in annassign.children[1].get_code() \
@@ -127,15 +138,18 @@ class ClassFilter(ParserTreeFilter):
             or self._equals_origin_scope()
 
     def _filter(self, names):
-        names = super(ClassFilter, self)._filter(names)
+        names = super()._filter(names)
         return [name for name in names if self._access_possible(name)]
 
 
-class ClassMixin(object):
+class ClassMixin:
     def is_class(self):
         return True
 
-    def py__call__(self, arguments=None):
+    def is_class_mixin(self):
+        return True
+
+    def py__call__(self, arguments):
         from jedi.inference.value import TreeInstance
 
         from jedi.inference.gradual.typing import TypedDict
@@ -144,7 +158,7 @@ class ClassMixin(object):
         return ValueSet([TreeInstance(self.inference_state, self.parent_context, self, arguments)])
 
     def py__class__(self):
-        return compiled.builtin_from_name(self.inference_state, u'type')
+        return compiled.builtin_from_name(self.inference_state, 'type')
 
     @property
     def name(self):
@@ -186,26 +200,25 @@ class ClassMixin(object):
                             mro.append(cls_new)
                             yield cls_new
 
-    def get_filters(self, origin_scope=None, is_instance=False, include_metaclasses=True):
+    def get_filters(self, origin_scope=None, is_instance=False,
+                    include_metaclasses=True, include_type_when_class=True):
         if include_metaclasses:
             metaclasses = self.get_metaclasses()
             if metaclasses:
-                for f in self.get_metaclass_filters(metaclasses):
-                    yield f
+                yield from self.get_metaclass_filters(metaclasses, is_instance)
 
         for cls in self.py__mro__():
             if cls.is_compiled():
-                for filter in cls.get_filters(is_instance=is_instance):
-                    yield filter
+                yield from cls.get_filters(is_instance=is_instance)
             else:
                 yield ClassFilter(
                     self, node_context=cls.as_context(),
                     origin_scope=origin_scope,
                     is_instance=is_instance
                 )
-        if not is_instance:
+        if not is_instance and include_type_when_class:
             from jedi.inference.compiled import builtin_from_name
-            type_ = builtin_from_name(self.inference_state, u'type')
+            type_ = builtin_from_name(self.inference_state, 'type')
             assert isinstance(type_, ClassValue)
             if type_ != self:
                 # We are not using execute_with_values here, because the
@@ -225,6 +238,11 @@ class ClassMixin(object):
         # Since calling staticmethod without a function is illegal, the Jedi
         # plugin doesn't return anything. Therefore call directly and get what
         # we want: An instance of staticmethod.
+        metaclasses = self.get_metaclasses()
+        if metaclasses:
+            sigs = self.get_metaclass_signatures(metaclasses)
+            if sigs:
+                return sigs
         args = ValuesArguments([])
         init_funcs = self.py__call__(args).py__getattribute__('__init__')
         return [sig.bind(self) for sig in init_funcs.get_signatures()]
@@ -267,53 +285,10 @@ class ClassMixin(object):
                         return True
         return False
 
-
-class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
-    api_type = u'class'
-
-    @inference_state_method_cache()
-    def list_type_vars(self):
-        found = []
-        arglist = self.tree_node.get_super_arglist()
-        if arglist is None:
-            return []
-
-        for stars, node in unpack_arglist(arglist):
-            if stars:
-                continue  # These are not relevant for this search.
-
-            from jedi.inference.gradual.annotation import find_unknown_type_vars
-            for type_var in find_unknown_type_vars(self.parent_context, node):
-                if type_var not in found:
-                    # The order matters and it's therefore a list.
-                    found.append(type_var)
-        return found
-
-    def _get_bases_arguments(self):
-        arglist = self.tree_node.get_super_arglist()
-        if arglist:
-            from jedi.inference import arguments
-            return arguments.TreeArguments(self.inference_state, self.parent_context, arglist)
-        return None
-
-    @inference_state_method_cache(default=())
-    def py__bases__(self):
-        args = self._get_bases_arguments()
-        if args is not None:
-            lst = [value for key, value in args.unpack() if key is None]
-            if lst:
-                return lst
-
-        if self.py__name__() == 'object' \
-                and self.parent_context.is_builtins_module():
-            return []
-        return [LazyKnownValues(
-            self.inference_state.builtins_module.py__getattribute__('object')
-        )]
-
     def py__getitem__(self, index_value_set, contextualized_node):
         from jedi.inference.gradual.base import GenericClass
         if not index_value_set:
+            debug.warning('Class indexes inferred to nothing. Returning class instead')
             return ValueSet([self])
         return ValueSet(
             GenericClass(
@@ -356,9 +331,53 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
             )])
         return ValueSet({self})
 
+
+class ClassValue(ClassMixin, FunctionAndClassBase, metaclass=CachedMetaClass):
+    api_type = 'class'
+
+    @inference_state_method_cache()
+    def list_type_vars(self):
+        found = []
+        arglist = self.tree_node.get_super_arglist()
+        if arglist is None:
+            return []
+
+        for stars, node in unpack_arglist(arglist):
+            if stars:
+                continue  # These are not relevant for this search.
+
+            from jedi.inference.gradual.annotation import find_unknown_type_vars
+            for type_var in find_unknown_type_vars(self.parent_context, node):
+                if type_var not in found:
+                    # The order matters and it's therefore a list.
+                    found.append(type_var)
+        return found
+
+    def _get_bases_arguments(self):
+        arglist = self.tree_node.get_super_arglist()
+        if arglist:
+            from jedi.inference import arguments
+            return arguments.TreeArguments(self.inference_state, self.parent_context, arglist)
+        return None
+
+    @inference_state_method_cache(default=())
+    def py__bases__(self):
+        args = self._get_bases_arguments()
+        if args is not None:
+            lst = [value for key, value in args.unpack() if key is None]
+            if lst:
+                return lst
+
+        if self.py__name__() == 'object' \
+                and self.parent_context.is_builtins_module():
+            return []
+        return [LazyKnownValues(
+            self.inference_state.builtins_module.py__getattribute__('object')
+        )]
+
     @plugin_manager.decorate()
-    def get_metaclass_filters(self, metaclass):
-        debug.dbg('Unprocessed metaclass %s', metaclass)
+    def get_metaclass_filters(self, metaclasses, is_instance):
+        debug.warning('Unprocessed metaclass %s', metaclasses)
         return []
 
     @inference_state_method_cache(default=NO_VALUES)
@@ -378,3 +397,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
                     if values:
                         return values
         return NO_VALUES
+
+    @plugin_manager.decorate()
+    def get_metaclass_signatures(self, metaclasses):
+        return []

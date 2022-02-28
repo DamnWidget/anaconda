@@ -1,4 +1,3 @@
-
 # Copyright (C) 2013 - Oscar Campos <oscar.campos@member.fsf.org>
 # This program is Free Software see LICENSE file for details
 
@@ -7,23 +6,25 @@ from .base import Command, get_function_parameters
 
 
 class CompleteParameters(Command):
-    """Get back a python definition where to go
-    """
+    """Get back a python definition where to go"""
 
-    def __init__(self, callback, uid, script, settings):
+    def __init__(self, callback, line, col, uid, script, settings):
         self.script = script
+        self.line = line
+        self.col = col
         self.settings = settings
         super(CompleteParameters, self).__init__(callback, uid)
 
     def run(self):
-        """Run the command
-        """
+        """Run the command"""
 
         completions = []
         complete_all = self.settings.get('complete_all_parameters', False)
 
         try:
-            signatures = self.script.call_signatures()[0]
+            signatures = self.script.get_signatures(
+                line=self.line, column=self.col
+            )[0]
         except IndexError:
             signatures = None
 
@@ -42,8 +43,10 @@ class CompleteParameters(Command):
                 if complete_all is True:
                     completions.append('%s=${%d:%s}' % (name, i + 1, value))
 
-        self.callback({
-            'success': True,
-            'template': ', '.join(completions),
-            'uid': self.uid
-        })
+        self.callback(
+            {
+                'success': True,
+                'template': ', '.join(completions),
+                'uid': self.uid,
+            }
+        )

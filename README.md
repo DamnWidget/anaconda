@@ -1,13 +1,37 @@
+# VERY IMPORTANT NOTICE, PLEASE, READ CAREFULLY
+
+**New versions of this plugin only works with Python >= 3.6 and requires Sublime Text 4 build >= 4107**
+
+This means versions higher than 2.2.3 **will not** work in Sublime Text 3 
+
+## For Sublime Text 3 Users
+
+If for whatever reason you can not - you do not want to upgrade to Sublime Text 4, remove Anaconda from your setup using Package Control, download [v2.2.3](https://github.com/DamnWidget/anaconda/releases/tag/v2.2.3), unpack it in your Users package directory and never ever try to install it through package control
+
+## Alternatives
+
+The plugins ecosystem in Sublime Text have improved by a lot in the past few years, there are many alternatives to anaconda that might work better for you 
+
+**Python**: Give a try to [LSP-pyright](https://github.com/sublimelsp/LSP-pyright) it works pretty well afaik   
+**Go**: More LSP plugins [LSP-gopls](https://github.com/sublimelsp/LSP-gopls) works well and uses the official gopls server   
+**Rust**: Same for Rust [LSP-rust-analyzer](https://github.com/sublimelsp/LSP-rust-analyzer) it is pretty ussable it needs a bit of tuning but it works well   
+
+For all of these ^^ you need to install [LSP](https://github.com/sublimelsp/LSP)   
+
 [![Join the chat at https://gitter.im/DamnWidget/anaconda](https://img.shields.io/gitter/room/DamnWidget/anaconda.svg?maxAge=2592000)](https://gitter.im/DamnWidget/anaconda?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![GitHub release](https://img.shields.io/github/release/damnwidget/anaconda.svg)](https://github.com/DamnWidget/anaconda/releases/latest)
 [![Build Status](https://travis-ci.org/DamnWidget/anaconda.svg?branch=master)](https://travis-ci.org/DamnWidget/anaconda)
 [![Package Control](https://img.shields.io/packagecontrol/dt/Anaconda.svg)](https://packagecontrol.io/packages/Anaconda)
 
+
+# Anaconda 
+
+
                                                           |
               _` |  __ \    _` |   __|   _ \   __ \    _` |   _` |
              (   |  |   |  (   |  (     (   |  |   |  (   |  (   |
             \__,_| _|  _| \__,_| \___| \___/  _|  _| \__,_| \__,_|
-                                     The Sublime Text 3 Python IDE
+                                     The Sublime Text 4 Python IDE
 
 Anaconda turns your Sublime Text 3 into a full featured Python IDE. Read the plugin documentation on [http://damnwidget.github.io/anaconda](http://damnwidget.github.io/anaconda).
 
@@ -91,9 +115,9 @@ anaconda capabilities to other languages, the complete list of them can be shown
 
 | Language | Web Site | Package Control | Status |
 | --- | --- | --- | --- |
-| **Go** | https://github.com/DamnWidget/anaconda_go | Yes | Active |
-| **Rust** | https://github.com/DamnWidget/anaconda_rust | Yes | Active |
-| **PHP** | https://github.com/DamnWidget/anaconda_php | Yes | Active |
+| **Go** | https://github.com/DamnWidget/anaconda_go | Yes | Unmaintained |
+| **Rust** | https://github.com/DamnWidget/anaconda_rust | Yes | Unmaintained |
+| **PHP** | https://github.com/DamnWidget/anaconda_php | Yes | Unmaintained |
 
 Would you like to see your language empowered by anaconda? Use `anaconda_rust` or `anaconda_php` as templates and bring your language to life with anaconda's plugable architecture.
 

@@ -1,5 +1,7 @@
 from abc import abstractmethod
 from contextlib import contextmanager
+from pathlib import Path
+from typing import Optional
 
 from parso.tree import search_ancestor
 from parso.python.tree import Name
@@ -13,7 +15,7 @@ from jedi import debug
 from jedi import parser_utils
 
 
-class AbstractContext(object):
+class AbstractContext:
     # Must be defined: inference_state and tree_node and parent_context as an attribute/property
 
     def __init__(self, inference_state):
@@ -164,7 +166,7 @@ class ValueContext(AbstractContext):
     Should be defined, otherwise the API returns empty types.
     """
     def __init__(self, value):
-        super(ValueContext, self).__init__(value.inference_state)
+        super().__init__(value.inference_state)
         self._value = value
 
     @property
@@ -216,7 +218,7 @@ class ValueContext(AbstractContext):
         return '%s(%s)' % (self.__class__.__name__, self._value)
 
 
-class TreeContextMixin(object):
+class TreeContextMixin:
     def infer_node(self, node):
         from jedi.inference.syntax_tree import infer_node
         return infer_node(self, node)
@@ -255,8 +257,7 @@ class TreeContextMixin(object):
             if scope_node.type in ('funcdef', 'lambdef', 'classdef'):
                 return self.create_value(scope_node).as_context()
             elif scope_node.type in ('comp_for', 'sync_comp_for'):
-                parent_scope = parser_utils.get_parent_scope(scope_node)
-                parent_context = from_scope_node(parent_scope)
+                parent_context = from_scope_node(parent_scope(scope_node.parent))
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context
                 return CompForContext(parent_context, scope_node)
@@ -308,8 +309,8 @@ class FunctionContext(TreeContextMixin, ValueContext):
 
 
 class ModuleContext(TreeContextMixin, ValueContext):
-    def py__file__(self):
-        return self._value.py__file__()
+    def py__file__(self) -> Optional[Path]:
+        return self._value.py__file__()  # type: ignore[no-any-return]
 
     def get_filters(self, until_position=None, origin_scope=None):
         filters = self._value.get_filters(origin_scope)
@@ -323,11 +324,10 @@ class ModuleContext(TreeContextMixin, ValueContext):
             ),
             self.get_global_filter(),
         )
-        for f in filters:  # Python 2...
-            yield f
+        yield from filters
 
     def get_global_filter(self):
-        return GlobalNameFilter(self, self.tree_node)
+        return GlobalNameFilter(self)
 
     @property
     def string_names(self):
@@ -357,8 +357,8 @@ class NamespaceContext(TreeContextMixin, ValueContext):
     def string_names(self):
         return self._value.string_names
 
-    def py__file__(self):
-        return self._value.py__file__()
+    def py__file__(self) -> Optional[Path]:
+        return self._value.py__file__()  # type: ignore[no-any-return]
 
 
 class ClassContext(TreeContextMixin, ValueContext):
@@ -375,7 +375,7 @@ class ClassContext(TreeContextMixin, ValueContext):
 
 class CompForContext(TreeContextMixin, AbstractContext):
     def __init__(self, parent_context, comp_for):
-        super(CompForContext, self).__init__(parent_context.inference_state)
+        super().__init__(parent_context.inference_state)
         self.tree_node = comp_for
         self.parent_context = parent_context
 
@@ -407,8 +407,8 @@ class CompiledModuleContext(CompiledContext):
     def string_names(self):
         return self._value.string_names
 
-    def py__file__(self):
-        return self._value.py__file__()
+    def py__file__(self) -> Optional[Path]:
+        return self._value.py__file__()  # type: ignore[no-any-return]
 
 
 def _get_global_filters_for_name(context, name_or_none, position):
@@ -439,13 +439,12 @@ def get_global_filters(context, until_position, origin_scope):
     For global name lookups. The filters will handle name resolution
     themselves, but here we gather possible filters downwards.
 
-    >>> from jedi._compatibility import u, no_unicode_pprint
     >>> from jedi import Script
-    >>> script = Script(u('''
+    >>> script = Script('''
     ... x = ['a', 'b', 'c']
     ... def func():
     ...     y = None
-    ... '''))
+    ... ''')
     >>> module_node = script._module_node
     >>> scope = next(module_node.iter_funcdefs())
     >>> scope
@@ -455,7 +454,7 @@ def get_global_filters(context, until_position, origin_scope):
 
     First we get the names from the function scope.
 
-    >>> no_unicode_pprint(filters[0])  # doctest: +ELLIPSIS
+    >>> print(filters[0])  # doctest: +ELLIPSIS
     MergedFilter(<ParserTreeFilter: ...>, <GlobalNameFilter: ...>)
     >>> sorted(str(n) for n in filters[0].values())  # doctest: +NORMALIZE_WHITESPACE
     ['<TreeNameDefinition: string_name=func start_pos=(3, 4)>',
@@ -484,10 +483,10 @@ def get_global_filters(context, until_position, origin_scope):
     from jedi.inference.value.function import BaseFunctionExecutionContext
     while context is not None:
         # Names in methods cannot be resolved within the class.
-        for filter in context.get_filters(
-                until_position=until_position,
-                origin_scope=origin_scope):
-            yield filter
+        yield from context.get_filters(
+            until_position=until_position,
+            origin_scope=origin_scope
+        )
         if isinstance(context, (BaseFunctionExecutionContext, ModuleContext)):
             # The position should be reset if the current scope is a function.
             until_position = None

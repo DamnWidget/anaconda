@@ -52,7 +52,7 @@ small_stmt: (expr_stmt | del_stmt | pass_stmt | flow_stmt |
              import_stmt | global_stmt | nonlocal_stmt | assert_stmt)
 expr_stmt: testlist_star_expr (annassign | augassign (yield_expr|testlist) |
                      ('=' (yield_expr|testlist_star_expr))*)
-annassign: ':' test ['=' test]
+annassign: ':' test ['=' (yield_expr|testlist_star_expr)]
 testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
 augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' |
             '<<=' | '>>=' | '**=' | '//=')
@@ -167,5 +167,5 @@ strings: (STRING | fstring)+
 fstring: FSTRING_START fstring_content* FSTRING_END
 fstring_content: FSTRING_STRING | fstring_expr
 fstring_conversion: '!' NAME
-fstring_expr: '{' testlist ['='] [ fstring_conversion ] [ fstring_format_spec ] '}'
+fstring_expr: '{' (testlist_comp | yield_expr) ['='] [ fstring_conversion ] [ fstring_format_spec ] '}'
 fstring_format_spec: ':' fstring_content*
