@@ -33,7 +33,7 @@ class Tooltip(object):
             self._load_tooltips()
             Tooltip.loaded = True
 
-    def show_tooltip(self, view: sublime.View, tooltip: str, content: Dict[str, str], fallback: Callable) -> None:  # noqa
+    def show_tooltip(self, view: sublime.View, tooltip: str, content: Dict[str, str], fallback: Callable, **kwargs: dict) -> None:  # noqa
         """Generates and display a tooltip or pass execution to fallback
         """
 
@@ -42,14 +42,15 @@ class Tooltip(object):
             return fallback()
 
         width = get_settings(view, 'font_size', 8) * 75
-        kwargs = {'location': -1, 'max_width': width if width < 900 else 900}
+        popup_kwargs = {'location': kwargs.get('location', -1),
+                        'max_width': kwargs.get('max_width', width if width < 900 else 900)}
         if st_ver >= 3071:
             kwargs['flags'] = sublime.COOPERATE_WITH_AUTO_COMPLETE
         text = self._generate(tooltip, content)
         if text is None:
             return fallback()
 
-        return view.show_popup(text, **kwargs)
+        return view.show_popup(text, **popup_kwargs)
 
     def _generate(self, tooltip: str, content: Dict[str, str]) -> Union[Dict[str, str], None]:  # noqa
         """Generate a tooltip with the given text
@@ -114,3 +115,43 @@ class Tooltip(object):
             self.themes[theme_name] = resource.read()
 
         return theme_name
+
+
+class TooltipHelper(Tooltip):
+    loaded = False
+    themes = {}  # type: Dict[str, bytes]
+    tooltips = {}  # type: Dict[str, str]
+
+    def __init__(self, theme: str) -> None:
+        self.theme = theme
+
+        if int(sublime.version()) < 3070:
+            return
+
+        if TooltipHelper.loaded is False:
+            self._load_css_themes()
+            self._load_tooltips()
+            TooltipHelper.loaded = True
+
+    def _load_tooltips(self) -> None:
+        """Load tooltips templates from anaconda tooltips templates
+        """
+
+        template_files_pattern = os.path.join(
+            os.path.dirname(__file__), os.pardir,
+            'templates', 'tooltips', '*.tpl')
+        for template_file in glob.glob(template_files_pattern):
+            with open(template_file, 'r', encoding='utf8') as tplfile:
+                tplname = os.path.basename(template_file).split('.tpl')[0]
+                self.tooltips[tplname] = Template(tplfile.read())
+
+    def generate_no_css(self, tooltip: str, content: Dict[str, str]) -> Union[Dict[str, str], None]:
+        try:
+            data = self.tooltips[tooltip].safe_substitute(content)
+            return data
+        except KeyError as err:
+            logging.error(
+                'while generating tooltip without css: tooltip {} don\'t exists'.format(
+                    str(err))
+            )
+            return None

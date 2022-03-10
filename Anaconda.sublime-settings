@@ -320,6 +320,11 @@
     "anaconda_linter_phantoms_template": "default",
 
     /*
+        This determines whether error messages are show when hovering over a line.
+    */
+    "anaconda_linter_hover_message": false,
+
+    /*
         If anaconda_linter_show_errors_on_save is set to true, anaconda
         will show a list of errors when you save the file.
 

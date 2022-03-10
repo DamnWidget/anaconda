@@ -330,6 +330,35 @@ def get_lineno_msgs(view, lineno):
     return errors_msg
 
 
+def get_specific_lineno_msgs(view, lineno):
+    """Get lineno error messages and return them by message type
+    """
+
+    ERRORS = ANACONDA.get('ERRORS')
+    WARNINGS = ANACONDA.get('WARNINGS')
+    VIOLATIONS = ANACONDA.get('VIOLATIONS')
+
+    specific_errors_msg = {}
+
+    if lineno is not None:
+        def check_and_delete_if_empty(dct: dict, key: str):
+            if not dct.get(key):
+                del dct[key]
+
+        vid = view.id()
+        if vid in ERRORS:
+            specific_errors_msg['ERRORS'] = ERRORS[vid].get(lineno, [])
+            check_and_delete_if_empty(specific_errors_msg, 'ERRORS')
+        if vid in WARNINGS:
+            specific_errors_msg['WARNINGS'] = WARNINGS[vid].get(lineno, [])
+            check_and_delete_if_empty(specific_errors_msg, 'WARNINGS')
+        if vid in VIOLATIONS:
+            specific_errors_msg['VIOLATIONS'] = VIOLATIONS[vid].get(lineno, [])
+            check_and_delete_if_empty(specific_errors_msg, 'VIOLATIONS')
+
+    return specific_errors_msg
+
+
 def run_linter(view=None, hook=None):
     """Run the linter for the given view
     """

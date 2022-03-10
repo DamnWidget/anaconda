@@ -7,6 +7,7 @@ import time
 import sublime
 import sublime_plugin
 
+from ..anaconda_lib.tooltips import Tooltip, TooltipHelper
 from ..anaconda_lib._typing import Callable, Dict, Any
 from ..anaconda_lib.helpers import (
     check_linting, get_settings, check_linting_behaviour,
@@ -14,7 +15,8 @@ from ..anaconda_lib.helpers import (
 )
 from ..anaconda_lib.linting.sublime import (
     ANACONDA, erase_lint_marks, run_linter,
-    last_selected_lineno, update_statusbar
+    last_selected_lineno, update_statusbar,
+    get_specific_lineno_msgs
 )
 
 
@@ -152,3 +154,31 @@ class BackgroundLinter(sublime_plugin.EventListener):
         """
 
         erase_lint_marks(view)
+
+    def on_hover(self, view: sublime.View, point: int, hover_zone: int) -> None:
+        """Called when user hovers cursor above a line
+        """
+        if hover_zone == sublime.HOVER_TEXT and get_settings(view, 'anaconda_linter_hover_message', False):
+            rowcol = view.rowcol(point)
+            line = rowcol[0]  # tuple (lineno, col)
+            messages_with_type = get_specific_lineno_msgs(view, line)
+
+            if messages_with_type:
+                css = get_settings(view, 'anaconda_tooltip_theme', 'popup')
+                main_tooltip = Tooltip(css)
+                tooltip_helper = TooltipHelper(css)
+                helper_content = []
+
+                for key in messages_with_type.keys():
+                    for msg in messages_with_type.get(key):
+                        tooltip_data = {'level': key.lower(), 'messages': msg}
+                        helper_content.append(tooltip_helper.generate_no_css('error_warning_helper', tooltip_data))
+
+                def do_nothing():
+                    return
+
+                messages = "<br>".join(helper_content)
+                tooltip_name = 'error_warning'
+                main_content = {'helper_content': messages}
+                kwargs = {'location': point}
+                main_tooltip.show_tooltip(view, tooltip_name, main_content, do_nothing, **kwargs)
