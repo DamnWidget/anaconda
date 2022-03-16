@@ -31,7 +31,7 @@ class LocalWorker(Worker):
             self.tip = self.process.tip
             return False
 
-        timeout = get_socket_timeout(0.2)
+        timeout = get_socket_timeout(0.5)
         start = time.time()
         times = 1
         interval = timeout * 10
