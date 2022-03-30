@@ -19,10 +19,10 @@ class AnacondaEnableLinting(sublime_plugin.WindowCommand):
         filename = view.file_name()
         if filename is not None and filename in ANACONDA['DISABLED']:
             ANACONDA['DISABLED'].remove(filename)
+            run_linter(view)
         elif filename is None and window_view in ANACONDA['DISABLED_BUFFERS']:
             ANACONDA['DISABLED_BUFFERS'].remove(window_view)
-
-        run_linter(self.window.active_view())
+            run_linter(view)
 
     def is_enabled(self) -> bool:
         """Determines if the command is enabled
