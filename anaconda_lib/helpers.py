@@ -13,7 +13,6 @@ import logging
 import functools
 import traceback
 import subprocess
-from collections import defaultdict
 
 import sublime
 
@@ -32,8 +31,9 @@ ONLY_CODE = 0x01
 NOT_SCRATCH = 0x02
 LINTING_ENABLED = 0x04
 
-ENVIRON_HOOK_INVALID = defaultdict(lambda: False)
 AUTO_COMPLETION_DOT_VIEWS = []
+SETTINGS_CACHE = {}
+PIPFILE_CACHE = {}
 
 
 def dot_completion(view):
@@ -199,15 +199,18 @@ def get_settings(view, name, default=None):
     """Get settings
     """
 
-    global ENVIRON_HOOK_INVALID
-
     if view is None:
         return default
 
     plugin_settings = sublime.load_settings('Anaconda.sublime-settings')
 
-    if (name in ('python_interpreter', 'extra_paths') and not
-            ENVIRON_HOOK_INVALID[view.id()]):
+    if name in ['python_interpreter', 'extra_paths']:
+        settings_key = '{}_{}_{}'.format(view.id(), name, default)
+        if settings_key in SETTINGS_CACHE:
+            # print('settings found in cache', settings_key, SETTINGS_CACHE)
+            return SETTINGS_CACHE[settings_key]
+        # print('settings not found in cache', settings_key, SETTINGS_CACHE)
+
         if view.window() is not None and view.window().folders():
             allow_multiple_env_hooks = get_settings(
                 view,
@@ -219,9 +222,13 @@ def get_settings(view, name, default=None):
             else:
                 dirname = view.window().folders()[0]
             while True:
+                # print('dirname', dirname)
                 environfile = os.path.join(dirname, '.anaconda')
-                if os.path.exists(environfile) and os.path.isfile(environfile):
+                pipfile = os.path.join(dirname, 'Pipfile')
+
+                if os.path.isfile(environfile):
                     # print("Environ found on %s" % environfile)
+                    # sublime.error_message("Environ found on %s" % environfile)
                     with open(environfile, 'r') as jsonfile:
                         try:
                             data = json.loads(jsonfile.read())
@@ -236,7 +243,6 @@ def get_settings(view, name, default=None):
                                 )
                             )
                             logging.error(error)
-                            ENVIRON_HOOK_INVALID[view.id()] = True
                             break  # stop loop
                         else:
                             r = data.get(
@@ -246,11 +252,70 @@ def get_settings(view, name, default=None):
                             )
                             w = view.window()
                             if w is not None:
-                                return sublime.expand_variables(
+                                SETTINGS_CACHE[settings_key] = sublime.expand_variables(
                                     r, w.extract_variables()
                                 )
+                                return SETTINGS_CACHE[settings_key]
 
+                            SETTINGS_CACHE[settings_key] = r
                             return r
+
+                elif name == 'python_interpreter' and os.path.isfile(pipfile) and \
+                        PIPFILE_CACHE.get(pipfile) != 'ERROR':
+
+                    if pipfile in PIPFILE_CACHE:
+                        # print('pipfile found in cache', pipfile)
+                        return PIPFILE_CACHE[pipfile]
+                    # print("Pipfile found on %s" % pipfile)
+                    # sublime.error_message("Pipfile found on %s" % pipfile)
+                    try:
+                        try:
+                            # check if venv has been created
+                            sp = create_subprocess(
+                                ['pipenv', '--venv'], cwd=dirname,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            _, sp_err = [p.decode().strip() for p in sp.communicate()]
+
+                        except Exception:
+                            raise Exception("Pipenv is not installed, please "
+                                "install Pipenv to enable pipfile support")
+
+                        if sp_err or sp.returncode:
+                            raise Exception("Pipenv's error was: \n{}".format(sp_err))
+
+                        # get Python interpreter
+                        sp = create_subprocess(
+                            ['pipenv', '--py'], cwd=dirname,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        sp_out, sp_err = [p.decode().strip() for p in sp.communicate()]
+                        if sp_err or sp.returncode:
+                            pipenv_error = "Pipenv's error was: \n{}".format(sp_err)
+                            raise Exception(pipenv_error)
+                        if not os.path.isfile(sp_out):
+                            pipenv_error = "Pipenv's Python interpreter is not valid: \n{}".format(sp_out)
+                            raise Exception(pipenv_error)
+
+                        PIPFILE_CACHE[pipfile] = sp_out
+                        SETTINGS_CACHE[settings_key] = sp_out
+                        return sp_out
+
+                    except Exception as error:
+                        sublime.error_message(
+                            "Anaconda Message:\n"
+                            "I found an Pipfile in {pipfile} "
+                            "path but couldn't get the virtual environment "
+                            "using pipenv.\n\n"
+                            "{pipenv_error}\n\n"
+                            "That means that your Pipfile "
+                            "is being ignored.".format(
+                                pipfile=pipfile, pipenv_error=error,
+                            )
+                        )
+                        logging.error(error)
+                        PIPFILE_CACHE[pipfile] = 'ERROR'
+                        break  # stop loop
+
+
                 else:
                     parts = os.path.split(dirname)
                     if len(parts[1]) > 0:
@@ -266,6 +331,9 @@ def get_settings(view, name, default=None):
             r = [expand(view, e) for e in r]
         else:
             r = expand(view, r)
+
+    if name in ['python_interpreter', 'extra_paths']:
+        SETTINGS_CACHE[settings_key] = r
 
     return r
 
